@@ -31,6 +31,9 @@ public class Account {
     @Column(name = "account_number_encrypted", length = 500)
     private String accountNumberEncrypted;
 
+    @Column(name = "account_number", length = 50)
+    private String accountNumber;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "account_type")
     private AccountType accountType = AccountType.BANK;
@@ -49,6 +52,9 @@ public class Account {
 
     @Column(length = 7)
     private String color;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

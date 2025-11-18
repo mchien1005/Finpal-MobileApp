@@ -31,6 +31,7 @@ public class TransactionService {
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
+    private final CategoryRuleService categoryRuleService;
     private final EntityManager entityManager;
 
     @Transactional
@@ -67,9 +68,16 @@ public class TransactionService {
             Category category = categoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new RuntimeException("Category not found"));
             transaction.setCategory(category);
-        } else if (request.getMerchant() != null) {
-            // TODO: Auto-categorize based on merchant using CategoryRuleService
-            // For now, leave it null
+        } else if (request.getMerchant() != null && !request.getMerchant().trim().isEmpty()) {
+            // Auto-categorize based on merchant using CategoryRuleService
+            Long suggestedCategoryId = categoryRuleService.suggestCategoryByMerchant(request.getMerchant());
+            if (suggestedCategoryId != null) {
+                Category category = categoryRepository.findById(suggestedCategoryId)
+                        .orElse(null);
+                if (category != null) {
+                    transaction.setCategory(category);
+                }
+            }
         }
 
         Transaction saved = transactionRepository.save(transaction);
