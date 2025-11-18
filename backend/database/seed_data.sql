@@ -442,40 +442,47 @@ VALUES (
 -- =====================================================
 -- DEMO USERS
 -- =====================================================
--- Password: 123456 (đã hash bằng BCrypt từ Spring Security)
-INSERT INTO users (
-        username,
-        password,
-        email,
-        full_name,
-        phone,
-        role,
-        is_active,
-        email_verified
-    )
-VALUES (
-        'demo',
-        '$2a$10$ZgCGeAc6Njs8LeHMclKhubnKTqAO55i2ZCfEUiQlYd',
-        'demo@finpal.com',
-        'Người dùng Demo',
-        '0901234567',
-        'USER',
-        TRUE,
-        TRUE
-    ),
-    (
-        'admin',
-        '$2a$10$RuYir.OBB1FWqHSuAIAGC.2bRufCJJ2D8XqUj26ciV4',
-        'admin@finpal.com',
-        'Quản trị viên',
-        '0987654321',
-        'ADMIN',
-        TRUE,
-        TRUE
-    );
+-- -- Password: 123456 (hash BCrypt chuẩn)
+-- INSERT INTO users (
+--         username,
+--         password,
+--         email,
+--         full_name,
+--         phone,
+--         role,
+--         is_active,
+--         email_verified
+--     )
+-- VALUES (
+--         'demo',
+--         '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhCu',
+--         'demo@finpal.com',
+--         'Người dùng Demo',
+--         '0901234567',
+--         'USER',
+--         TRUE,
+--         TRUE
+--     ),
+--     (
+--         'admin',
+--         '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhCu',
+--         'admin@finpal.com',
+--         'Quản trị viên',
+--         '0987654321',
+--         'ADMIN',
+--         TRUE,
+--         TRUE
+--     );
 -- =====================================================
 -- DEMO DATA cho user 'demo'
 -- =====================================================
+-- Lấy user_id của demo user
+SET @demo_user_id = (
+        SELECT id
+        FROM users
+        WHERE username = 'demo'
+        LIMIT 1
+    );
 -- Tài khoản ngân hàng
 INSERT INTO accounts (
         user_id,
@@ -488,7 +495,7 @@ INSERT INTO accounts (
         color
     )
 VALUES (
-        1,
+        @demo_user_id,
         'Vietcombank',
         'Tài khoản chính',
         'BANK',
@@ -498,7 +505,7 @@ VALUES (
         '#007AC2'
     ),
     (
-        1,
+        @demo_user_id,
         'Techcombank',
         'Thẻ tín dụng',
         'CREDIT_CARD',
@@ -508,7 +515,7 @@ VALUES (
         '#FF6B00'
     ),
     (
-        1,
+        @demo_user_id,
         'Tiền mặt',
         'Ví tiền',
         'CASH',
@@ -554,6 +561,14 @@ SET @giai_tri_id = (
         WHERE name = 'Giải trí'
         LIMIT 1
     );
+-- Lấy account_id của demo user
+SET @demo_account_vcb = (
+        SELECT id
+        FROM accounts
+        WHERE user_id = @demo_user_id
+            AND bank_name = 'Vietcombank'
+        LIMIT 1
+    );
 INSERT INTO transactions (
         user_id,
         account_id,
@@ -566,8 +581,8 @@ INSERT INTO transactions (
         is_auto
     )
 VALUES (
-        1,
-        1,
+        @demo_user_id,
+        @demo_account_vcb,
         @luong_id,
         15000000.00,
         'INCOME',
@@ -577,8 +592,8 @@ VALUES (
         FALSE
     ),
     (
-        1,
-        1,
+        @demo_user_id,
+        @demo_account_vcb,
         @cafe_id,
         45000.00,
         'EXPENSE',
@@ -588,8 +603,8 @@ VALUES (
         TRUE
     ),
     (
-        1,
-        1,
+        @demo_user_id,
+        @demo_account_vcb,
         @grab_id,
         85000.00,
         'EXPENSE',
@@ -599,8 +614,8 @@ VALUES (
         TRUE
     ),
     (
-        1,
-        1,
+        @demo_user_id,
+        @demo_account_vcb,
         @an_uong_id,
         150000.00,
         'EXPENSE',
@@ -610,8 +625,8 @@ VALUES (
         TRUE
     ),
     (
-        1,
-        1,
+        @demo_user_id,
+        @demo_account_vcb,
         @mua_sam_id,
         500000.00,
         'EXPENSE',
@@ -621,8 +636,8 @@ VALUES (
         TRUE
     ),
     (
-        1,
-        1,
+        @demo_user_id,
+        @demo_account_vcb,
         @giai_tri_id,
         200000.00,
         'EXPENSE',
@@ -655,7 +670,7 @@ INSERT INTO budgets (
         alert_threshold
     )
 VALUES (
-        1,
+        @demo_user_id,
         @an_uong_id,
         'Ngân sách Ăn uống tháng 11',
         3000000.00,
@@ -665,7 +680,7 @@ VALUES (
         70
     ),
     (
-        1,
+        @demo_user_id,
         @di_chuyen_id,
         'Ngân sách Di chuyển tháng 11',
         1500000.00,
@@ -687,7 +702,7 @@ INSERT INTO savings_goals (
         status
     )
 VALUES (
-        1,
+        @demo_user_id,
         'Mua tai nghe AirPods',
         'Tiết kiệm để mua tai nghe không dây',
         5000000.00,
@@ -698,7 +713,7 @@ VALUES (
         'ACTIVE'
     ),
     (
-        1,
+        @demo_user_id,
         'Du lịch Đà Lạt',
         'Chuyến đi cuối năm',
         10000000.00,
@@ -709,6 +724,12 @@ VALUES (
         'ACTIVE'
     );
 -- User preferences
+SET @admin_user_id = (
+        SELECT id
+        FROM users
+        WHERE username = 'admin'
+        LIMIT 1
+    );
 INSERT INTO user_preferences (
         user_id,
         currency,
@@ -716,5 +737,17 @@ INSERT INTO user_preferences (
         timezone,
         budget_alert_threshold
     )
-VALUES (1, 'VND', 'vi', 'Asia/Ho_Chi_Minh', 70),
-    (2, 'VND', 'vi', 'Asia/Ho_Chi_Minh', 70);
+VALUES (
+        @demo_user_id,
+        'VND',
+        'vi',
+        'Asia/Ho_Chi_Minh',
+        70
+    ),
+    (
+        @admin_user_id,
+        'VND',
+        'vi',
+        'Asia/Ho_Chi_Minh',
+        70
+    );
