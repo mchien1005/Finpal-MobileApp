@@ -442,31 +442,34 @@ VALUES (
 -- =====================================================
 -- DEMO USERS
 -- =====================================================
--- Password: 123456 (đã hash bằng BCrypt)
+-- Password: 123456 (đã hash bằng BCrypt từ Spring Security)
 INSERT INTO users (
         username,
         password,
         email,
         full_name,
         phone,
+        role,
         is_active,
         email_verified
     )
 VALUES (
         'demo',
-        '$2a$10$xQGVF3VDqPVvQqJ9xVHKAO5rZRq1VQH5P8LjPGTJP3pW8fCwN8fDK',
+        '$2a$10$ZgCGeAc6Njs8LeHMclKhubnKTqAO55i2ZCfEUiQlYd',
         'demo@finpal.com',
         'Người dùng Demo',
         '0901234567',
+        'USER',
         TRUE,
         TRUE
     ),
     (
         'admin',
-        '$2a$10$xQGVF3VDqPVvQqJ9xVHKAO5rZRq1VQH5P8LjPGTJP3pW8fCwN8fDK',
+        '$2a$10$RuYir.OBB1FWqHSuAIAGC.2bRufCJJ2D8XqUj26ciV4',
         'admin@finpal.com',
         'Quản trị viên',
         '0987654321',
+        'ADMIN',
         TRUE,
         TRUE
     );

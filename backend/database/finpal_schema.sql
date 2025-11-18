@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     full_name VARCHAR(100),
     phone VARCHAR(20),
     avatar_url VARCHAR(500),
+    role VARCHAR(20) NOT NULL DEFAULT 'USER' COMMENT 'USER hoặc ADMIN',
     is_active BOOLEAN DEFAULT TRUE,
     email_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -23,7 +24,8 @@ CREATE TABLE IF NOT EXISTS users (
     last_login_at TIMESTAMP NULL,
     INDEX idx_username (username),
     INDEX idx_email (email),
-    INDEX idx_created_at (created_at)
+    INDEX idx_created_at (created_at),
+    INDEX idx_role (role)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
 -- 2. BẢNG CATEGORIES - Danh mục chi tiêu
