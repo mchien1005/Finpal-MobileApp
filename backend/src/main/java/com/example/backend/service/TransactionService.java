@@ -12,10 +12,6 @@ import com.example.backend.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +31,7 @@ public class TransactionService {
     private final EntityManager entityManager;
 
     @Transactional
+    @SuppressWarnings("null")
     public TransactionResponse createTransaction(TransactionRequest request, String username) {
         // Get current user
         User user = userRepository.findByUsername(username)
@@ -85,6 +82,7 @@ public class TransactionService {
     }
 
     @Transactional(readOnly = true)
+    @SuppressWarnings("null")
     public PageResponse<TransactionResponse> getTransactions(
             String username,
             TransactionFilter filter,
@@ -171,6 +169,7 @@ public class TransactionService {
     }
 
     @Transactional(readOnly = true)
+    @SuppressWarnings("null")
     public TransactionResponse getTransactionById(Long id, String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -186,6 +185,7 @@ public class TransactionService {
     }
 
     @Transactional
+    @SuppressWarnings("null")
     public TransactionResponse updateTransaction(Long id, TransactionRequest request, String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -226,6 +226,7 @@ public class TransactionService {
     }
 
     @Transactional
+    @SuppressWarnings("null")
     public void deleteTransaction(Long id, String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
