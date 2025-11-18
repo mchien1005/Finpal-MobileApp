@@ -13,7 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -36,8 +36,8 @@ public class TransactionController {
             @RequestParam(required = false) Long accountId,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String type,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) String merchant,
             @RequestParam(required = false) Boolean isAuto,
             @RequestParam(required = false) Boolean isVerified,
@@ -52,8 +52,8 @@ public class TransactionController {
         filter.setAccountId(accountId);
         filter.setCategoryId(categoryId);
         filter.setType(type);
-        filter.setStartDate(startDate);
-        filter.setEndDate(endDate);
+        filter.setStartDate(startDate != null ? startDate.atStartOfDay() : null);
+        filter.setEndDate(endDate != null ? endDate.atTime(23, 59, 59) : null);
         filter.setMerchant(merchant);
         filter.setIsAuto(isAuto);
         filter.setIsVerified(isVerified);
