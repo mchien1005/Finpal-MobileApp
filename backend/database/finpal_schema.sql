@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     user_id BIGINT NOT NULL,
     bank_name VARCHAR(100) NOT NULL COMMENT 'Vietcombank, Techcombank, ACB...',
     account_name VARCHAR(100) COMMENT 'Tên tài khoản',
+    account_number VARCHAR(50) COMMENT 'Số tài khoản (plain text hoặc masked)',
     account_number_encrypted VARCHAR(500) COMMENT 'Số tài khoản được mã hóa',
     account_type ENUM('BANK', 'CASH', 'CREDIT_CARD', 'E_WALLET') DEFAULT 'BANK',
     balance DECIMAL(15, 2) DEFAULT 0.00,
@@ -60,11 +61,13 @@ CREATE TABLE IF NOT EXISTS accounts (
     is_active BOOLEAN DEFAULT TRUE,
     icon VARCHAR(50),
     color VARCHAR(7),
+    notes TEXT COMMENT 'Ghi chú về tài khoản',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_id (user_id),
-    INDEX idx_bank_name (bank_name)
+    INDEX idx_bank_name (bank_name),
+    INDEX idx_account_number (account_number)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
 -- 4. BẢNG TRANSACTIONS - Giao dịch tài chính
