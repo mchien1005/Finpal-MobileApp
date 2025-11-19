@@ -13,22 +13,31 @@ import java.util.Optional;
 @Repository
 public interface BudgetRepository extends JpaRepository<Budget, Long> {
 
-    List<Budget> findByUserId(Long userId);
+        List<Budget> findByUserId(Long userId);
 
-    List<Budget> findByUserIdAndIsActiveTrue(Long userId);
+        List<Budget> findByUserIdAndIsActiveTrue(Long userId);
 
-    Optional<Budget> findByIdAndUserId(Long id, Long userId);
+        List<Budget> findByUserIdAndIsActive(Long userId, Boolean isActive);
 
-    List<Budget> findByUserIdAndCategoryId(Long userId, Long categoryId);
+        List<Budget> findByUserIdOrderByCreatedAtDesc(Long userId);
 
-    @Query("SELECT b FROM Budget b WHERE b.userId = :userId AND b.startDate <= :date AND b.endDate >= :date AND b.isActive = true")
-    List<Budget> findActiveBudgetsByUserIdAndDate(
-            @Param("userId") Long userId,
-            @Param("date") LocalDate date);
+        Optional<Budget> findByIdAndUserId(Long id, Long userId);
 
-    @Query("SELECT b FROM Budget b WHERE b.userId = :userId AND b.categoryId = :categoryId AND b.startDate <= :date AND b.endDate >= :date AND b.isActive = true")
-    Optional<Budget> findActiveBudgetByUserIdAndCategoryIdAndDate(
-            @Param("userId") Long userId,
-            @Param("categoryId") Long categoryId,
-            @Param("date") LocalDate date);
+        List<Budget> findByUserIdAndCategoryId(Long userId, Long categoryId);
+
+        @Query("SELECT b FROM Budget b WHERE b.userId = :userId AND b.startDate <= :date AND b.endDate >= :date AND b.isActive = true")
+        List<Budget> findActiveBudgetsByUserIdAndDate(
+                        @Param("userId") Long userId,
+                        @Param("date") LocalDate date);
+
+        @Query("SELECT b FROM Budget b WHERE b.userId = :userId AND b.startDate <= :date AND b.endDate >= :date AND b.isActive = true")
+        List<Budget> findActiveBudgetsForDate(
+                        @Param("userId") Long userId,
+                        @Param("date") LocalDate date);
+
+        @Query("SELECT b FROM Budget b WHERE b.userId = :userId AND b.categoryId = :categoryId AND b.startDate <= :date AND b.endDate >= :date AND b.isActive = true")
+        Optional<Budget> findActiveBudgetByUserIdAndCategoryIdAndDate(
+                        @Param("userId") Long userId,
+                        @Param("categoryId") Long categoryId,
+                        @Param("date") LocalDate date);
 }
