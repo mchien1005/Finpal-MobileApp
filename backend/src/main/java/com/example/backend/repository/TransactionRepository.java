@@ -42,4 +42,68 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
         @Query("SELECT COUNT(t) FROM Transaction t WHERE t.user.id = :userId AND t.isAuto = true")
         Long countAutoTransactionsByUserId(@Param("userId") Long userId);
+
+        // Dashboard queries
+        @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.user.id = :userId AND t.type = :type AND t.transactionDate BETWEEN :startDate AND :endDate")
+        BigDecimal sumByUserIdAndTypeAndDateRange(
+                        @Param("userId") Long userId,
+                        @Param("type") Transaction.TransactionType type,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
+
+        @Query("SELECT COUNT(t) FROM Transaction t WHERE t.user.id = :userId AND t.transactionDate BETWEEN :startDate AND :endDate")
+        Long countByUserIdAndDateRange(
+                        @Param("userId") Long userId,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
+
+        @Query("SELECT COUNT(t) FROM Transaction t WHERE t.user.id = :userId AND t.type = :type AND t.transactionDate BETWEEN :startDate AND :endDate")
+        Long countByUserIdAndTypeAndDateRange(
+                        @Param("userId") Long userId,
+                        @Param("type") Transaction.TransactionType type,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
+
+        @Query("SELECT COUNT(t) FROM Transaction t WHERE t.user.id = :userId AND t.account.id = :accountId AND t.transactionDate BETWEEN :startDate AND :endDate")
+        Long countByUserIdAndAccountIdAndDateRange(
+                        @Param("userId") Long userId,
+                        @Param("accountId") Long accountId,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
+
+        @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.user.id = :userId AND t.category.id = :categoryId AND t.type = :type AND t.transactionDate BETWEEN :startDate AND :endDate")
+        BigDecimal sumByUserIdAndCategoryIdAndTypeAndDateRange(
+                        @Param("userId") Long userId,
+                        @Param("categoryId") Long categoryId,
+                        @Param("type") Transaction.TransactionType type,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
+
+        @Query("SELECT t.category.id, t.category.name, t.category.icon, t.category.color, SUM(t.amount), COUNT(t) " +
+                        "FROM Transaction t " +
+                        "WHERE t.user.id = :userId " +
+                        "AND t.transactionDate BETWEEN :startDate AND :endDate " +
+                        "AND (:type IS NULL OR t.type = :type) " +
+                        "AND t.category IS NOT NULL " +
+                        "GROUP BY t.category.id, t.category.name, t.category.icon, t.category.color " +
+                        "ORDER BY SUM(t.amount) DESC")
+        List<Object[]> getSpendingByCategory(
+                        @Param("userId") Long userId,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate,
+                        @Param("type") Transaction.TransactionType type);
+
+        @Query("SELECT t.id, t.type, t.amount, t.merchant, t.description, t.category.name, t.category.icon, t.transactionDate, t.account.accountName "
+                        +
+                        "FROM Transaction t " +
+                        "WHERE t.user.id = :userId " +
+                        "AND t.transactionDate BETWEEN :startDate AND :endDate " +
+                        "AND (:type IS NULL OR t.type = :type) " +
+                        "ORDER BY t.amount DESC")
+        List<Object[]> getTopTransactions(
+                        @Param("userId") Long userId,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate,
+                        @Param("type") Transaction.TransactionType type,
+                        @Param("limit") int limit);
 }
