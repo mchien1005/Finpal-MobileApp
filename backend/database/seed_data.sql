@@ -4,6 +4,45 @@
 -- =====================================================
 USE finpal_db;
 -- =====================================================
+-- CLEAN UP - Xóa dữ liệu cũ (nếu có) để tránh duplicate
+-- =====================================================
+SET FOREIGN_KEY_CHECKS = 0;
+DELETE FROM transactions
+WHERE user_id IN (
+        SELECT id
+        FROM users
+        WHERE username IN ('demo', 'admin')
+    );
+DELETE FROM budgets
+WHERE user_id IN (
+        SELECT id
+        FROM users
+        WHERE username IN ('demo', 'admin')
+    );
+DELETE FROM savings_goals
+WHERE user_id IN (
+        SELECT id
+        FROM users
+        WHERE username IN ('demo', 'admin')
+    );
+DELETE FROM accounts
+WHERE user_id IN (
+        SELECT id
+        FROM users
+        WHERE username IN ('demo', 'admin')
+    );
+DELETE FROM user_preferences
+WHERE user_id IN (
+        SELECT id
+        FROM users
+        WHERE username IN ('demo', 'admin')
+    );
+DELETE FROM category_rules;
+DELETE FROM sms_parsers;
+DELETE FROM categories
+WHERE is_system = TRUE;
+SET FOREIGN_KEY_CHECKS = 1;
+-- =====================================================
 -- CATEGORIES - Danh mục hệ thống
 -- =====================================================
 -- Categories Thu nhập
@@ -376,7 +415,7 @@ VALUES (
 -- =====================================================
 -- SMS PARSERS - Mẫu phân tích SMS ngân hàng
 -- =====================================================
--- Parser cho Vietcombank
+-- Parser cho Vietcombank (VCB) - Format mới
 INSERT INTO sms_parsers (
         bank_name,
         bank_code,
@@ -390,14 +429,14 @@ INSERT INTO sms_parsers (
 VALUES (
         'Vietcombank',
         'VCB',
-        'Vietcombank',
-        'TK (\\d+) GD (-|\\+)([\\d,]+)VND luc (\\d{2}/\\d{2}/\\d{4} \\d{2}:\\d{2}:\\d{2}). SD ([\\d,]+)VND. (.*)',
-        '{"account": 1, "type": 2, "amount": 3, "time": 4, "balance": 5, "description": 6}',
-        'TK 1234567890 GD -500,000VND luc 17/11/2024 14:30:00. SD 2,500,000VND. GRAB VIETNAM',
+        'VIETCOMBANK',
+        'TK (\\d+x+\\d+) ([+-])(\\d{1,3}(?:,\\d{3})*(?:\\.\\d{2})?) VND luc (\\d{2}/\\d{2}/\\d{4} \\d{2}:\\d{2}:\\d{2})\\. So du (\\d{1,3}(?:,\\d{3})*(?:\\.\\d{2})?) VND\\. GD tai (.+?)(?:\\.|$)',
+        '{"account":1,"type":2,"amount":3,"time":4,"merchant":6}',
+        'TK 1234xxxx5678 -100,000 VND luc 18/11/2025 15:30:45. So du 2,500,000 VND. GD tai GRAB-VIETNAM',
         TRUE,
         1
     );
--- Parser cho Techcombank
+-- Parser cho Techcombank (TCB) - Format mới
 INSERT INTO sms_parsers (
         bank_name,
         bank_code,
@@ -411,14 +450,14 @@ INSERT INTO sms_parsers (
 VALUES (
         'Techcombank',
         'TCB',
-        'Techcombank',
-        'TK (\\d+) (-|\\+)([\\d,]+)d (\\d{2}/\\d{2}/\\d{2} \\d{2}:\\d{2}) SD ([\\d,]+)d (.*)',
-        '{"account": 1, "type": 2, "amount": 3, "time": 4, "balance": 5, "description": 6}',
-        'TK 9876543210 -200,000d 17/11/24 15:45 SD 1,800,000d SHOPEE',
+        'TECHCOMBANK',
+        'TK (\\d+x+\\d+) ([+-])(\\d{1,3}(?:,\\d{3})*) VND\\. (\\d{2}:\\d{2} \\d{2}/\\d{2}/\\d{4})\\. ND: (.+?)\\. SD: (\\d{1,3}(?:,\\d{3})*) VND',
+        '{"account":1,"type":2,"amount":3,"time":4,"merchant":5}',
+        'TK 9876xxxx4321 -50,000 VND. 15:30 18/11/2025. ND: SHOPEE-VN. SD: 1,000,000 VND',
         TRUE,
-        1
+        2
     );
--- Parser cho ACB
+-- Parser cho ACB - Format mới
 INSERT INTO sms_parsers (
         bank_name,
         bank_code,
@@ -433,46 +472,46 @@ VALUES (
         'ACB',
         'ACB',
         'ACB',
-        'TK (\\d+) (-|\\+)([\\d,]+) \\d{2}/\\d{2}/\\d{2} \\d{2}:\\d{2}:\\d{2} SD:([\\d,]+) (.*)',
-        '{"account": 1, "type": 2, "amount": 3, "balance": 4, "description": 5}',
-        'TK 1122334455 -150,000 17/11/24 16:20:30 SD:950,000 CGV CINEMAS',
+        'TK (\\d+x+\\d+) GD ([+-])(\\d{1,3}(?:,\\d{3})*) (\\d{2}-\\d{2}-\\d{4} \\d{2}:\\d{2}) tai (.+?)\\. SD: (\\d{1,3}(?:,\\d{3})*)',
+        '{"account":1,"type":2,"amount":3,"time":4,"merchant":5}',
+        'TK 1111xxxx2222 GD -30,000 18-11-2025 14:00 tai COFFEE-HOUSE. SD: 500,000',
         TRUE,
-        1
+        3
     );
 -- =====================================================
 -- DEMO USERS
 -- =====================================================
--- -- Password: 123456 (hash BCrypt chuẩn)
--- INSERT INTO users (
---         username,
---         password,
---         email,
---         full_name,
---         phone,
---         role,
---         is_active,
---         email_verified
---     )
--- VALUES (
---         'demo',
---         '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhCu',
---         'demo@finpal.com',
---         'Người dùng Demo',
---         '0901234567',
---         'USER',
---         TRUE,
---         TRUE
---     ),
---     (
---         'admin',
---         '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhCu',
---         'admin@finpal.com',
---         'Quản trị viên',
---         '0987654321',
---         'ADMIN',
---         TRUE,
---         TRUE
---     );
+-- Password: 123456 (hash BCrypt chuẩn)
+INSERT INTO users (
+        username,
+        password,
+        email,
+        full_name,
+        phone,
+        role,
+        is_active,
+        email_verified
+    )
+VALUES (
+        'demo',
+        '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhCu',
+        'demo@finpal.com',
+        'Người dùng Demo',
+        '0901234567',
+        'USER',
+        TRUE,
+        TRUE
+    ),
+    (
+        'admin',
+        '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhCu',
+        'admin@finpal.com',
+        'Quản trị viên',
+        '0987654321',
+        'ADMIN',
+        TRUE,
+        TRUE
+    );
 -- =====================================================
 -- DEMO DATA cho user 'demo'
 -- =====================================================
@@ -646,19 +685,7 @@ VALUES (
         '2024-11-13 19:00:00',
         TRUE
     );
--- Ngân sách
-SET @an_uong_id = (
-        SELECT id
-        FROM categories
-        WHERE name = 'Ăn uống'
-        LIMIT 1
-    );
-SET @di_chuyen_id = (
-        SELECT id
-        FROM categories
-        WHERE name = 'Di chuyển'
-        LIMIT 1
-    );
+-- Ngân sách (sử dụng lại biến @an_uong_id và @di_chuyen_id đã set ở trên)
 INSERT INTO budgets (
         user_id,
         category_id,
