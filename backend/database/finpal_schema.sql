@@ -2,6 +2,8 @@
 -- FINPAL DATABASE SCHEMA
 -- Ví Thông Minh - Smart Financial Assistant
 -- =====================================================
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
 -- Tạo database
 CREATE DATABASE IF NOT EXISTS finpal_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE finpal_db;

@@ -2,6 +2,8 @@
 -- FINPAL SEED DATA
 -- Dữ liệu mẫu cho hệ thống
 -- =====================================================
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
 USE finpal_db;
 -- =====================================================
 -- CLEAN UP - Xóa dữ liệu cũ (nếu có) để tránh duplicate
@@ -481,7 +483,8 @@ VALUES (
 -- =====================================================
 -- DEMO USERS
 -- =====================================================
--- Password: 123456 (hash BCrypt chuẩn)
+-- Password: 123456 
+-- BCrypt hash được generate bởi hệ thống: $2a$10$PtD9U/K40h7.STHT9pV8ouDWPswAdb6eMgpgQn2vZtLNONsIA9OH.
 INSERT INTO users (
         username,
         password,
@@ -494,7 +497,7 @@ INSERT INTO users (
     )
 VALUES (
         'demo',
-        '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhCu',
+        '$2a$10$PtD9U/K40h7.STHT9pV8ouDWPswAdb6eMgpgQn2vZtLNONsIA9OH.',
         'demo@finpal.com',
         'Người dùng Demo',
         '0901234567',
@@ -504,7 +507,7 @@ VALUES (
     ),
     (
         'admin',
-        '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhCu',
+        '$2a$10$PtD9U/K40h7.STHT9pV8ouDWPswAdb6eMgpgQn2vZtLNONsIA9OH.',
         'admin@finpal.com',
         'Quản trị viên',
         '0987654321',
