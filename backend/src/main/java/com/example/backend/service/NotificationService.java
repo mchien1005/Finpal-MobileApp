@@ -1,12 +1,15 @@
 package com.example.backend.service;
 
 import com.example.backend.dto.NotificationResponse;
+import com.example.backend.dto.SavingsSuggestionsResponse;
+import com.example.backend.dto.SpendingInsight;
 import com.example.backend.model.Budget;
 import com.example.backend.model.Notification;
 import com.example.backend.model.SavingsGoal;
 import com.example.backend.model.User;
 import com.example.backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,9 +20,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Service for Notification System (FR3.1)
+ * Service quản lý Hệ thống Thông báo (Notification System) - FR3.1
+ * Chức năng: Thông báo ngân sách vượt quá, nhắc nhở mục tiêu, gợi ý tiết kiệm
+ * AI, cảnh báo chi tiêu
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class NotificationService {
 
@@ -28,9 +34,15 @@ public class NotificationService {
     private final BudgetRepository budgetRepository;
     private final SavingsGoalRepository savingsGoalRepository;
     private final TransactionRepository transactionRepository;
+    private final AIInsightsService aiInsightsService;
 
     /**
-     * Lấy tất cả notifications của user
+     * Lấy tất cả thông báo của user
+     * 
+     * @param username Tên đăng nhập của user
+     * @param isRead   Lọc theo trạng thái đã đọc (true/false, nếu null thì lấy tất
+     *                 cả)
+     * @return List<NotificationResponse> chứa danh sách thông báo
      */
     @Transactional(readOnly = true)
     public List<NotificationResponse> getAllNotifications(String username, Boolean isRead) {
@@ -50,7 +62,7 @@ public class NotificationService {
     }
 
     /**
-     * Đếm số notifications chưa đọc
+     * Đếm số thông báo chưa đọc (hiển thị badge trên icon chuông)
      */
     @Transactional(readOnly = true)
     public Long countUnreadNotifications(String username) {
@@ -61,7 +73,11 @@ public class NotificationService {
     }
 
     /**
-     * Đánh dấu notification là đã đọc
+     * Đánh dấu thông báo là đã đọc
+     * 
+     * @param username       Tên đăng nhập của user
+     * @param notificationId ID của thông báo
+     * @return NotificationResponse chứa thông tin thông báo sau khi cập nhật
      */
     @Transactional
     public NotificationResponse markAsRead(String username, Long notificationId) {
@@ -86,7 +102,9 @@ public class NotificationService {
     }
 
     /**
-     * Đánh dấu tất cả notifications là đã đọc
+     * Đánh dấu tất cả thông báo là đã đọc
+     * 
+     * @param username Tên đăng nhập của user
      */
     @Transactional
     public void markAllAsRead(String username) {
@@ -105,7 +123,10 @@ public class NotificationService {
     }
 
     /**
-     * Xóa notification
+     * Xóa thông báo
+     * 
+     * @param username       Tên đăng nhập của user
+     * @param notificationId ID của thông báo cần xóa
      */
     @Transactional
     public void deleteNotification(String username, Long notificationId) {
@@ -124,7 +145,7 @@ public class NotificationService {
     }
 
     /**
-     * Xóa tất cả notifications đã đọc
+     * Xóa tất cả thông báo đã đọc (dọc dẹp inbox)
      */
     @Transactional
     public void deleteAllRead(String username) {
@@ -137,7 +158,12 @@ public class NotificationService {
     }
 
     /**
-     * Tạo budget alert notification
+     * Tạo thông báo cảnh báo ngân sách (budget alert)
+     * 
+     * @param userId   ID của user
+     * @param budgetId ID của ngân sách
+     * @param message  Nội dung cảnh báo
+     * @param priority Mức độ ưu tiên (LOW/MEDIUM/HIGH)
      */
     @Transactional
     public void createBudgetAlert(Long userId, Long budgetId, String message, String priority) {
@@ -154,7 +180,11 @@ public class NotificationService {
     }
 
     /**
-     * Tạo savings goal reminder notification
+     * Tạo thông báo nhắc nhở mục tiêu tiết kiệm
+     * 
+     * @param userId  ID của user
+     * @param goalId  ID của mục tiêu
+     * @param message Nội dung nhắc nhở
      */
     @Transactional
     public void createSavingsGoalReminder(Long userId, Long goalId, String message) {
@@ -171,7 +201,9 @@ public class NotificationService {
     }
 
     /**
-     * Kiểm tra và tạo budget alerts tự động
+     * Kiểm tra và tạo cảnh báo ngân sách tự động cho user
+     * - Vượt 100%: Cảnh báo HIGH
+     * - Vượt alertThreshold (ví dụ 80%): Cảnh báo MEDIUM
      */
     @Transactional
     public void checkBudgetAlertsForUser(Long userId) {
@@ -179,7 +211,7 @@ public class NotificationService {
         List<Budget> activeBudgets = budgetRepository.findActiveBudgetsForDate(userId, today);
 
         for (Budget budget : activeBudgets) {
-            // Calculate spent amount
+            // Tính số tiền đã chi trong ngân sách
             java.math.BigDecimal spentAmount = transactionRepository.sumByUserIdAndCategoryIdAndTypeAndDateRange(
                     userId,
                     budget.getCategoryId(),
@@ -192,9 +224,9 @@ public class NotificationService {
                         .multiply(java.math.BigDecimal.valueOf(100))
                         .doubleValue();
 
-                // Check if alert should be sent
+                // Kiểm tra có nên gửi cảnh báo không
                 if (usagePercentage >= 100) {
-                    // Check if alert already exists for this budget today
+                    // Kiểm tra đã có cảnh báo hôm nay chưa
                     boolean alertExists = notificationRepository.existsByUserIdAndTypeAndActionUrl(
                             userId, "BUDGET_ALERT", "/budgets/" + budget.getId());
 
@@ -264,5 +296,140 @@ public class NotificationService {
                 .priority(notification.getPriority().toString())
                 .createdAt(notification.getCreatedAt())
                 .build();
+    }
+
+    /**
+     * Generate budget alerts for all users (called by scheduler)
+     */
+    @Transactional
+    public void generateBudgetAlerts() {
+        log.info("Generating budget alerts for all users...");
+
+        List<User> allUsers = userRepository.findAll();
+        int alertCount = 0;
+
+        for (User user : allUsers) {
+            try {
+                checkBudgetAlertsForUser(user.getId());
+                alertCount++;
+            } catch (Exception e) {
+                log.error("Error checking budget alerts for user {}: {}", user.getId(), e.getMessage());
+            }
+        }
+
+        log.info("Budget alerts generated for {} users", alertCount);
+    }
+
+    /**
+     * Generate savings suggestions using AI (called by scheduler)
+     */
+    @Transactional
+    public void generateSavingsSuggestions() {
+        log.info("Generating AI-powered savings suggestions for all users...");
+
+        List<User> allUsers = userRepository.findAll();
+        int suggestionCount = 0;
+
+        for (User user : allUsers) {
+            try {
+                // Get AI suggestions
+                SavingsSuggestionsResponse suggestions = aiInsightsService.getSavingsSuggestions(user.getId());
+
+                if (suggestions != null && !suggestions.getSuggestions().isEmpty()) {
+                    // Create notification with top suggestion
+                    SavingsSuggestionsResponse.SavingsSuggestion topSuggestion = suggestions.getSuggestions().get(0);
+
+                    Notification notification = new Notification();
+                    notification.setUserId(user.getId());
+                    notification.setType("SAVINGS_SUGGESTION");
+                    notification.setTitle("💡 Gợi ý Tiết kiệm Thông minh");
+                    notification.setContent(String.format(
+                            "%s\\n\\n✨ Tổng tiềm năng tiết kiệm: %,.0f VND/tháng",
+                            topSuggestion.getMessage(),
+                            suggestions.getTotalPotentialSavings()));
+                    notification.setActionUrl("/dashboard/insights");
+                    notification.setIsRead(false);
+                    notification.setPriority(Notification.NotificationPriority.MEDIUM);
+
+                    notificationRepository.save(notification);
+                    suggestionCount++;
+                }
+            } catch (Exception e) {
+                log.error("Error generating savings suggestions for user {}: {}", user.getId(), e.getMessage());
+            }
+        }
+
+        log.info("Savings suggestions generated for {} users", suggestionCount);
+    }
+
+    /**
+     * Generate proactive spending insights using AI (called by scheduler)
+     */
+    @Transactional
+    public void generateProactiveInsights() {
+        log.info("Generating AI-powered proactive insights for all users...");
+
+        List<User> allUsers = userRepository.findAll();
+        int insightCount = 0;
+
+        for (User user : allUsers) {
+            try {
+                // Get AI insights
+                List<SpendingInsight> insights = aiInsightsService.getProactiveInsights(user.getId());
+
+                if (insights != null && !insights.isEmpty()) {
+                    // Create notifications for high-impact insights
+                    for (SpendingInsight insight : insights) {
+                        // Only create notification for high-impact or warnings
+                        if (insight.getImpactScore() >= 0.7 || "warning".equals(insight.getInsightType())) {
+
+                            String title = switch (insight.getInsightType()) {
+                                case "warning" -> "⚠️ Cảnh báo Chi tiêu";
+                                case "achievement" -> "🎉 Thành tích Tiết kiệm";
+                                case "tip" -> "💡 Mẹo Quản lý Chi tiêu";
+                                default -> "📊 Phân tích Chi tiêu";
+                            };
+
+                            Notification notification = new Notification();
+                            notification.setUserId(user.getId());
+                            notification.setType("SPENDING_INSIGHT");
+                            notification.setTitle(title);
+                            notification.setContent(insight.getMessage());
+                            notification.setActionUrl(
+                                    insight.getCategory() != null
+                                            ? "/transactions?category=" + insight.getCategory()
+                                            : "/dashboard/analytics");
+                            notification.setIsRead(false);
+                            notification.setPriority(
+                                    "warning".equals(insight.getInsightType())
+                                            ? Notification.NotificationPriority.HIGH
+                                            : Notification.NotificationPriority.MEDIUM);
+
+                            notificationRepository.save(notification);
+                            insightCount++;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error generating proactive insights for user {}: {}", user.getId(), e.getMessage());
+            }
+        }
+
+        log.info("Proactive insights generated: {} notifications created", insightCount);
+    }
+
+    /**
+     * Cleanup old read notifications (called by scheduler)
+     */
+    @Transactional
+    public void cleanupOldNotifications() {
+        log.info("Cleaning up old read notifications...");
+
+        // Delete notifications that are read and older than 30 days
+        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(30);
+
+        int deletedCount = notificationRepository.deleteByIsReadAndCreatedAtBefore(true, cutoffDate);
+
+        log.info("Deleted {} old read notifications", deletedCount);
     }
 }
