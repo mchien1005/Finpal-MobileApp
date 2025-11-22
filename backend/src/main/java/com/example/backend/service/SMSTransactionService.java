@@ -13,6 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
+/**
+ * Service quản lý giao dịch từ SMS ngân hàng
+ * Chức năng: Parse SMS → Tự động tạo giao dịch → Tự động phân loại category
+ */
 @Service
 @RequiredArgsConstructor
 public class SMSTransactionService {
@@ -22,37 +26,53 @@ public class SMSTransactionService {
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
 
+    /**
+     * Xử lý tạo giao dịch từ SMS ngân hàng
+     * 
+     * @param smsContent  Nội dung SMS (ví dụ: "TK 1234 GD +500,000 VND luc 10:30
+     *                    18/11/2025")
+     * @param senderPhone Số điện thoại người gửi (dùng để xác định ngân hàng)
+     * @param username    Tên đăng nhập của user
+     * @return TransactionResponse chứa thông tin giao dịch vừa tạo
+     */
     @Transactional
     public TransactionResponse processSMSTransaction(String smsContent, String senderPhone, String username) {
-        // Parse SMS content
+        // Parse nội dung SMS
         ParsedSMSData parsedData = smsParserService.parseSMS(smsContent, senderPhone);
 
-        // Get user
+        // Lấy thông tin user
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Find or create account
+        // Tìm hoặc tạo tài khoản ngân hàng tự động
         Account account = findOrCreateAccount(user, parsedData);
 
-        // Build transaction request
+        // Xây dựng transaction request
         TransactionRequest transactionRequest = TransactionRequest.builder()
                 .accountId(account.getId())
                 .amount(parsedData.getAmount())
                 .type(parsedData.getType())
                 .description(parsedData.getMerchant())
                 .transactionDate(parsedData.getTransactionDate())
-                .isAuto(true) // Mark as auto-created from SMS
+                .isAuto(true) // Đánh dấu là tự động tạo từ SMS
                 .build();
 
-        // Create transaction using existing service (will auto-categorize)
+        // Tạo giao dịch (sẽ tự động phân loại category)
         return transactionService.createTransaction(transactionRequest, username);
     }
 
+    /**
+     * Tìm hoặc tạo tài khoản ngân hàng dựa trên thông tin SMS
+     * 
+     * @param user       User sở hữu tài khoản
+     * @param parsedData Dữ liệu đã parse từ SMS (chứa bankCode và accountNumber)
+     * @return Account đã tìm thấy hoặc vừa tạo mới
+     */
     private Account findOrCreateAccount(User user, ParsedSMSData parsedData) {
         String bankCode = parsedData.getBankCode();
         String accountNumber = parsedData.getAccountNumber();
 
-        // Try to find existing account by bank code and last 4 digits
+        // Thử tìm tài khoản đã tồn tại theo bank code và 4 chữ số cuối
         Account account = accountRepository
                 .findByUserIdAndAccountNameContaining(user.getId(), bankCode + " " + accountNumber)
                 .stream()
@@ -60,7 +80,7 @@ public class SMSTransactionService {
                 .orElse(null);
 
         if (account == null) {
-            // Create new bank account
+            // Tạo tài khoản ngân hàng mới
             account = Account.builder()
                     .userId(user.getId())
                     .bankName(getBankNameFromCode(bankCode))
@@ -77,6 +97,10 @@ public class SMSTransactionService {
         return account;
     }
 
+    /**
+     * Chuyển mã ngân hàng sang tên đầy đủ (VCB → Vietcombank, TCB → Techcombank,
+     * ...)
+     */
     private String getBankNameFromCode(String bankCode) {
         switch (bankCode.toUpperCase()) {
             case "VCB":

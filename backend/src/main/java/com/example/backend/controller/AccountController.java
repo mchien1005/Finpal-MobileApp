@@ -12,13 +12,32 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Controller quản lý Tài khoản người dùng (Accounts)
+ *
+ * Chức năng chính:
+ * - Lấy danh sách tài khoản của user
+ * - Lấy chi tiết 1 tài khoản
+ * - Tạo / Cập nhật / Xóa tài khoản
+ *
+ * Lưu ý:
+ * - Mọi thao tác đều kiểm tra ownership dựa trên `Authentication`
+ */
 @RestController
 @RequestMapping("/api/accounts")
 @RequiredArgsConstructor
 public class AccountController {
 
+    // Service chứa business logic cho accounts
     private final AccountService accountService;
 
+    /**
+     * GET /api/accounts
+     * Lấy tất cả tài khoản của user hiện tại
+     *
+     * @param authentication - thông tin user (lấy username)
+     * @return List<AccountResponse>
+     */
     @GetMapping
     public ResponseEntity<List<AccountResponse>> getAllAccounts(Authentication authentication) {
         String username = authentication.getName();
@@ -26,6 +45,12 @@ public class AccountController {
         return ResponseEntity.ok(accounts);
     }
 
+    /**
+     * GET /api/accounts/{id}
+     * Lấy chi tiết 1 tài khoản theo id (kiểm tra user sở hữu)
+     *
+     * @param id tài khoản id
+     */
     @GetMapping("/{id}")
     public ResponseEntity<AccountResponse> getAccountById(
             @PathVariable Long id,
@@ -35,6 +60,12 @@ public class AccountController {
         return ResponseEntity.ok(account);
     }
 
+    /**
+     * POST /api/accounts
+     * Tạo tài khoản mới cho user
+     *
+     * @param request - AccountRequest chứa tên, loại, số tài khoản, balance...
+     */
     @PostMapping
     public ResponseEntity<AccountResponse> createAccount(
             @Valid @RequestBody AccountRequest request,
@@ -44,6 +75,10 @@ public class AccountController {
         return ResponseEntity.status(HttpStatus.CREATED).body(account);
     }
 
+    /**
+     * PUT /api/accounts/{id}
+     * Cập nhật thông tin tài khoản (chỉ owner mới được phép)
+     */
     @PutMapping("/{id}")
     public ResponseEntity<AccountResponse> updateAccount(
             @PathVariable Long id,
@@ -54,6 +89,10 @@ public class AccountController {
         return ResponseEntity.ok(account);
     }
 
+    /**
+     * DELETE /api/accounts/{id}
+     * Xóa tài khoản (owner kiểm tra) - trả về 204 No Content nếu thành công
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAccount(
             @PathVariable Long id,

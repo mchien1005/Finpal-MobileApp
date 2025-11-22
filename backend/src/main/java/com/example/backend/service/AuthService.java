@@ -14,6 +14,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+/**
+ * Service Xác thực & Đăng ký (Authentication & Registration)
+ * Chức năng: Login, Register, tạo JWT token
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -23,33 +27,42 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
+    /**
+     * Đăng nhập user
+     * - Xác thực username/password
+     * - Tạo JWT token
+     * - Cập nhật lastLoginAt
+     * 
+     * @param request LoginRequest chứa username và password
+     * @return LoginResponse chứa token, userInfo, và message thành công/thất bại
+     */
     public LoginResponse login(LoginRequest request) {
         String username = request.getUsername();
         String password = request.getPassword();
 
-        // Validate input
+        // Kiểm tra đầu vào
         if (username == null || username.trim().isEmpty() ||
                 password == null || password.trim().isEmpty()) {
             return new LoginResponse(false, "Username và password không được để trống", null, null);
         }
 
         try {
-            // Authenticate user
+            // Xác thực user qua Spring Security
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(username, password));
 
-            // Get user details
+            // Lấy thông tin user từ database
             User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // Update last login
+            // Cập nhật thời gian đăng nhập cuối
             user.setLastLoginAt(LocalDateTime.now());
             userRepository.save(user);
 
-            // Generate JWT token
+            // Tạo JWT token cho user
             String token = jwtService.generateToken(user);
 
-            // Create user info (without password)
+            // Tạo thông tin user (không bao gồm password)
             LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo(
                     user.getId(),
                     user.getUsername(),
@@ -63,8 +76,21 @@ public class AuthService {
         }
     }
 
+    /**
+     * Đăng ký user mới
+     * - Validate input (username, email, password)
+     * - Kiểm tra trùng lặp username/email
+     * - Mã hóa password
+     * - Tạo JWT token
+     * 
+     * @param username Tên đăng nhập (unique)
+     * @param email    Email (unique)
+     * @param password Mật khẩu (tối thiểu 6 ký tự)
+     * @param fullName Họ tên đầy đủ
+     * @return LoginResponse chứa token, userInfo, và message thành công/thất bại
+     */
     public LoginResponse register(String username, String email, String password, String fullName) {
-        // Validate input
+        // Kiểm tra đầu vào
         if (username == null || username.trim().isEmpty()) {
             return new LoginResponse(false, "Username không được để trống", null, null);
         }
@@ -75,18 +101,18 @@ public class AuthService {
             return new LoginResponse(false, "Password phải có ít nhất 6 ký tự", null, null);
         }
 
-        // Check if username exists
+        // Kiểm tra username đã tồn tại chưa
         if (userRepository.existsByUsername(username)) {
             return new LoginResponse(false, "Username đã tồn tại", null, null);
         }
 
-        // Check if email exists
+        // Kiểm tra email đã được sử dụng chưa
         if (userRepository.existsByEmail(email)) {
             return new LoginResponse(false, "Email đã được sử dụng", null, null);
         }
 
         try {
-            // Create new user
+            // Tạo user mới với password đã mã hóa
             User user = new User();
             user.setUsername(username);
             user.setEmail(email);
@@ -96,13 +122,13 @@ public class AuthService {
             user.setIsActive(true);
             user.setEmailVerified(false);
 
-            // Save user
+            // Lưu user vào database
             user = userRepository.save(user);
 
-            // Generate JWT token
+            // Tạo JWT token cho user mới
             String token = jwtService.generateToken(user);
 
-            // Create user info
+            // Tạo thông tin user
             LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo(
                     user.getId(),
                     user.getUsername(),

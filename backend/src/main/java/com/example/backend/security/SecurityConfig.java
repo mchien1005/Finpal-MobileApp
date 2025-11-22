@@ -22,6 +22,15 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
+/**
+ * Cấu hình Security cho ứng dụng Spring Boot
+ *
+ * Mô tả:
+ * - Bật Spring Security và method-level security (@EnableMethodSecurity)
+ * - Sử dụng JWT (qua JwtAuthenticationFilter) cho authentication
+ * - Whitelist một số public endpoints (auth, public, swagger, actuator)
+ * - Stateless session (REST API) — không dùng session server-side
+ */
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
@@ -29,6 +38,12 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // Cấu hình filter chain:
+        // - Disable CSRF (API không dùng form login)
+        // - CORS: sử dụng cấu hình mặc định
+        // - Whitelist các endpoint public (auth, swagger, actuator)
+        // - Thêm JwtAuthenticationFilter trước UsernamePasswordAuthenticationFilter
+        // - Sử dụng stateless session (token-based)
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configure(http))
@@ -38,7 +53,11 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/public/**",
                                 "/error",
-                                "/actuator/health")
+                                "/actuator/health",
+                                // Swagger UI endpoints
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html")
                         .permitAll()
                         // Admin endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
@@ -54,6 +73,9 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
+        // AuthenticationProvider dùng DaoAuthenticationProvider + UserDetailsService
+        // - UserDetailsService sẽ load user (username/password/roles) từ DB
+        // - BCryptPasswordEncoder dùng để compare password hash
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
@@ -67,6 +89,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
+        // Sử dụng BCrypt để hash password
         return new BCryptPasswordEncoder();
     }
 }

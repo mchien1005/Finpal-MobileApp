@@ -25,6 +25,14 @@ public class JwtService {
     private long jwtExpiration;
 
     /**
+     * Service xử lý JWT token: tạo, validate, và extract claims
+     *
+     * Ghi chú:
+     * - Sử dụng thư viện jjwt để build/parse token
+     * - `secretKey` được đọc từ application.properties
+     */
+
+    /**
      * Extract username from JWT token
      */
     public String extractUsername(String token) {
@@ -69,6 +77,11 @@ public class JwtService {
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
+
+    /**
+     * Tạo token JWT cho user với thời hạn cấu hình
+     * - Có thể thêm extraClaims nếu muốn embed thêm thông tin (roles, tenant...)
+     */
 
     /**
      * Validate token against user details

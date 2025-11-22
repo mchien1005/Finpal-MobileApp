@@ -20,7 +20,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Service for Budget Management (FR3.2)
+ * Service quản lý Ngân sách (Budget Management) - FR3.2
+ * Chức năng: Tạo/sửa/xóa ngân sách, theo dõi tiến độ sử dụng, cảnh báo khi vượt
+ * ngưỡng
  */
 @Service
 @RequiredArgsConstructor
@@ -32,7 +34,12 @@ public class BudgetService {
     private final TransactionRepository transactionRepository;
 
     /**
-     * Lấy tất cả budgets của user
+     * Lấy tất cả ngân sách của user
+     * 
+     * @param username Tên đăng nhập của user
+     * @param isActive Lọc theo trạng thái hoạt động (true/false, nếu null thì lấy
+     *                 tất cả)
+     * @return List<BudgetResponse> chứa danh sách ngân sách và tiến độ sử dụng
      */
     @Transactional(readOnly = true)
     public List<BudgetResponse> getAllBudgets(String username, Boolean isActive) {
@@ -52,7 +59,11 @@ public class BudgetService {
     }
 
     /**
-     * Lấy budgets đang active cho một ngày cụ thể
+     * Lấy các ngân sách đang hoạt động cho một ngày cụ thể
+     * 
+     * @param username Tên đăng nhập của user
+     * @param date     Ngày cần kiểm tra (nếu null thì lấy ngày hôm nay)
+     * @return List<BudgetResponse> chứa danh sách ngân sách đang hoạt động
      */
     @Transactional(readOnly = true)
     public List<BudgetResponse> getActiveBudgets(String username, LocalDate date) {
@@ -68,7 +79,11 @@ public class BudgetService {
     }
 
     /**
-     * Lấy chi tiết budget theo ID
+     * Lấy chi tiết ngân sách theo ID
+     * 
+     * @param username Tên đăng nhập của user (dùng để kiểm tra quyền sở hữu)
+     * @param budgetId ID của ngân sách
+     * @return BudgetResponse chứa thông tin chi tiết ngân sách và tiến độ
      */
     @Transactional(readOnly = true)
     public BudgetResponse getBudgetById(String username, Long budgetId) {
@@ -87,14 +102,19 @@ public class BudgetService {
     }
 
     /**
-     * Tạo budget mới
+     * Tạo ngân sách mới
+     * 
+     * @param username Tên đăng nhập của user
+     * @param request  Dữ liệu ngân sách (name, amount, period, categoryId,
+     *                 startDate, endDate, alertThreshold)
+     * @return BudgetResponse chứa thông tin ngân sách vừa tạo
      */
     @Transactional
     public BudgetResponse createBudget(String username, BudgetRequest request) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Validate category if provided
+        // Kiểm tra category hợp lệ (nếu có)
         if (request.getCategoryId() != null) {
             categoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new RuntimeException("Category not found"));
@@ -121,7 +141,13 @@ public class BudgetService {
     }
 
     /**
-     * Cập nhật budget
+     * Cập nhật ngân sách
+     * 
+     * @param username Tên đăng nhập của user
+     * @param budgetId ID của ngân sách cần cập nhật
+     * @param request  Dữ liệu mới (name, amount, period, categoryId, startDate,
+     *                 endDate, alertThreshold)
+     * @return BudgetResponse chứa thông tin ngân sách sau khi cập nhật
      */
     @Transactional
     public BudgetResponse updateBudget(String username, Long budgetId, BudgetRequest request) {
@@ -160,7 +186,10 @@ public class BudgetService {
     }
 
     /**
-     * Xóa budget (soft delete)
+     * Xóa ngân sách (soft delete - chỉ set isActive = false)
+     * 
+     * @param username Tên đăng nhập của user
+     * @param budgetId ID của ngân sách cần xóa
      */
     @Transactional
     public void deleteBudget(String username, Long budgetId) {
@@ -180,7 +209,8 @@ public class BudgetService {
     }
 
     /**
-     * Convert Budget entity to BudgetResponse DTO với progress tracking
+     * Chuyển Budget entity sang BudgetResponse DTO với tiến độ sử dụng
+     * Tính toán: số tiền đã dùng, còn lại, %, trạng thái (OK/WARNING/EXCEEDED)
      */
     private BudgetResponse convertToResponse(Budget budget) {
         BudgetResponse response = new BudgetResponse();
@@ -197,7 +227,7 @@ public class BudgetService {
         response.setCreatedAt(budget.getCreatedAt());
         response.setUpdatedAt(budget.getUpdatedAt());
 
-        // Get category details if available
+        // Lấy thông tin category (nếu có)
         if (budget.getCategoryId() != null) {
             categoryRepository.findById(budget.getCategoryId()).ifPresent(category -> {
                 response.setCategoryName(category.getName());
@@ -206,7 +236,7 @@ public class BudgetService {
             });
         }
 
-        // Calculate progress
+        // Tính toán tiến độ ngân sách
         calculateBudgetProgress(budget, response);
 
         return response;
@@ -214,15 +244,20 @@ public class BudgetService {
 
     /**
      * Tính toán tiến độ ngân sách
+     * - Số tiền đã chi (spentAmount)
+     * - Số tiền còn lại (remainingAmount)
+     * - Phần trăm sử dụng (usagePercentage)
+     * - Trạng thái (OK/WARNING/EXCEEDED)
+     * - Số ngày còn lại
      */
     private void calculateBudgetProgress(Budget budget, BudgetResponse response) {
         LocalDateTime start = budget.getStartDate().atStartOfDay();
         LocalDateTime end = budget.getEndDate().atTime(23, 59, 59);
 
-        // Calculate spent amount
+        // Tính số tiền đã chi
         BigDecimal spentAmount;
         if (budget.getCategoryId() != null) {
-            // Budget for specific category
+            // Ngân sách cho category cụ thể
             spentAmount = transactionRepository.sumByUserIdAndCategoryIdAndTypeAndDateRange(
                     budget.getUserId(),
                     budget.getCategoryId(),
@@ -230,7 +265,7 @@ public class BudgetService {
                     start,
                     end);
         } else {
-            // Total budget (all expenses)
+            // Ngân sách tổng (tất cả chi tiêu)
             spentAmount = transactionRepository.sumByUserIdAndTypeAndDateRange(
                     budget.getUserId(),
                     Transaction.TransactionType.EXPENSE,
@@ -243,7 +278,7 @@ public class BudgetService {
         response.setSpentAmount(spentAmount);
         response.setRemainingAmount(budget.getAmount().subtract(spentAmount));
 
-        // Calculate usage percentage
+        // Tính phần trăm sử dụng
         double usagePercentage = 0.0;
         if (budget.getAmount().compareTo(BigDecimal.ZERO) > 0) {
             usagePercentage = spentAmount.divide(budget.getAmount(), 4, RoundingMode.HALF_UP)
@@ -252,7 +287,7 @@ public class BudgetService {
         }
         response.setUsagePercentage(usagePercentage);
 
-        // Determine status
+        // Xác định trạng thái (EXCEEDED/WARNING/OK)
         String status;
         if (usagePercentage >= 100) {
             status = "EXCEEDED";
@@ -263,7 +298,7 @@ public class BudgetService {
         }
         response.setStatus(status);
 
-        // Calculate days remaining
+        // Tính số ngày còn lại
         LocalDate today = LocalDate.now();
         if (today.isAfter(budget.getEndDate())) {
             response.setDaysRemaining(0);
