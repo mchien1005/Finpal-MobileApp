@@ -549,6 +549,7 @@ VALUES -- Thu nhập
 INSERT INTO ngan_sach (
         id_nguoi_dung,
         id_danh_muc,
+        ten_ngan_sach,
         so_tien,
         ngay_bat_dau,
         ngay_ket_thuc
@@ -556,6 +557,7 @@ INSERT INTO ngan_sach (
 VALUES (
         @demo_user_id,
         @cat_an_uong,
+        'Ngân sách Ăn uống T11',
         3000000.00,
         '2025-11-01',
         '2025-11-30'
@@ -563,6 +565,7 @@ VALUES (
     (
         @demo_user_id,
         @cat_di_chuyen,
+        'Ngân sách Di chuyển T11',
         1500000.00,
         '2025-11-01',
         '2025-11-30'
@@ -570,6 +573,7 @@ VALUES (
     (
         @demo_user_id,
         @cat_mua_sam,
+        'Ngân sách Mua sắm T11',
         2000000.00,
         '2025-11-01',
         '2025-11-30'
@@ -577,6 +581,7 @@ VALUES (
     (
         @demo_user_id,
         @cat_giai_tri,
+        'Ngân sách Giải trí T11',
         1000000.00,
         '2025-11-01',
         '2025-11-30'
@@ -584,6 +589,7 @@ VALUES (
     (
         @demo_user_id,
         @cat_hoa_don,
+        'Ngân sách Hóa đơn T11',
         800000.00,
         '2025-11-01',
         '2025-11-30'
