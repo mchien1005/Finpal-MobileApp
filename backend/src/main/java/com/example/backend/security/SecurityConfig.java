@@ -72,6 +72,7 @@ public class SecurityConfig {
     }
 
     @Bean
+    @SuppressWarnings("deprecation")
     public AuthenticationProvider authenticationProvider() {
         // AuthenticationProvider dùng DaoAuthenticationProvider + UserDetailsService
         // - UserDetailsService sẽ load user (username/password/roles) từ DB

@@ -102,7 +102,7 @@ public class AICategorizationService {
 
         try {
             String healthUrl = aiBackendUrl + "/health";
-            ResponseEntity<Map> response = restTemplate.getForEntity(healthUrl, Map.class);
+            ResponseEntity<Object> response = restTemplate.getForEntity(healthUrl, Object.class);
             return response.getStatusCode().is2xxSuccessful();
         } catch (Exception e) {
             log.debug("AI service health check failed: {}", e.getMessage());

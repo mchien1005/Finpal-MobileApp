@@ -85,7 +85,6 @@ public class AccountService {
         account.setAccountNumber(request.getAccountNumber());
         account.setCurrency(request.getCurrency() != null ? request.getCurrency() : "VND");
         account.setIsActive(true);
-
         Account saved = accountRepository.save(account);
         return AccountResponse.fromEntity(saved);
     }

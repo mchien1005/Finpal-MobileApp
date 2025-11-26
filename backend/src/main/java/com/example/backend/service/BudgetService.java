@@ -3,7 +3,6 @@ package com.example.backend.service;
 import com.example.backend.dto.BudgetRequest;
 import com.example.backend.dto.BudgetResponse;
 import com.example.backend.model.Budget;
-import com.example.backend.model.Category;
 import com.example.backend.model.Transaction;
 import com.example.backend.model.User;
 import com.example.backend.repository.*;

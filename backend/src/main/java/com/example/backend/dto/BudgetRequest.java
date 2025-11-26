@@ -42,5 +42,7 @@ public class BudgetRequest {
 
     @Min(value = 1, message = "Ngưỡng cảnh báo phải từ 1-100")
     @Max(value = 100, message = "Ngưỡng cảnh báo phải từ 1-100")
+    @Builder.Default
     private Integer alertThreshold = 70;
+
 }
