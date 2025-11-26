@@ -1,5 +1,6 @@
 package com.example.backend.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -18,16 +19,21 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "Tạo mục tiêu tiết kiệm")
 public class SavingsGoalRequest {
 
     @NotBlank(message = "Tên mục tiêu không được để trống")
+    @Schema(description = "Tên mục tiêu", example = "Mua iPhone 16", requiredMode = Schema.RequiredMode.REQUIRED)
     private String name;
 
+    @Schema(description = "Mô tả chi tiết", example = "Tiết kiệm mua iPhone 16 Pro Max 256GB")
     private String description;
 
     @NotNull(message = "Số tiền mục tiêu không được để trống")
     @Positive(message = "Số tiền mục tiêu phải lớn hơn 0")
+    @Schema(description = "Số tiền mục tiêu", example = "35000000", requiredMode = Schema.RequiredMode.REQUIRED)
     private BigDecimal targetAmount;
 
+    @Schema(description = "Hạn chót hoàn thành (yyyy-MM-dd)", example = "2026-06-01")
     private LocalDate deadline;
 }
