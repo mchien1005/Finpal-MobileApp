@@ -17,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -35,18 +36,19 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         // Cấu hình filter chain:
         // - Disable CSRF (API không dùng form login)
-        // - CORS: sử dụng cấu hình mặc định
+        // - CORS: sử dụng cấu hình từ CorsConfig
         // - Whitelist các endpoint public (auth, swagger, actuator)
         // - Thêm JwtAuthenticationFilter trước UsernamePasswordAuthenticationFilter
         // - Sử dụng stateless session (token-based)
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configure(http))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers(
