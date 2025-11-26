@@ -42,7 +42,6 @@ public class TransactionResponse {
                 .accountName(transaction.getAccount().getAccountName())
                 .categoryId(transaction.getCategory() != null ? transaction.getCategory().getId() : null)
                 .categoryName(transaction.getCategory() != null ? transaction.getCategory().getName() : null)
-                .categoryIcon(transaction.getCategory() != null ? transaction.getCategory().getIcon() : null)
                 .amount(transaction.getAmount())
                 .type(transaction.getType().name())
                 .merchant(transaction.getMerchant())
@@ -52,7 +51,6 @@ public class TransactionResponse {
                 .isVerified(transaction.getIsVerified())
                 .isAnomaly(transaction.getIsAnomaly())
                 .notes(transaction.getNotes())
-                .tags(transaction.getTags())
                 .createdAt(transaction.getCreatedAt())
                 .updatedAt(transaction.getUpdatedAt())
                 .build();

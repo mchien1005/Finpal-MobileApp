@@ -120,8 +120,6 @@ public class AuthService {
             user.setFullName(fullName);
             user.setRole(Role.USER);
             user.setIsActive(true);
-            user.setEmailVerified(false);
-
             // Lưu user vào database
             user = userRepository.save(user);
 

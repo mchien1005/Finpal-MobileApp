@@ -26,8 +26,6 @@ public class SavingsGoalResponse {
     private BigDecimal targetAmount;
     private BigDecimal currentAmount;
     private LocalDate deadline;
-    private String icon;
-    private String color;
     private String status; // ACTIVE, COMPLETED, CANCELLED
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

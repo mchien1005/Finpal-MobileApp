@@ -31,10 +31,4 @@ public class AccountRequest {
     private String accountNumber; // Optional, encrypted
 
     private String currency; // Default: VND
-
-    private String icon; // Emoji icon
-
-    private String color; // Hex color code
-
-    private String notes;
 }

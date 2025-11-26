@@ -22,9 +22,6 @@ public class AccountResponse {
     private String accountNumber; // Masked: **** 1234
     private String currency;
     private Boolean isActive;
-    private String icon;
-    private String color;
-    private String notes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -39,9 +36,6 @@ public class AccountResponse {
         response.setAccountNumber(maskAccountNumber(account.getAccountNumber()));
         response.setCurrency(account.getCurrency());
         response.setIsActive(account.getIsActive());
-        response.setIcon(account.getIcon());
-        response.setColor(account.getColor());
-        response.setNotes(account.getNotes());
         response.setCreatedAt(account.getCreatedAt());
         response.setUpdatedAt(account.getUpdatedAt());
         return response;

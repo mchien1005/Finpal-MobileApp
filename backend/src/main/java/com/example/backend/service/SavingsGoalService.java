@@ -99,8 +99,6 @@ public class SavingsGoalService {
         goal.setTargetAmount(request.getTargetAmount());
         goal.setCurrentAmount(BigDecimal.ZERO);
         goal.setDeadline(request.getDeadline());
-        goal.setIcon(request.getIcon());
-        goal.setColor(request.getColor());
         goal.setStatus(SavingsGoal.GoalStatus.ACTIVE);
 
         SavingsGoal savedGoal = savingsGoalRepository.save(goal);
@@ -112,8 +110,7 @@ public class SavingsGoalService {
      * 
      * @param username Tên đăng nhập của user
      * @param goalId   ID của mục tiêu cần cập nhật
-     * @param request  Dữ liệu mới (name, description, targetAmount, deadline, icon,
-     *                 color)
+     * @param request  Dữ liệu mới (name, description, targetAmount, deadline)
      * @return SavingsGoalResponse chứa thông tin mục tiêu sau khi cập nhật
      */
     @Transactional
@@ -133,8 +130,6 @@ public class SavingsGoalService {
         goal.setDescription(request.getDescription());
         goal.setTargetAmount(request.getTargetAmount());
         goal.setDeadline(request.getDeadline());
-        goal.setIcon(request.getIcon());
-        goal.setColor(request.getColor());
 
         SavingsGoal updatedGoal = savingsGoalRepository.save(goal);
         return convertToResponse(updatedGoal, false);
@@ -259,8 +254,6 @@ public class SavingsGoalService {
         response.setTargetAmount(goal.getTargetAmount());
         response.setCurrentAmount(goal.getCurrentAmount());
         response.setDeadline(goal.getDeadline());
-        response.setIcon(goal.getIcon());
-        response.setColor(goal.getColor());
         response.setStatus(goal.getStatus().toString());
         response.setCreatedAt(goal.getCreatedAt());
         response.setUpdatedAt(goal.getUpdatedAt());

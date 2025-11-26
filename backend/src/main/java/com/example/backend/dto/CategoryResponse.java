@@ -36,8 +36,6 @@ public class CategoryResponse {
         response.setId(category.getId());
         response.setName(category.getName());
         response.setType(category.getType() != null ? category.getType().name() : null);
-        response.setIcon(category.getIcon());
-        response.setColor(category.getColor());
         response.setParentId(category.getParentId());
         response.setIsSystem(category.getIsSystem());
         response.setDisplayOrder(category.getDisplayOrder());

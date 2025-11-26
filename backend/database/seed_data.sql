@@ -8,18 +8,18 @@ USE finpal_db;
 -- =====================================================
 -- CLEAN UP - Xóa dữ liệu cũ (nếu có) để tránh duplicate
 -- =====================================================
-SET FOREIGN_KEY_CHECKS = 0;
-TRUNCATE TABLE thong_bao;
-TRUNCATE TABLE giao_dich_dinh_ky;
-TRUNCATE TABLE ngan_sach;
-TRUNCATE TABLE giao_dich;
-TRUNCATE TABLE muc_tieu_tiet_kiem;
-TRUNCATE TABLE tai_khoan;
-TRUNCATE TABLE quy_tac_danh_muc;
-TRUNCATE TABLE danh_muc;
-TRUNCATE TABLE bo_phan_tich_sms;
-TRUNCATE TABLE nguoi_dung;
-SET FOREIGN_KEY_CHECKS = 1;
+-- SET FOREIGN_KEY_CHECKS = 0;
+-- TRUNCATE TABLE thong_bao;
+-- TRUNCATE TABLE giao_dich_dinh_ky;
+-- TRUNCATE TABLE ngan_sach;
+-- TRUNCATE TABLE giao_dich;
+-- TRUNCATE TABLE muc_tieu_tiet_kiem;
+-- TRUNCATE TABLE tai_khoan;
+-- TRUNCATE TABLE quy_tac_danh_muc;
+-- TRUNCATE TABLE danh_muc;
+-- TRUNCATE TABLE bo_phan_tich_sms;
+-- TRUNCATE TABLE nguoi_dung;
+-- SET FOREIGN_KEY_CHECKS = 1;
 -- =====================================================
 -- 1. NGUOI_DUNG - Người dùng demo
 -- =====================================================

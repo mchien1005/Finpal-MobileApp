@@ -30,8 +30,4 @@ public class SavingsGoalRequest {
     private BigDecimal targetAmount;
 
     private LocalDate deadline;
-
-    private String icon;
-
-    private String color;
 }

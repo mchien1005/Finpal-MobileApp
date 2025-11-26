@@ -85,9 +85,6 @@ public class AccountService {
         account.setAccountNumber(request.getAccountNumber());
         account.setCurrency(request.getCurrency() != null ? request.getCurrency() : "VND");
         account.setIsActive(true);
-        account.setIcon(request.getIcon());
-        account.setColor(request.getColor());
-        account.setNotes(request.getNotes());
 
         Account saved = accountRepository.save(account);
         return AccountResponse.fromEntity(saved);
@@ -119,10 +116,6 @@ public class AccountService {
         account.setBalance(request.getBalance());
         account.setAccountNumber(request.getAccountNumber());
         account.setCurrency(request.getCurrency());
-        account.setIcon(request.getIcon());
-        account.setColor(request.getColor());
-        account.setNotes(request.getNotes());
-
         Account updated = accountRepository.save(account);
         return AccountResponse.fromEntity(updated);
     }

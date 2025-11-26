@@ -231,8 +231,6 @@ public class BudgetService {
         if (budget.getCategoryId() != null) {
             categoryRepository.findById(budget.getCategoryId()).ifPresent(category -> {
                 response.setCategoryName(category.getName());
-                response.setCategoryIcon(category.getIcon());
-                response.setCategoryColor(category.getColor());
             });
         }
 
