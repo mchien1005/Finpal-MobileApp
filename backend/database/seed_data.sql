@@ -34,7 +34,7 @@ INSERT INTO nguoi_dung (
     )
 VALUES (
         'demo',
-        '$2a$10$N9qo8uLOickgx2ZMRZoMye1VdedWaK.ILPi4k6VYLaHjRg/ZcXq5u',
+        '$2a$10$PtD9U/K40h7.STHT9pV8ouDWPswAdb6eMgpgQn2vZtLNONsIA9OH.',
         'demo@finpal.vn',
         'Nguyễn Văn Demo',
         'USER',
@@ -42,7 +42,7 @@ VALUES (
     ),
     (
         'admin',
-        '$2a$10$N9qo8uLOickgx2ZMRZoMye1VdedWaK.ILPi4k6VYLaHjRg/ZcXq5u',
+        '$2a$10$PtD9U/K40h7.STHT9pV8ouDWPswAdb6eMgpgQn2vZtLNONsIA9OH.',
         'admin@finpal.vn',
         'Quản Trị Viên',
         'ADMIN',
