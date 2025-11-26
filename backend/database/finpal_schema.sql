@@ -8,278 +8,284 @@ SET CHARACTER SET utf8mb4;
 CREATE DATABASE IF NOT EXISTS finpal_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE finpal_db;
 -- =====================================================
--- 1. BẢNG USERS - Quản lý người dùng
+-- 1. BẢNG NGUOI_DUNG (USERS) - Quản lý người dùng
 -- =====================================================
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS nguoi_dung (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL COMMENT 'Mã hóa bằng BCrypt',
+    ten_dang_nhap VARCHAR(50) UNIQUE NOT NULL,
+    mat_khau VARCHAR(255) NOT NULL COMMENT 'Mã hóa bằng BCrypt',
     email VARCHAR(100) UNIQUE NOT NULL,
-    full_name VARCHAR(100),
-    phone VARCHAR(20),
-    avatar_url VARCHAR(500),
-    role VARCHAR(20) NOT NULL DEFAULT 'USER' COMMENT 'USER hoặc ADMIN',
-    is_active BOOLEAN DEFAULT TRUE,
-    email_verified BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    last_login_at TIMESTAMP NULL,
-    INDEX idx_username (username),
+    ho_ten VARCHAR(100),
+    so_dien_thoai VARCHAR(20),
+    anh_dai_dien VARCHAR(500),
+    vai_tro VARCHAR(20) NOT NULL DEFAULT 'USER' COMMENT 'USER hoặc ADMIN',
+    dang_hoat_dong BOOLEAN DEFAULT TRUE,
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ngay_cap_nhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    lan_dang_nhap_cuoi TIMESTAMP NULL,
+    INDEX idx_ten_dang_nhap (ten_dang_nhap),
     INDEX idx_email (email),
-    INDEX idx_created_at (created_at),
-    INDEX idx_role (role)
+    INDEX idx_ngay_tao (ngay_tao),
+    INDEX idx_vai_tro (vai_tro)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 2. BẢNG CATEGORIES - Danh mục chi tiêu
+-- 2. BẢNG DANH_MUC (CATEGORIES) - Danh mục chi tiêu
 -- =====================================================
-CREATE TABLE IF NOT EXISTS categories (
+CREATE TABLE IF NOT EXISTS danh_muc (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    type ENUM('INCOME', 'EXPENSE') NOT NULL DEFAULT 'EXPENSE',
-    icon VARCHAR(50) COMMENT 'Icon name hoặc emoji',
-    color VARCHAR(7) COMMENT 'Mã màu hex, ví dụ: #FF5733',
-    parent_id BIGINT NULL COMMENT 'Category cha (cho sub-category)',
-    is_system BOOLEAN DEFAULT FALSE COMMENT 'Category hệ thống không thể xóa',
-    display_order INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE
+    ten_danh_muc VARCHAR(100) NOT NULL,
+    loai ENUM('INCOME', 'EXPENSE') NOT NULL DEFAULT 'EXPENSE',
+    id_cha BIGINT NULL COMMENT 'Category cha (cho sub-category)',
+    la_he_thong BOOLEAN DEFAULT FALSE COMMENT 'Category hệ thống không thể xóa',
+    thu_tu_hien_thi INT DEFAULT 0,
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_cha) REFERENCES danh_muc(id) ON DELETE
     SET NULL,
-        INDEX idx_type (type),
-        INDEX idx_parent (parent_id)
+        INDEX idx_loai (loai),
+        INDEX idx_id_cha (id_cha)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 3. BẢNG ACCOUNTS - Tài khoản ngân hàng
+-- 3. BẢNG TAI_KHOAN (ACCOUNTS) - Tài khoản ngân hàng
 -- =====================================================
-CREATE TABLE IF NOT EXISTS accounts (
+CREATE TABLE IF NOT EXISTS tai_khoan (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL,
-    bank_name VARCHAR(100) NOT NULL COMMENT 'Vietcombank, Techcombank, ACB...',
-    account_name VARCHAR(100) COMMENT 'Tên tài khoản',
-    account_number VARCHAR(50) COMMENT 'Số tài khoản (plain text hoặc masked)',
-    account_number_encrypted VARCHAR(500) COMMENT 'Số tài khoản được mã hóa',
-    account_type ENUM('BANK', 'CASH', 'CREDIT_CARD', 'E_WALLET') DEFAULT 'BANK',
-    balance DECIMAL(15, 2) DEFAULT 0.00,
-    currency VARCHAR(3) DEFAULT 'VND',
-    is_active BOOLEAN DEFAULT TRUE,
-    icon VARCHAR(50),
-    color VARCHAR(7),
-    notes TEXT COMMENT 'Ghi chú về tài khoản',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    INDEX idx_user_id (user_id),
-    INDEX idx_bank_name (bank_name),
-    INDEX idx_account_number (account_number)
+    id_nguoi_dung BIGINT NOT NULL,
+    ten_ngan_hang VARCHAR(100) NOT NULL COMMENT 'Vietcombank, Techcombank, ACB...',
+    ten_tai_khoan VARCHAR(100) COMMENT 'Tên tài khoản',
+    so_tai_khoan VARCHAR(50) COMMENT 'Số tài khoản (plain text hoặc masked)',
+    so_tai_khoan_ma_hoa VARCHAR(500) COMMENT 'Số tài khoản được mã hóa',
+    loai_tai_khoan ENUM('BANK', 'CASH', 'CREDIT_CARD', 'E_WALLET') DEFAULT 'BANK',
+    so_du DECIMAL(15, 2) DEFAULT 0.00,
+    don_vi_tien_te VARCHAR(3) DEFAULT 'VND',
+    dang_hoat_dong BOOLEAN DEFAULT TRUE,
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ngay_cap_nhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id) ON DELETE CASCADE,
+    INDEX idx_id_nguoi_dung (id_nguoi_dung),
+    INDEX idx_ten_ngan_hang (ten_ngan_hang),
+    INDEX idx_so_tai_khoan (so_tai_khoan)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 4. BẢNG TRANSACTIONS - Giao dịch tài chính
+-- 4. BẢNG GIAO_DICH (TRANSACTIONS) - Giao dịch tài chính
 -- =====================================================
-CREATE TABLE IF NOT EXISTS transactions (
+CREATE TABLE IF NOT EXISTS giao_dich (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL,
-    account_id BIGINT NOT NULL,
-    category_id BIGINT NULL,
-    amount DECIMAL(15, 2) NOT NULL,
-    type ENUM('INCOME', 'EXPENSE') NOT NULL,
-    merchant VARCHAR(255) COMMENT 'Đơn vị nhận tiền: GRAB, SHOPEE, CGV...',
-    description TEXT COMMENT 'Mô tả giao dịch',
-    transaction_date DATETIME NOT NULL,
+    id_nguoi_dung BIGINT NOT NULL,
+    id_tai_khoan BIGINT NOT NULL,
+    id_danh_muc BIGINT NULL,
+    so_tien DECIMAL(15, 2) NOT NULL,
+    loai ENUM('INCOME', 'EXPENSE') NOT NULL,
+    don_vi_chap_nhan VARCHAR(255) COMMENT 'Đơn vị nhận tiền: GRAB, SHOPEE, CGV...',
+    mo_ta TEXT COMMENT 'Mô tả giao dịch',
+    ngay_giao_dich DATETIME NOT NULL,
     -- Thông tin SMS
-    is_auto BOOLEAN DEFAULT FALSE COMMENT 'TRUE: từ SMS, FALSE: nhập tay',
-    sms_content_encrypted TEXT COMMENT 'Nội dung SMS gốc (mã hóa)',
-    sms_bank_code VARCHAR(20) COMMENT 'Mã ngân hàng trong SMS',
+    tu_dong BOOLEAN DEFAULT FALSE COMMENT 'TRUE: từ SMS, FALSE: nhập tay',
+    noi_dung_sms_ma_hoa TEXT COMMENT 'Nội dung SMS gốc (mã hóa)',
+    ma_ngan_hang_sms VARCHAR(20) COMMENT 'Mã ngân hàng trong SMS',
     -- Trạng thái
-    is_verified BOOLEAN DEFAULT FALSE COMMENT 'Người dùng đã xác nhận',
-    is_anomaly BOOLEAN DEFAULT FALSE COMMENT 'Giao dịch bất thường',
+    da_xac_nhan BOOLEAN DEFAULT FALSE COMMENT 'Người dùng đã xác nhận',
+    bat_thuong BOOLEAN DEFAULT FALSE COMMENT 'Giao dịch bất thường',
     -- Metadata
-    notes TEXT COMMENT 'Ghi chú của người dùng',
-    tags VARCHAR(500) COMMENT 'Tags, cách nhau bởi dấu phẩy',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE
+    anh_hoa_don VARCHAR(500) COMMENT 'Ảnh hóa đơn/bill',
+    ghi_chu TEXT COMMENT 'Ghi chú của người dùng',
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ngay_cap_nhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_tai_khoan) REFERENCES tai_khoan(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_danh_muc) REFERENCES danh_muc(id) ON DELETE
     SET NULL,
-        INDEX idx_user_date (user_id, transaction_date),
-        INDEX idx_account (account_id),
-        INDEX idx_category (category_id),
-        INDEX idx_type (type),
-        INDEX idx_merchant (merchant),
-        INDEX idx_transaction_date (transaction_date)
+        INDEX idx_nguoi_dung_ngay (id_nguoi_dung, ngay_giao_dich),
+        INDEX idx_tai_khoan (id_tai_khoan),
+        INDEX idx_danh_muc (id_danh_muc),
+        INDEX idx_loai (loai),
+        INDEX idx_don_vi_chap_nhan (don_vi_chap_nhan),
+        INDEX idx_ngay_giao_dich (ngay_giao_dich)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 5. BẢNG BUDGETS - Ngân sách
+-- 5. BẢNG NGAN_SACH (BUDGETS) - Ngân sách
 -- =====================================================
-CREATE TABLE IF NOT EXISTS budgets (
+CREATE TABLE IF NOT EXISTS ngan_sach (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL,
-    category_id BIGINT NULL COMMENT 'NULL = tổng ngân sách',
-    name VARCHAR(100) NOT NULL,
-    amount DECIMAL(15, 2) NOT NULL,
-    period ENUM('WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY') DEFAULT 'MONTHLY',
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    alert_threshold INT DEFAULT 70 COMMENT 'Cảnh báo khi đạt % này',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE
+    id_nguoi_dung BIGINT NOT NULL,
+    id_danh_muc BIGINT NULL COMMENT 'NULL = tổng ngân sách',
+    ten_ngan_sach VARCHAR(100) NOT NULL,
+    so_tien DECIMAL(15, 2) NOT NULL,
+    ky_han ENUM('WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY') DEFAULT 'MONTHLY',
+    ngay_bat_dau DATE NOT NULL,
+    ngay_ket_thuc DATE NOT NULL,
+    dang_hoat_dong BOOLEAN DEFAULT TRUE,
+    nguong_canh_bao INT DEFAULT 70 COMMENT 'Cảnh báo khi đạt % này',
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ngay_cap_nhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_danh_muc) REFERENCES danh_muc(id) ON DELETE
     SET NULL,
-        INDEX idx_user_period (user_id, period),
-        INDEX idx_dates (start_date, end_date)
+        INDEX idx_nguoi_dung_ky_han (id_nguoi_dung, ky_han),
+        INDEX idx_ngay (ngay_bat_dau, ngay_ket_thuc)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 6. BẢNG SAVINGS_GOALS - Mục tiêu tiết kiệm (Hũ tiết kiệm)
+-- 6. BẢNG MUC_TIEU_TIET_KIEM (SAVINGS_GOALS) - Hũ tiết kiệm
 -- =====================================================
-CREATE TABLE IF NOT EXISTS savings_goals (
+CREATE TABLE IF NOT EXISTS muc_tieu_tiet_kiem (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL,
-    name VARCHAR(200) NOT NULL COMMENT 'Ví dụ: Mua tai nghe, Du lịch Đà Lạt',
-    description TEXT,
-    target_amount DECIMAL(15, 2) NOT NULL,
-    current_amount DECIMAL(15, 2) DEFAULT 0.00,
-    deadline DATE NULL,
-    icon VARCHAR(50),
-    color VARCHAR(7),
-    status ENUM('ACTIVE', 'COMPLETED', 'CANCELLED') DEFAULT 'ACTIVE',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    completed_at TIMESTAMP NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    INDEX idx_user_status (user_id, status),
-    INDEX idx_deadline (deadline)
+    id_nguoi_dung BIGINT NOT NULL,
+    ten_muc_tieu VARCHAR(200) NOT NULL COMMENT 'Ví dụ: Mua tai nghe, Du lịch Đà Lạt',
+    mo_ta TEXT,
+    so_tien_muc_tieu DECIMAL(15, 2) NOT NULL,
+    so_tien_hien_tai DECIMAL(15, 2) DEFAULT 0.00,
+    han_chot DATE NULL,
+    trang_thai ENUM('ACTIVE', 'COMPLETED', 'CANCELLED') DEFAULT 'ACTIVE',
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ngay_cap_nhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    ngay_hoan_thanh TIMESTAMP NULL,
+    FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id) ON DELETE CASCADE,
+    INDEX idx_nguoi_dung_trang_thai (id_nguoi_dung, trang_thai),
+    INDEX idx_han_chot (han_chot)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 7. BẢNG SAVINGS_CONTRIBUTIONS - Đóng góp vào mục tiêu
+-- 7. BẢNG DONG_GOP_TIET_KIEM (SAVINGS_CONTRIBUTIONS)
 -- =====================================================
-CREATE TABLE IF NOT EXISTS savings_contributions (
+CREATE TABLE IF NOT EXISTS dong_gop_tiet_kiem (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    savings_goal_id BIGINT NOT NULL,
-    amount DECIMAL(15, 2) NOT NULL,
-    contribution_date DATE NOT NULL,
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (savings_goal_id) REFERENCES savings_goals(id) ON DELETE CASCADE,
-    INDEX idx_goal (savings_goal_id),
-    INDEX idx_date (contribution_date)
+    id_muc_tieu BIGINT NOT NULL,
+    so_tien DECIMAL(15, 2) NOT NULL,
+    ngay_dong_gop DATE NOT NULL,
+    ghi_chu TEXT,
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_muc_tieu) REFERENCES muc_tieu_tiet_kiem(id) ON DELETE CASCADE,
+    INDEX idx_muc_tieu (id_muc_tieu),
+    INDEX idx_ngay (ngay_dong_gop)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 8. BẢNG SMS_PARSERS - Mẫu phân tích SMS ngân hàng
+-- 7.1. BẢNG GIAO_DICH_DINH_KY (RECURRING_TRANSACTIONS)
 -- =====================================================
-CREATE TABLE IF NOT EXISTS sms_parsers (
+CREATE TABLE IF NOT EXISTS giao_dich_dinh_ky (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    bank_name VARCHAR(100) NOT NULL,
-    bank_code VARCHAR(20) NOT NULL COMMENT 'VCB, TCB, ACB...',
-    sender_number VARCHAR(20) COMMENT 'Số điện thoại gửi SMS',
-    regex_pattern TEXT NOT NULL COMMENT 'Pattern để extract thông tin',
-    field_mappings JSON COMMENT 'Mapping các field: amount, type, merchant, time...',
-    sample_sms TEXT COMMENT 'SMS mẫu để test',
-    is_active BOOLEAN DEFAULT TRUE,
-    priority INT DEFAULT 0 COMMENT 'Thứ tự ưu tiên khi match',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_bank_code (bank_code),
-    INDEX idx_active (is_active)
+    id_nguoi_dung BIGINT NOT NULL,
+    id_danh_muc BIGINT NOT NULL,
+    so_tien DECIMAL(15, 2) NOT NULL COMMENT 'Số tiền dự kiến',
+    tan_suat ENUM('DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY') NOT NULL DEFAULT 'MONTHLY',
+    ngay_bat_dau DATE NOT NULL,
+    ngay_ket_thuc DATE NULL,
+    lan_tiep_theo DATE NOT NULL COMMENT 'Ngày dự kiến tiếp theo',
+    mo_ta VARCHAR(255),
+    dang_hoat_dong BOOLEAN DEFAULT TRUE,
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ngay_cap_nhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_danh_muc) REFERENCES danh_muc(id) ON DELETE CASCADE,
+    INDEX idx_nguoi_dung_lan_tiep (id_nguoi_dung, lan_tiep_theo)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 9. BẢNG CATEGORY_RULES - Luật phân loại tự động
+-- 8. BẢNG BO_PHAN_TICH_SMS (SMS_PARSERS)
 -- =====================================================
-CREATE TABLE IF NOT EXISTS category_rules (
+CREATE TABLE IF NOT EXISTS bo_phan_tich_sms (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    keyword VARCHAR(255) NOT NULL COMMENT 'Từ khóa: GRAB, SHOPEE, CGV...',
-    category_id BIGINT NOT NULL,
-    match_type ENUM(
+    ten_ngan_hang VARCHAR(100) NOT NULL,
+    ma_ngan_hang VARCHAR(20) NOT NULL COMMENT 'VCB, TCB, ACB...',
+    so_dien_thoai_gui VARCHAR(20) COMMENT 'Số điện thoại gửi SMS',
+    mau_regex TEXT NOT NULL COMMENT 'Pattern để extract thông tin',
+    anh_xa_truong JSON COMMENT 'Mapping các field: amount, type, merchant, time...',
+    sms_mau TEXT COMMENT 'SMS mẫu để test',
+    dang_hoat_dong BOOLEAN DEFAULT TRUE,
+    do_uu_tien INT DEFAULT 0 COMMENT 'Thứ tự ưu tiên khi match',
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ngay_cap_nhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ma_ngan_hang (ma_ngan_hang),
+    INDEX idx_dang_hoat_dong (dang_hoat_dong)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+-- =====================================================
+-- 9. BẢNG QUY_TAC_DANH_MUC (CATEGORY_RULES)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS quy_tac_danh_muc (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tu_khoa VARCHAR(255) NOT NULL COMMENT 'Từ khóa: GRAB, SHOPEE, CGV...',
+    id_danh_muc BIGINT NOT NULL,
+    loai_khop ENUM(
         'EXACT',
         'CONTAINS',
         'STARTS_WITH',
         'ENDS_WITH',
         'REGEX'
     ) DEFAULT 'CONTAINS',
-    priority INT DEFAULT 0,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
-    INDEX idx_keyword (keyword),
-    INDEX idx_category (category_id)
+    do_uu_tien INT DEFAULT 0,
+    dang_hoat_dong BOOLEAN DEFAULT TRUE,
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_danh_muc) REFERENCES danh_muc(id) ON DELETE CASCADE,
+    INDEX idx_tu_khoa (tu_khoa),
+    INDEX idx_danh_muc (id_danh_muc)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 10. BẢNG NOTIFICATIONS - Thông báo
+-- 10. BẢNG THONG_BAO (NOTIFICATIONS)
 -- =====================================================
-CREATE TABLE IF NOT EXISTS notifications (
+CREATE TABLE IF NOT EXISTS thong_bao (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL,
-    type VARCHAR(50) NOT NULL COMMENT 'BUDGET_ALERT, SAVING_TIP, ANOMALY, REPORT...',
-    title VARCHAR(255) NOT NULL,
-    content TEXT,
-    action_url VARCHAR(500) COMMENT 'Deep link trong app',
-    is_read BOOLEAN DEFAULT FALSE,
-    read_at TIMESTAMP NULL,
-    priority ENUM('LOW', 'MEDIUM', 'HIGH', 'URGENT') DEFAULT 'MEDIUM',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    INDEX idx_user_read (user_id, is_read),
-    INDEX idx_created (created_at)
+    id_nguoi_dung BIGINT NOT NULL,
+    loai VARCHAR(50) NOT NULL COMMENT 'BUDGET_ALERT, SAVING_TIP, ANOMALY, REPORT...',
+    tieu_de VARCHAR(255) NOT NULL,
+    noi_dung TEXT,
+    duong_dan_hanh_dong VARCHAR(500) COMMENT 'Deep link trong app',
+    da_doc BOOLEAN DEFAULT FALSE,
+    thoi_gian_doc TIMESTAMP NULL,
+    do_uu_tien ENUM('LOW', 'MEDIUM', 'HIGH', 'URGENT') DEFAULT 'MEDIUM',
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id) ON DELETE CASCADE,
+    INDEX idx_nguoi_dung_da_doc (id_nguoi_dung, da_doc),
+    INDEX idx_ngay_tao (ngay_tao)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 11. BẢNG USER_PREFERENCES - Cài đặt người dùng
+-- 11. BẢNG CAI_DAT_NGUOI_DUNG (USER_PREFERENCES)
 -- =====================================================
-CREATE TABLE IF NOT EXISTS user_preferences (
+CREATE TABLE IF NOT EXISTS cai_dat_nguoi_dung (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL UNIQUE,
-    currency VARCHAR(3) DEFAULT 'VND',
-    language VARCHAR(10) DEFAULT 'vi',
-    timezone VARCHAR(50) DEFAULT 'Asia/Ho_Chi_Minh',
-    notifications_enabled BOOLEAN DEFAULT TRUE,
-    email_notifications BOOLEAN DEFAULT TRUE,
-    push_notifications BOOLEAN DEFAULT TRUE,
-    budget_alert_threshold INT DEFAULT 70,
-    theme VARCHAR(20) DEFAULT 'light',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    id_nguoi_dung BIGINT NOT NULL UNIQUE,
+    don_vi_tien_te VARCHAR(3) DEFAULT 'VND',
+    ngon_ngu VARCHAR(10) DEFAULT 'vi',
+    bat_thong_bao BOOLEAN DEFAULT TRUE,
+    thong_bao_email BOOLEAN DEFAULT TRUE,
+    thong_bao_day BOOLEAN DEFAULT TRUE,
+    nguong_canh_bao_ngan_sach INT DEFAULT 70,
+    giao_dien VARCHAR(20) DEFAULT 'light',
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ngay_cap_nhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id) ON DELETE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 12. BẢNG SPENDING_INSIGHTS - Phân tích chi tiêu
+-- 12. BẢNG PHAN_TICH_CHI_TIEU (SPENDING_INSIGHTS)
 -- =====================================================
-CREATE TABLE IF NOT EXISTS spending_insights (
+CREATE TABLE IF NOT EXISTS phan_tich_chi_tieu (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL,
-    period_type ENUM('DAILY', 'WEEKLY', 'MONTHLY') NOT NULL,
-    period_start DATE NOT NULL,
-    period_end DATE NOT NULL,
-    total_income DECIMAL(15, 2) DEFAULT 0.00,
-    total_expense DECIMAL(15, 2) DEFAULT 0.00,
-    top_category_id BIGINT NULL COMMENT 'Category chi nhiều nhất',
-    top_category_amount DECIMAL(15, 2),
-    insights_data JSON COMMENT 'Chi tiết phân tích',
-    generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (top_category_id) REFERENCES categories(id) ON DELETE
+    id_nguoi_dung BIGINT NOT NULL,
+    loai_ky_han ENUM('DAILY', 'WEEKLY', 'MONTHLY') NOT NULL,
+    ngay_bat_dau DATE NOT NULL,
+    ngay_ket_thuc DATE NOT NULL,
+    tong_thu_nhap DECIMAL(15, 2) DEFAULT 0.00,
+    tong_chi_tieu DECIMAL(15, 2) DEFAULT 0.00,
+    id_danh_muc_hang_dau BIGINT NULL COMMENT 'Category chi nhiều nhất',
+    so_tien_danh_muc_hang_dau DECIMAL(15, 2),
+    du_lieu_phan_tich JSON COMMENT 'Chi tiết phân tích',
+    thoi_gian_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_danh_muc_hang_dau) REFERENCES danh_muc(id) ON DELETE
     SET NULL,
-        INDEX idx_user_period (user_id, period_start, period_end),
-        UNIQUE KEY unique_user_period (user_id, period_type, period_start)
+        INDEX idx_nguoi_dung_ky_han (id_nguoi_dung, ngay_bat_dau, ngay_ket_thuc),
+        UNIQUE KEY unique_nguoi_dung_ky_han (id_nguoi_dung, loai_ky_han, ngay_bat_dau)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 13. BẢNG AUDIT_LOGS - Nhật ký hệ thống
+-- 13. BẢNG NHAT_KY_HE_THONG (AUDIT_LOGS)
 -- =====================================================
-CREATE TABLE IF NOT EXISTS audit_logs (
+CREATE TABLE IF NOT EXISTS nhat_ky_he_thong (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NULL,
-    action VARCHAR(100) NOT NULL,
-    entity_type VARCHAR(50) NOT NULL,
-    entity_id BIGINT NULL,
-    old_value JSON,
-    new_value JSON,
-    ip_address VARCHAR(50),
-    user_agent TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE
+    id_nguoi_dung BIGINT NULL,
+    hanh_dong VARCHAR(100) NOT NULL,
+    loai_doi_tuong VARCHAR(50) NOT NULL,
+    id_doi_tuong BIGINT NULL,
+    gia_tri_cu JSON,
+    gia_tri_moi JSON,
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id) ON DELETE
     SET NULL,
-        INDEX idx_user (user_id),
-        INDEX idx_created (created_at),
-        INDEX idx_entity (entity_type, entity_id)
+        INDEX idx_nguoi_dung (id_nguoi_dung),
+        INDEX idx_ngay_tao (ngay_tao),
+        INDEX idx_doi_tuong (loai_doi_tuong, id_doi_tuong)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
--- =====================================================
--- DATABASE SCHEMA CREATED SUCCESSFULLY
--- =====================================================

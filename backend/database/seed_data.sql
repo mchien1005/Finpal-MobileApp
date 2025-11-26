@@ -9,775 +9,697 @@ USE finpal_db;
 -- CLEAN UP - Xóa dữ liệu cũ (nếu có) để tránh duplicate
 -- =====================================================
 SET FOREIGN_KEY_CHECKS = 0;
-DELETE FROM transactions
-WHERE user_id IN (
-        SELECT id
-        FROM users
-        WHERE username IN ('demo', 'admin')
-    );
-DELETE FROM budgets
-WHERE user_id IN (
-        SELECT id
-        FROM users
-        WHERE username IN ('demo', 'admin')
-    );
-DELETE FROM savings_goals
-WHERE user_id IN (
-        SELECT id
-        FROM users
-        WHERE username IN ('demo', 'admin')
-    );
-DELETE FROM accounts
-WHERE user_id IN (
-        SELECT id
-        FROM users
-        WHERE username IN ('demo', 'admin')
-    );
-DELETE FROM user_preferences
-WHERE user_id IN (
-        SELECT id
-        FROM users
-        WHERE username IN ('demo', 'admin')
-    );
-DELETE FROM category_rules;
-DELETE FROM sms_parsers;
-DELETE FROM categories
-WHERE is_system = TRUE;
+TRUNCATE TABLE thong_bao;
+TRUNCATE TABLE giao_dich_dinh_ky;
+TRUNCATE TABLE ngan_sach;
+TRUNCATE TABLE giao_dich;
+TRUNCATE TABLE muc_tieu_tiet_kiem;
+TRUNCATE TABLE tai_khoan;
+TRUNCATE TABLE quy_tac_danh_muc;
+TRUNCATE TABLE danh_muc;
+TRUNCATE TABLE bo_phan_tich_sms;
+TRUNCATE TABLE nguoi_dung;
 SET FOREIGN_KEY_CHECKS = 1;
 -- =====================================================
--- CATEGORIES - Danh mục hệ thống
+-- 1. NGUOI_DUNG - Người dùng demo
 -- =====================================================
--- Categories Thu nhập
-INSERT INTO categories (
-        name,
-        type,
-        icon,
-        color,
-        is_system,
-        display_order
-    )
-VALUES ('Lương', 'INCOME', '💰', '#4CAF50', TRUE, 1),
-    ('Thưởng', 'INCOME', '🎁', '#8BC34A', TRUE, 2),
-    ('Đầu tư', 'INCOME', '📈', '#009688', TRUE, 3),
-    (
-        'Thu nhập khác',
-        'INCOME',
-        '💵',
-        '#00BCD4',
-        TRUE,
-        4
-    );
--- Categories Chi tiêu chính
-INSERT INTO categories (
-        name,
-        type,
-        icon,
-        color,
-        is_system,
-        display_order
-    )
-VALUES ('Ăn uống', 'EXPENSE', '🍔', '#FF5722', TRUE, 1),
-    ('Mua sắm', 'EXPENSE', '🛒', '#E91E63', TRUE, 2),
-    ('Di chuyển', 'EXPENSE', '🚗', '#9C27B0', TRUE, 3),
-    ('Giải trí', 'EXPENSE', '🎬', '#673AB7', TRUE, 4),
-    ('Hóa đơn', 'EXPENSE', '📄', '#3F51B5', TRUE, 5),
-    ('Sức khỏe', 'EXPENSE', '⚕️', '#2196F3', TRUE, 6),
-    ('Giáo dục', 'EXPENSE', '📚', '#03A9F4', TRUE, 7),
-    ('Làm đẹp', 'EXPENSE', '💄', '#FF4081', TRUE, 8),
-    (
-        'Gia đình',
-        'EXPENSE',
-        '👨‍👩‍👧‍👦',
-        '#795548',
-        TRUE,
-        9
-    ),
-    (
-        'Chi tiêu khác',
-        'EXPENSE',
-        '💸',
-        '#9E9E9E',
-        TRUE,
-        10
-    );
--- Sub-categories cho Ăn uống
-SET @an_uong_id = (
-        SELECT id
-        FROM categories
-        WHERE name = 'Ăn uống'
-        LIMIT 1
-    );
-INSERT INTO categories (
-        name,
-        type,
-        icon,
-        color,
-        parent_id,
-        is_system,
-        display_order
-    )
-VALUES (
-        'Ăn sáng',
-        'EXPENSE',
-        '🌅',
-        '#FF6F00',
-        @an_uong_id,
-        TRUE,
-        1
-    ),
-    (
-        'Ăn trưa',
-        'EXPENSE',
-        '☀️',
-        '#FF8F00',
-        @an_uong_id,
-        TRUE,
-        2
-    ),
-    (
-        'Ăn tối',
-        'EXPENSE',
-        '🌙',
-        '#FFA000',
-        @an_uong_id,
-        TRUE,
-        3
-    ),
-    (
-        'Cafe/Trà sữa',
-        'EXPENSE',
-        '☕',
-        '#FFB300',
-        @an_uong_id,
-        TRUE,
-        4
-    ),
-    (
-        'Nhậu/Bar',
-        'EXPENSE',
-        '🍺',
-        '#FFC107',
-        @an_uong_id,
-        TRUE,
-        5
-    );
--- Sub-categories cho Di chuyển
-SET @di_chuyen_id = (
-        SELECT id
-        FROM categories
-        WHERE name = 'Di chuyển'
-        LIMIT 1
-    );
-INSERT INTO categories (
-        name,
-        type,
-        icon,
-        color,
-        parent_id,
-        is_system,
-        display_order
-    )
-VALUES (
-        'Grab/Taxi',
-        'EXPENSE',
-        '🚕',
-        '#7B1FA2',
-        @di_chuyen_id,
-        TRUE,
-        1
-    ),
-    (
-        'Xe bus',
-        'EXPENSE',
-        '🚌',
-        '#8E24AA',
-        @di_chuyen_id,
-        TRUE,
-        2
-    ),
-    (
-        'Xăng xe',
-        'EXPENSE',
-        '⛽',
-        '#9C27B0',
-        @di_chuyen_id,
-        TRUE,
-        3
-    ),
-    (
-        'Gửi xe',
-        'EXPENSE',
-        '🅿️',
-        '#AB47BC',
-        @di_chuyen_id,
-        TRUE,
-        4
-    );
--- Sub-categories cho Hóa đơn
-SET @hoa_don_id = (
-        SELECT id
-        FROM categories
-        WHERE name = 'Hóa đơn'
-        LIMIT 1
-    );
-INSERT INTO categories (
-        name,
-        type,
-        icon,
-        color,
-        parent_id,
-        is_system,
-        display_order
-    )
-VALUES (
-        'Điện',
-        'EXPENSE',
-        '💡',
-        '#1976D2',
-        @hoa_don_id,
-        TRUE,
-        1
-    ),
-    (
-        'Nước',
-        'EXPENSE',
-        '💧',
-        '#2196F3',
-        @hoa_don_id,
-        TRUE,
-        2
-    ),
-    (
-        'Internet',
-        'EXPENSE',
-        '🌐',
-        '#42A5F5',
-        @hoa_don_id,
-        TRUE,
-        3
-    ),
-    (
-        'Điện thoại',
-        'EXPENSE',
-        '📱',
-        '#64B5F6',
-        @hoa_don_id,
-        TRUE,
-        4
-    ),
-    (
-        'Nhà trọ',
-        'EXPENSE',
-        '🏠',
-        '#1565C0',
-        @hoa_don_id,
-        TRUE,
-        5
-    );
--- =====================================================
--- CATEGORY RULES - Luật phân loại tự động
--- =====================================================
--- Rules cho Ăn uống
-INSERT INTO category_rules (keyword, category_id, match_type, priority)
-VALUES (
-        'GRAB',
-        (
-            SELECT id
-            FROM categories
-            WHERE name = 'Grab/Taxi'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'GRABFOOD', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Ăn uống'
-            LIMIT 1
-        ), 'CONTAINS', 20
-    ), (
-        'SHOPEE', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Mua sắm'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'LAZADA', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Mua sắm'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'TIKI', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Mua sắm'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'CGV', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Giải trí'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'LOTTE', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Giải trí'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'HIGHLANDS', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Cafe/Trà sữa'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'STARBUCKS', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Cafe/Trà sữa'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'THE COFFEE', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Cafe/Trà sữa'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'PHUC LONG', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Cafe/Trà sữa'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'GONGCHA', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Cafe/Trà sữa'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'CIRCLE K', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Mua sắm'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'FAMILY MART', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Mua sắm'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'VINMART', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Mua sắm'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'COOPMART', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Mua sắm'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'BITI', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Mua sắm'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'GUARDIAN', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Sức khỏe'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    ), (
-        'PHARMACITY', (
-            SELECT id
-            FROM categories
-            WHERE name = 'Sức khỏe'
-            LIMIT 1
-        ), 'CONTAINS', 10
-    );
--- =====================================================
--- SMS PARSERS - Mẫu phân tích SMS ngân hàng
--- =====================================================
--- Parser cho Vietcombank (VCB) - Format mới
-INSERT INTO sms_parsers (
-        bank_name,
-        bank_code,
-        sender_number,
-        regex_pattern,
-        field_mappings,
-        sample_sms,
-        is_active,
-        priority
-    )
-VALUES (
-        'Vietcombank',
-        'VCB',
-        'VIETCOMBANK',
-        'TK (\\d+x+\\d+) ([+-])(\\d{1,3}(?:,\\d{3})*(?:\\.\\d{2})?) VND luc (\\d{2}/\\d{2}/\\d{4} \\d{2}:\\d{2}:\\d{2})\\. So du (\\d{1,3}(?:,\\d{3})*(?:\\.\\d{2})?) VND\\. GD tai (.+?)(?:\\.|$)',
-        '{"account":1,"type":2,"amount":3,"time":4,"merchant":6}',
-        'TK 1234xxxx5678 -100,000 VND luc 18/11/2025 15:30:45. So du 2,500,000 VND. GD tai GRAB-VIETNAM',
-        TRUE,
-        1
-    );
--- Parser cho Techcombank (TCB) - Format mới
-INSERT INTO sms_parsers (
-        bank_name,
-        bank_code,
-        sender_number,
-        regex_pattern,
-        field_mappings,
-        sample_sms,
-        is_active,
-        priority
-    )
-VALUES (
-        'Techcombank',
-        'TCB',
-        'TECHCOMBANK',
-        'TK (\\d+x+\\d+) ([+-])(\\d{1,3}(?:,\\d{3})*) VND\\. (\\d{2}:\\d{2} \\d{2}/\\d{2}/\\d{4})\\. ND: (.+?)\\. SD: (\\d{1,3}(?:,\\d{3})*) VND',
-        '{"account":1,"type":2,"amount":3,"time":4,"merchant":5}',
-        'TK 9876xxxx4321 -50,000 VND. 15:30 18/11/2025. ND: SHOPEE-VN. SD: 1,000,000 VND',
-        TRUE,
-        2
-    );
--- Parser cho ACB - Format mới
-INSERT INTO sms_parsers (
-        bank_name,
-        bank_code,
-        sender_number,
-        regex_pattern,
-        field_mappings,
-        sample_sms,
-        is_active,
-        priority
-    )
-VALUES (
-        'ACB',
-        'ACB',
-        'ACB',
-        'TK (\\d+x+\\d+) GD ([+-])(\\d{1,3}(?:,\\d{3})*) (\\d{2}-\\d{2}-\\d{4} \\d{2}:\\d{2}) tai (.+?)\\. SD: (\\d{1,3}(?:,\\d{3})*)',
-        '{"account":1,"type":2,"amount":3,"time":4,"merchant":5}',
-        'TK 1111xxxx2222 GD -30,000 18-11-2025 14:00 tai COFFEE-HOUSE. SD: 500,000',
-        TRUE,
-        3
-    );
--- =====================================================
--- DEMO USERS
--- =====================================================
--- Password: 123456 
--- BCrypt hash được generate bởi hệ thống: $2a$10$PtD9U/K40h7.STHT9pV8ouDWPswAdb6eMgpgQn2vZtLNONsIA9OH.
-INSERT INTO users (
-        username,
-        password,
+-- Password: demo123 (BCrypt hash)
+INSERT INTO nguoi_dung (
+        ten_dang_nhap,
+        mat_khau,
         email,
-        full_name,
-        phone,
-        role,
-        is_active,
-        email_verified
+        ho_ten,
+        vai_tro,
+        dang_hoat_dong
     )
 VALUES (
         'demo',
-        '$2a$10$PtD9U/K40h7.STHT9pV8ouDWPswAdb6eMgpgQn2vZtLNONsIA9OH.',
-        'demo@finpal.com',
-        'Người dùng Demo',
-        '0901234567',
+        '$2a$10$N9qo8uLOickgx2ZMRZoMye1VdedWaK.ILPi4k6VYLaHjRg/ZcXq5u',
+        'demo@finpal.vn',
+        'Nguyễn Văn Demo',
         'USER',
-        TRUE,
         TRUE
     ),
     (
         'admin',
-        '$2a$10$PtD9U/K40h7.STHT9pV8ouDWPswAdb6eMgpgQn2vZtLNONsIA9OH.',
-        'admin@finpal.com',
-        'Quản trị viên',
-        '0987654321',
+        '$2a$10$N9qo8uLOickgx2ZMRZoMye1VdedWaK.ILPi4k6VYLaHjRg/ZcXq5u',
+        'admin@finpal.vn',
+        'Quản Trị Viên',
         'ADMIN',
-        TRUE,
         TRUE
     );
 -- =====================================================
--- DEMO DATA cho user 'demo'
+-- 2. DANH_MUC - Danh mục hệ thống
 -- =====================================================
--- Lấy user_id của demo user
+INSERT INTO danh_muc (id_cha, ten_danh_muc, loai)
+VALUES -- EXPENSE Categories (8)
+    (NULL, 'Ăn uống', 'EXPENSE'),
+    (NULL, 'Di chuyển', 'EXPENSE'),
+    (NULL, 'Mua sắm', 'EXPENSE'),
+    (NULL, 'Giải trí', 'EXPENSE'),
+    (NULL, 'Sức khỏe', 'EXPENSE'),
+    (NULL, 'Giáo dục', 'EXPENSE'),
+    (NULL, 'Hóa đơn', 'EXPENSE'),
+    (NULL, 'Khác', 'EXPENSE'),
+    -- INCOME Categories (4)
+    (NULL, 'Lương', 'INCOME'),
+    (NULL, 'Thưởng', 'INCOME'),
+    (NULL, 'Đầu tư', 'INCOME'),
+    (NULL, 'Khác', 'INCOME');
+-- =====================================================
+-- 3. BO_PHAN_TICH_SMS - Cấu hình parse SMS ngân hàng
+-- =====================================================
+INSERT INTO bo_phan_tich_sms (
+        ma_ngan_hang,
+        ten_ngan_hang,
+        mau_regex,
+        anh_xa_truong,
+        sms_mau
+    )
+VALUES -- Vietcombank (SMS format)
+    (
+        'VCB',
+        'Vietcombank',
+        'TK\\s+(\\d+).*?([+-])([\\d,]+)VND.*?luc\\s+([\\d/\\s:]+).*?ND:\\s*([^.]+).*?SD:\\s*([\\d,]+)',
+        '{"type":"group2","amount":"group3","transaction_date":"group4","merchant":"group5","balance_after":"group6"}',
+        'TK 001234567: -55,000VND luc 12/11/2025 09:00. ND: GRAB. SD: 2,450,000VND'
+    ),
+    -- Vietcombank (App notification format)
+    (
+        'VCB',
+        'Vietcombank',
+        'So du TK VCB\\s+(\\d+).*?([+-])([\\d,]+)\\s+VND\\s+luc\\s+([\\d-]+)\\s+([\\d:]+).*?So du\\s+([\\d,]+)\\s+VND.*?GD:(.+?)(?:\\s|$)',
+        '{"type":"group2","amount":"group3","transaction_date":"group4 group5","balance_after":"group6","merchant":"group7"}',
+        'Số dư TK VCB 0111000155751\n-20,000 VND lúc 26-06-2021 08:10:14.\nSố dư 877,172 VND. Ref POS.79900\n008.830963.20210626.081014.9704\n3668Tc4a111000000000762010 ..\n505471.0.000000.GD:ZALOPAY'
+    ),
+    -- Techcombank
+    (
+        'TCB',
+        'Techcombank',
+        'GD:\\s*([+-])([\\d,]+)VND.*?luc\\s+([\\d/\\s:]+).*?tai\\s+([^.]+).*?SD:\\s*([\\d,]+)',
+        '{"type":"group1","amount":"group2","transaction_date":"group3","merchant":"group4","balance_after":"group5"}',
+        'GD: -120,000VND luc 13/11 10:30 tai HIGHLANDS COFFEE. SD: 1,880,000VND'
+    ),
+    -- BIDV
+    (
+        'BIDV',
+        'BIDV',
+        'Thoi gian giao dich:\\s+(\\d{2}:\\d{2})\\s+(\\d{2}/\\d{2}/\\d{4}).*?So tien GD:\\s+([+-])([\\d,]+)\\s+VND.*?So du cuoi:\\s+([\\d,]+)\\s+VND.*?Noi dung giao dich:\\s*([^M]+?)(?:Ma giao dich|$)',
+        '{"transaction_date":"group1 group2","type":"group3","amount":"group4","balance_after":"group5","merchant":"group6"}',
+        'BIDV xin thông báo tới Quý khách\nThời gian giao dịch: 13:11 25/11/2025\nTài khoản thanh toán: 4260848570\nSố tiền GD: +10,000 VND\nSố dư cuối: 971,979 VND\nNội dung giao dịch: TKThe :1027779485, tai Vietcombank. MBVCB.11876304648.447013.VU XUAN HUY chuyen tien.CT tu 1027779445 VU XUAN HUY toi 4260848540 NGUYEN MINH CHIEN tai BIDV -CTLNHIDI000013514283774-1/1-CRE-002\nMã giao dịch: 0832ODV4-84v6kpcqo'
+    ),
+    -- MBBank
+    (
+        'MBB',
+        'MBBank',
+        'TK\\s+(\\d+x+\\d+)\\|GD:\\s+([+-])([\\d,]+)VND\\s+(\\d{2}/\\d{2}/\\d{2})\\s+(\\d{2}:\\d{2})\\s+\\|SD:\\s+([\\d,]+)VND\\|ND:\\s*([^-]+)',
+        '{"type":"group2","amount":"group3","transaction_date":"group4 group5","balance_after":"group6","merchant":"group7"}',
+        'Thông báo biến động số dư\nTK 10xxx969|GD: +25,000VND 25/11/25 20:35 |SD: 140,002VND|ND: 108609376869-HA VAN THANG chuyen tien qua MoMo-CHUYEN TIEN-OQCH00044xSs-MOMO108609376867MOMO'
+    ),
+    -- PVcomBank
+    (
+        'PVB',
+        'PVcomBank',
+        '([+-])([\\d,]+)\\s*₫.*?Tai khoan:\\s+(\\d+).*?So du:\\s+([\\d,]+)\\s*₫.*?Loi nhan:\\s*([^.]+)',
+        '{"type":"group1","amount":"group2","balance_after":"group4","merchant":"group5"}',
+        '+9000 ₫\n\nTài khoản: 107001384884\n\nSố dư: 50,570 ₫\n\nLời nhắn: Lai nhap goc .\n\nLai suat gui tiet kiem online cao hon tai quay toi 0.5%/nam. Liên hệ: 19006692/1900555592.\n\n23:23'
+    ),
+    -- VietinBank
+    (
+        'CTG',
+        'VietinBank',
+        'Thoi gian:\\s+(\\d{2}/\\d{2}/\\d{4})\\s+(\\d{2}:\\d{2}).*?Tai khoan:\\s+(\\d+).*?Giao dich:\\s+([+-])([\\d,]+)\\s+VND.*?So du hien tai:\\s+([\\d,]+)\\s+VND.*?Noi dung:\\s*(.+?)(?:;\\s*tai|$)',
+        '{"transaction_date":"group1 group2","type":"group4","amount":"group5","balance_after":"group6","merchant":"group7"}',
+        'Thời gian: 26/11/2025 10:05\nTài khoản: 103600583557\nGiao dich: -30,000 VND\nSố dư hiện tại: 696,634 VND\nNội dung: CT DI:533010651537 NGUYEN XUAN ANH chuye n tien; tai iPay'
+    );
+-- =====================================================
+-- 4. QUY_TAC_DANH_MUC - Luật AI phân loại (Global)
+-- =====================================================
+INSERT INTO quy_tac_danh_muc (tu_khoa, id_danh_muc, do_uu_tien)
+VALUES -- Ăn uống (id_danh_muc sẽ là 1)
+    ('GRAB FOOD', 1, 95),
+    ('HIGHLANDS', 1, 90),
+    ('THE COFFEE HOUSE', 1, 90),
+    ('PHUC LONG', 1, 90),
+    ('CIRCLE K', 1, 75),
+    -- Di chuyển (id_danh_muc = 2)
+    ('GRAB', 2, 85),
+    ('BE', 2, 85),
+    ('XANG', 2, 90),
+    -- Mua sắm (id_danh_muc = 3)
+    ('SHOPEE', 3, 95),
+    ('LAZADA', 3, 95),
+    ('TIKI', 3, 95),
+    ('VINMART', 3, 85),
+    -- Giải trí (id_danh_muc = 4)
+    ('CGV', 4, 95),
+    ('LOTTE CINEMA', 4, 95),
+    ('NETFLIX', 4, 90),
+    ('SPOTIFY', 4, 90),
+    -- Hóa đơn (id_danh_muc = 7)
+    ('EVN', 7, 100),
+    ('VNPT', 7, 100),
+    ('VIETTEL', 7, 95),
+    ('FPT', 7, 95);
+-- =====================================================
+-- 5. DEMO DATA - Tai khoan cho user demo
+-- =====================================================
 SET @demo_user_id = (
         SELECT id
-        FROM users
-        WHERE username = 'demo'
+        FROM nguoi_dung
+        WHERE ten_dang_nhap = 'demo'
         LIMIT 1
     );
--- Tài khoản ngân hàng
-INSERT INTO accounts (
-        user_id,
-        bank_name,
-        account_name,
-        account_type,
-        balance,
-        is_active,
-        icon,
-        color
+INSERT INTO tai_khoan (
+        id_nguoi_dung,
+        ten_ngan_hang,
+        so_tai_khoan,
+        ten_tai_khoan,
+        so_du
     )
 VALUES (
         @demo_user_id,
-        'Vietcombank',
-        'Tài khoản chính',
-        'BANK',
-        5000000.00,
-        TRUE,
-        '🏦',
-        '#007AC2'
+        'VCB',
+        '****1234',
+        'VCB Lương',
+        5000000.00
     ),
     (
         @demo_user_id,
-        'Techcombank',
-        'Thẻ tín dụng',
-        'CREDIT_CARD',
-        10000000.00,
-        TRUE,
-        '💳',
-        '#FF6B00'
+        'TCB',
+        '****5678',
+        'TCB Tiết kiệm',
+        10000000.00
     ),
     (
         @demo_user_id,
-        'Tiền mặt',
-        'Ví tiền',
         'CASH',
-        500000.00,
-        TRUE,
-        '💵',
-        '#4CAF50'
+        NULL,
+        'Tiền mặt',
+        500000.00
     );
--- Giao dịch mẫu
-SET @luong_id = (
+-- =====================================================
+-- 6. DEMO DATA - Giao dich (30 ngày gần nhất)
+-- =====================================================
+SET @vcb_account = (
         SELECT id
-        FROM categories
-        WHERE name = 'Lương'
+        FROM tai_khoan
+        WHERE id_nguoi_dung = @demo_user_id
+            AND ten_ngan_hang = 'VCB'
         LIMIT 1
     );
-SET @cafe_id = (
+SET @tcb_account = (
         SELECT id
-        FROM categories
-        WHERE name = 'Cafe/Trà sữa'
+        FROM tai_khoan
+        WHERE id_nguoi_dung = @demo_user_id
+            AND ten_ngan_hang = 'TCB'
         LIMIT 1
     );
-SET @grab_id = (
+-- Category IDs
+SET @cat_an_uong = (
         SELECT id
-        FROM categories
-        WHERE name = 'Grab/Taxi'
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Ăn uống'
         LIMIT 1
     );
-SET @an_uong_id = (
+SET @cat_di_chuyen = (
         SELECT id
-        FROM categories
-        WHERE name = 'Ăn uống'
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Di chuyển'
         LIMIT 1
     );
-SET @mua_sam_id = (
+SET @cat_mua_sam = (
         SELECT id
-        FROM categories
-        WHERE name = 'Mua sắm'
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Mua sắm'
         LIMIT 1
     );
-SET @giai_tri_id = (
+SET @cat_giai_tri = (
         SELECT id
-        FROM categories
-        WHERE name = 'Giải trí'
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Giải trí'
         LIMIT 1
     );
--- Lấy account_id của demo user
-SET @demo_account_vcb = (
+SET @cat_hoa_don = (
         SELECT id
-        FROM accounts
-        WHERE user_id = @demo_user_id
-            AND bank_name = 'Vietcombank'
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Hóa đơn'
         LIMIT 1
     );
-INSERT INTO transactions (
-        user_id,
-        account_id,
-        category_id,
-        amount,
-        type,
-        merchant,
-        description,
-        transaction_date,
-        is_auto
+SET @cat_luong = (
+        SELECT id
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Lương'
+        LIMIT 1
+    );
+INSERT INTO giao_dich (
+        id_nguoi_dung,
+        id_tai_khoan,
+        id_danh_muc,
+        so_tien,
+        loai,
+        don_vi_chap_nhan,
+        mo_ta,
+        ngay_giao_dich,
+        tu_dong
     )
-VALUES (
+VALUES -- Thu nhập
+    (
         @demo_user_id,
-        @demo_account_vcb,
-        @luong_id,
+        @vcb_account,
+        @cat_luong,
         15000000.00,
         'INCOME',
-        'CÔNG TY ABC',
+        'CONG TY ABC',
         'Lương tháng 11',
-        '2024-11-01 09:00:00',
+        '2025-11-01 09:00:00',
         FALSE
     ),
+    -- Chi tiêu tuần 1 (01-07/11)
     (
         @demo_user_id,
-        @demo_account_vcb,
-        @cafe_id,
+        @vcb_account,
+        @cat_an_uong,
         45000.00,
         'EXPENSE',
         'HIGHLANDS COFFEE',
         'Cafe sáng',
-        '2024-11-15 08:30:00',
+        '2025-11-02 08:30:00',
         TRUE
     ),
     (
         @demo_user_id,
-        @demo_account_vcb,
-        @grab_id,
+        @vcb_account,
+        @cat_di_chuyen,
         85000.00,
         'EXPENSE',
-        'GRAB VIETNAM',
-        'Đi làm',
-        '2024-11-15 08:00:00',
+        'GRAB',
+        'Đi làm về',
+        '2025-11-02 18:00:00',
         TRUE
     ),
     (
         @demo_user_id,
-        @demo_account_vcb,
-        @an_uong_id,
+        @vcb_account,
+        @cat_an_uong,
+        120000.00,
+        'EXPENSE',
+        'GRAB FOOD',
+        'Ăn trưa',
+        '2025-11-03 12:00:00',
+        TRUE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_mua_sam,
+        350000.00,
+        'EXPENSE',
+        'CIRCLE K',
+        'Mua đồ ăn vặt',
+        '2025-11-03 20:00:00',
+        TRUE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_giai_tri,
         150000.00,
         'EXPENSE',
-        'GRABFOOD',
-        'Ăn trưa',
-        '2024-11-15 12:00:00',
+        'CGV',
+        'Vé xem phim',
+        '2025-11-05 19:00:00',
         TRUE
     ),
     (
         @demo_user_id,
-        @demo_account_vcb,
-        @mua_sam_id,
-        500000.00,
-        'EXPENSE',
-        'SHOPEE',
-        'Mua đồ',
-        '2024-11-14 20:00:00',
-        TRUE
-    ),
-    (
-        @demo_user_id,
-        @demo_account_vcb,
-        @giai_tri_id,
+        @vcb_account,
+        @cat_an_uong,
         200000.00,
         'EXPENSE',
-        'CGV CINEMAS',
-        'Xem phim',
-        '2024-11-13 19:00:00',
+        'NHA HANG ABC',
+        'Ăn tối cuối tuần',
+        '2025-11-06 19:30:00',
+        FALSE
+    ),
+    -- Chi tiêu tuần 2 (08-14/11)
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_hoa_don,
+        350000.00,
+        'EXPENSE',
+        'EVN',
+        'Tiền điện tháng 10',
+        '2025-11-08 10:00:00',
+        TRUE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_hoa_don,
+        200000.00,
+        'EXPENSE',
+        'VNPT',
+        'Cước internet',
+        '2025-11-08 10:05:00',
+        TRUE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_di_chuyen,
+        95000.00,
+        'EXPENSE',
+        'GRAB',
+        'Đi làm',
+        '2025-11-09 08:00:00',
+        TRUE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_an_uong,
+        55000.00,
+        'EXPENSE',
+        'THE COFFEE HOUSE',
+        'Cafe',
+        '2025-11-09 15:00:00',
+        TRUE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_mua_sam,
+        1200000.00,
+        'EXPENSE',
+        'SHOPEE',
+        'Mua quần áo',
+        '2025-11-10 21:00:00',
+        TRUE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_an_uong,
+        180000.00,
+        'EXPENSE',
+        'PHUC LONG',
+        'Trà sữa + bánh',
+        '2025-11-11 16:00:00',
+        TRUE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_giai_tri,
+        199000.00,
+        'EXPENSE',
+        'NETFLIX',
+        'Gói Premium tháng',
+        '2025-11-12 00:01:00',
+        TRUE
+    ),
+    -- Chi tiêu tuần 3 (15-21/11)
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_an_uong,
+        50000.00,
+        'EXPENSE',
+        'HIGHLANDS COFFEE',
+        'Cafe sáng',
+        '2025-11-15 08:30:00',
+        TRUE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_di_chuyen,
+        75000.00,
+        'EXPENSE',
+        'BE',
+        'Đi làm',
+        '2025-11-15 08:00:00',
+        TRUE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_mua_sam,
+        850000.00,
+        'EXPENSE',
+        'LAZADA',
+        'Mua đồ điện tử',
+        '2025-11-16 14:00:00',
+        TRUE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_an_uong,
+        320000.00,
+        'EXPENSE',
+        'LOTTERIA',
+        'Ăn trưa buffet',
+        '2025-11-17 12:30:00',
+        FALSE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_giai_tri,
+        250000.00,
+        'EXPENSE',
+        'LOTTE CINEMA',
+        'Vé xem phim IMAX',
+        '2025-11-18 20:00:00',
+        TRUE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_an_uong,
+        45000.00,
+        'EXPENSE',
+        'HIGHLANDS COFFEE',
+        'Cafe',
+        '2025-11-19 09:00:00',
+        TRUE
+    ),
+    -- Chi tiêu tuần 4 (22-26/11)
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_di_chuyen,
+        120000.00,
+        'EXPENSE',
+        'GRAB',
+        'Đi chơi xa',
+        '2025-11-22 14:00:00',
+        TRUE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_an_uong,
+        280000.00,
+        'EXPENSE',
+        'KICHI KICHI',
+        'Lẩu buffet',
+        '2025-11-23 18:00:00',
+        FALSE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_mua_sam,
+        650000.00,
+        'EXPENSE',
+        'TIKI',
+        'Mua sách',
+        '2025-11-24 10:00:00',
+        TRUE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_an_uong,
+        60000.00,
+        'EXPENSE',
+        'PHUC LONG',
+        'Trà sữa',
+        '2025-11-25 15:30:00',
+        TRUE
+    ),
+    (
+        @demo_user_id,
+        @vcb_account,
+        @cat_di_chuyen,
+        90000.00,
+        'EXPENSE',
+        'GRAB',
+        'Về nhà',
+        '2025-11-26 17:00:00',
         TRUE
     );
--- Ngân sách (sử dụng lại biến @an_uong_id và @di_chuyen_id đã set ở trên)
-INSERT INTO budgets (
-        user_id,
-        category_id,
-        name,
-        amount,
-        period,
-        start_date,
-        end_date,
-        alert_threshold
+-- =====================================================
+-- 7. DEMO DATA - Ngan sach
+-- =====================================================
+INSERT INTO ngan_sach (
+        id_nguoi_dung,
+        id_danh_muc,
+        so_tien,
+        ngay_bat_dau,
+        ngay_ket_thuc
     )
 VALUES (
         @demo_user_id,
-        @an_uong_id,
-        'Ngân sách Ăn uống tháng 11',
+        @cat_an_uong,
         3000000.00,
-        'MONTHLY',
-        '2024-11-01',
-        '2024-11-30',
-        70
+        '2025-11-01',
+        '2025-11-30'
     ),
     (
         @demo_user_id,
-        @di_chuyen_id,
-        'Ngân sách Di chuyển tháng 11',
+        @cat_di_chuyen,
         1500000.00,
-        'MONTHLY',
-        '2024-11-01',
-        '2024-11-30',
-        70
+        '2025-11-01',
+        '2025-11-30'
+    ),
+    (
+        @demo_user_id,
+        @cat_mua_sam,
+        2000000.00,
+        '2025-11-01',
+        '2025-11-30'
+    ),
+    (
+        @demo_user_id,
+        @cat_giai_tri,
+        1000000.00,
+        '2025-11-01',
+        '2025-11-30'
+    ),
+    (
+        @demo_user_id,
+        @cat_hoa_don,
+        800000.00,
+        '2025-11-01',
+        '2025-11-30'
     );
--- Mục tiêu tiết kiệm
-INSERT INTO savings_goals (
-        user_id,
-        name,
-        description,
-        target_amount,
-        current_amount,
-        deadline,
-        icon,
-        color,
-        status
+-- =====================================================
+-- 8. DEMO DATA - Muc tieu tiet kiem
+-- =====================================================
+INSERT INTO muc_tieu_tiet_kiem (
+        id_nguoi_dung,
+        ten_muc_tieu,
+        so_tien_muc_tieu,
+        so_tien_hien_tai,
+        han_chot,
+        trang_thai
     )
 VALUES (
         @demo_user_id,
-        'Mua tai nghe AirPods',
-        'Tiết kiệm để mua tai nghe không dây',
-        5000000.00,
-        1500000.00,
-        '2024-12-31',
-        '🎧',
-        '#1976D2',
+        'Mua iPhone 16 Pro',
+        30000000.00,
+        8500000.00,
+        '2026-03-01',
         'ACTIVE'
     ),
     (
         @demo_user_id,
-        'Du lịch Đà Lạt',
-        'Chuyến đi cuối năm',
-        10000000.00,
-        3000000.00,
-        '2024-12-20',
-        '✈️',
-        '#4CAF50',
+        'Du lịch Nhật Bản',
+        50000000.00,
+        12000000.00,
+        '2026-07-01',
         'ACTIVE'
+    ),
+    (
+        @demo_user_id,
+        'Quỹ khẩn cấp',
+        20000000.00,
+        20000000.00,
+        '2025-12-31',
+        'COMPLETED'
     );
--- User preferences
-SET @admin_user_id = (
-        SELECT id
-        FROM users
-        WHERE username = 'admin'
-        LIMIT 1
-    );
-INSERT INTO user_preferences (
-        user_id,
-        currency,
-        language,
-        timezone,
-        budget_alert_threshold
+-- =====================================================
+-- 9. DEMO DATA - Giao dich dinh ky (AI đã học)
+-- =====================================================
+INSERT INTO giao_dich_dinh_ky (
+        id_nguoi_dung,
+        id_danh_muc,
+        mo_ta,
+        so_tien,
+        tan_suat,
+        ngay_bat_dau,
+        lan_tiep_theo
     )
 VALUES (
         @demo_user_id,
-        'VND',
-        'vi',
-        'Asia/Ho_Chi_Minh',
-        70
+        @cat_hoa_don,
+        'EVN',
+        350000.00,
+        'MONTHLY',
+        '2025-11-08',
+        '2025-12-08'
     ),
     (
-        @admin_user_id,
-        'VND',
-        'vi',
-        'Asia/Ho_Chi_Minh',
-        70
+        @demo_user_id,
+        @cat_hoa_don,
+        'VNPT',
+        200000.00,
+        'MONTHLY',
+        '2025-11-08',
+        '2025-12-08'
+    ),
+    (
+        @demo_user_id,
+        @cat_giai_tri,
+        'NETFLIX',
+        199000.00,
+        'MONTHLY',
+        '2025-11-12',
+        '2025-12-12'
+    ),
+    (
+        @demo_user_id,
+        @cat_an_uong,
+        'HIGHLANDS COFFEE',
+        47500.00,
+        'WEEKLY',
+        '2025-11-19',
+        '2025-11-26'
+    );
+-- =====================================================
+-- 10. DEMO DATA - Thong bao
+-- =====================================================
+INSERT INTO thong_bao (id_nguoi_dung, loai, tieu_de, noi_dung, da_doc)
+VALUES (
+        @demo_user_id,
+        'BUDGET_ALERT',
+        '⚠️ Vượt ngân sách Mua sắm',
+        'Bạn đã chi 3,050,000đ/2,000,000đ (153%). Hãy cân nhắc giảm chi tiêu!',
+        FALSE
+    ),
+    (
+        @demo_user_id,
+        'SAVINGS_TIP',
+        '💡 Tiết kiệm thông minh',
+        'Bạn uống cafe 4 lần/tuần (190k). Nấu cafe tại nhà giúp tiết kiệm 120k/tuần!',
+        FALSE
+    ),
+    (
+        @demo_user_id,
+        'ANOMALY_DETECTED',
+        '🔍 Phát hiện bất thường',
+        'Chi tiêu Mua sắm tháng này cao hơn trung bình 85%. Kiểm tra lại nhé!',
+        TRUE
+    ),
+    (
+        @demo_user_id,
+        'MONTHLY_REPORT',
+        '📊 Báo cáo tháng 11',
+        'Tổng thu: 15tr. Tổng chi: 7.5tr. Tiết kiệm: 7.5tr (50%). Tuyệt vời! 🎉',
+        TRUE
     );
