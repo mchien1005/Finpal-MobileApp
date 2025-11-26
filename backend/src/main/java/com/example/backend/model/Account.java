@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "accounts")
+@Table(name = "tai_khoan")
 @Data
 @Builder
 @NoArgsConstructor
@@ -21,47 +21,42 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "id_nguoi_dung", nullable = false)
     private Long userId;
 
-    @Column(name = "bank_name", nullable = false, length = 100)
+    @Column(name = "ten_ngan_hang", nullable = false, length = 100)
     private String bankName;
 
-    @Column(name = "account_name", length = 100)
+    @Column(name = "ten_tai_khoan", length = 100)
     private String accountName;
 
-    @Column(name = "account_number_encrypted", length = 500)
+    @Column(name = "so_tai_khoan_ma_hoa", length = 500)
     private String accountNumberEncrypted;
 
-    @Column(name = "account_number", length = 50)
+    @Column(name = "so_tai_khoan", length = 50)
     private String accountNumber;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "account_type")
+    @Column(name = "loai_tai_khoan")
+    @Builder.Default
     private AccountType accountType = AccountType.BANK;
 
-    @Column(precision = 15, scale = 2)
+    @Column(name = "so_du", precision = 15, scale = 2)
+    @Builder.Default
     private BigDecimal balance = BigDecimal.ZERO;
 
-    @Column(length = 3)
+    @Column(name = "don_vi_tien_te", length = 3)
+    @Builder.Default
     private String currency = "VND";
 
-    @Column(name = "is_active")
+    @Column(name = "dang_hoat_dong")
+    @Builder.Default
     private Boolean isActive = true;
 
-    @Column(length = 50)
-    private String icon;
-
-    @Column(length = 7)
-    private String color;
-
-    @Column(columnDefinition = "TEXT")
-    private String notes;
-
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "ngay_tao", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "ngay_cap_nhat")
     private LocalDateTime updatedAt;
 
     @PrePersist

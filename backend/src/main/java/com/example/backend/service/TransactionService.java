@@ -72,7 +72,6 @@ public class TransactionService {
         transaction.setTransactionDate(request.getTransactionDate());
         transaction.setIsAuto(request.getIsAuto());
         transaction.setNotes(request.getNotes());
-        transaction.setTags(request.getTags());
         transaction.setIsVerified(false);
         transaction.setIsAnomaly(false);
 
@@ -277,7 +276,6 @@ public class TransactionService {
         transaction.setDescription(request.getDescription());
         transaction.setTransactionDate(request.getTransactionDate());
         transaction.setNotes(request.getNotes());
-        transaction.setTags(request.getTags());
 
         Transaction updated = transactionRepository.save(transaction);
         return TransactionResponse.fromEntity(updated);

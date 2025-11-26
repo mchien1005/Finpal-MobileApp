@@ -13,7 +13,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Entity
-@Table(name = "users")
+@Table(name = "nguoi_dung")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,41 +23,38 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false, length = 50)
+    @Column(name = "ten_dang_nhap", unique = true, nullable = false, length = 50)
     private String username;
 
-    @Column(nullable = false)
+    @Column(name = "mat_khau", nullable = false)
     private String password;
 
-    @Column(unique = true, nullable = false, length = 100)
+    @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(name = "full_name", length = 100)
+    @Column(name = "ho_ten", length = 100)
     private String fullName;
 
-    @Column(length = 20)
+    @Column(name = "so_dien_thoai", length = 20)
     private String phone;
 
-    @Column(name = "avatar_url", length = 500)
+    @Column(name = "anh_dai_dien", length = 500)
     private String avatarUrl;
 
-    @Column(name = "is_active")
+    @Column(name = "dang_hoat_dong")
     private Boolean isActive = true;
 
-    @Column(name = "email_verified")
-    private Boolean emailVerified = false;
-
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(name = "vai_tro", nullable = false, length = 20)
     private Role role = Role.USER;
 
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "ngay_tao", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "ngay_cap_nhat")
     private LocalDateTime updatedAt;
 
-    @Column(name = "last_login_at")
+    @Column(name = "lan_dang_nhap_cuoi")
     private LocalDateTime lastLoginAt;
 
     @PrePersist

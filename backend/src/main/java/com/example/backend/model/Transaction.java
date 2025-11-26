@@ -9,10 +9,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "transactions", indexes = {
-        @Index(name = "idx_user_date", columnList = "user_id,transaction_date"),
-        @Index(name = "idx_account", columnList = "account_id"),
-        @Index(name = "idx_category", columnList = "category_id")
+@Table(name = "giao_dich", indexes = {
+        @Index(name = "idx_nguoi_dung_ngay", columnList = "id_nguoi_dung,ngay_giao_dich"),
+        @Index(name = "idx_tai_khoan", columnList = "id_tai_khoan"),
+        @Index(name = "idx_danh_muc", columnList = "id_danh_muc")
 })
 @Data
 @NoArgsConstructor
@@ -24,61 +24,61 @@ public class Transaction {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "id_nguoi_dung", nullable = false)
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", nullable = false)
+    @JoinColumn(name = "id_tai_khoan", nullable = false)
     private Account account;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
+    @JoinColumn(name = "id_danh_muc")
     private Category category;
 
-    @Column(nullable = false, precision = 15, scale = 2)
+    @Column(name = "so_tien", nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "loai", nullable = false)
     private TransactionType type;
 
-    @Column(length = 255)
+    @Column(name = "don_vi_chap_nhan", length = 255)
     private String merchant;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "mo_ta", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "transaction_date", nullable = false)
+    @Column(name = "ngay_giao_dich", nullable = false)
     private LocalDateTime transactionDate;
 
     // SMS related fields
-    @Column(name = "is_auto")
+    @Column(name = "tu_dong")
     private Boolean isAuto = false;
 
-    @Column(name = "sms_content_encrypted", columnDefinition = "TEXT")
+    @Column(name = "noi_dung_sms_ma_hoa", columnDefinition = "TEXT")
     private String smsContentEncrypted;
 
-    @Column(name = "sms_bank_code", length = 20)
+    @Column(name = "ma_ngan_hang_sms", length = 20)
     private String smsBankCode;
 
     // Status fields
-    @Column(name = "is_verified")
+    @Column(name = "da_xac_nhan")
     private Boolean isVerified = false;
 
-    @Column(name = "is_anomaly")
+    @Column(name = "bat_thuong")
     private Boolean isAnomaly = false;
 
     // Metadata
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "ghi_chu", columnDefinition = "TEXT")
     private String notes;
 
-    @Column(length = 500)
-    private String tags;
+    @Column(name = "anh_hoa_don", length = 500)
+    private String receiptImage;
 
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "ngay_tao", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "ngay_cap_nhat")
     private LocalDateTime updatedAt;
 
     @PrePersist

@@ -10,7 +10,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "savings_goals")
+@Table(name = "muc_tieu_tiet_kiem")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,40 +20,35 @@ public class SavingsGoal {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "id_nguoi_dung", nullable = false)
     private Long userId;
 
-    @Column(nullable = false, length = 200)
+    @Column(name = "ten_muc_tieu", nullable = false, length = 200)
     private String name;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "mo_ta", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "target_amount", nullable = false, precision = 15, scale = 2)
+    @Column(name = "so_tien_muc_tieu", nullable = false, precision = 15, scale = 2)
     private BigDecimal targetAmount;
 
-    @Column(name = "current_amount", precision = 15, scale = 2)
+    @Column(name = "so_tien_hien_tai", precision = 15, scale = 2)
     private BigDecimal currentAmount = BigDecimal.ZERO;
 
+    @Column(name = "han_chot")
     private LocalDate deadline;
 
-    @Column(length = 50)
-    private String icon;
-
-    @Column(length = 7)
-    private String color;
-
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "trang_thai", nullable = false)
     private GoalStatus status = GoalStatus.ACTIVE;
 
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "ngay_tao", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "ngay_cap_nhat")
     private LocalDateTime updatedAt;
 
-    @Column(name = "completed_at")
+    @Column(name = "ngay_hoan_thanh")
     private LocalDateTime completedAt;
 
     @PrePersist

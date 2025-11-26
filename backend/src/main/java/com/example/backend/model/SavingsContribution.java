@@ -11,7 +11,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "savings_contributions")
+@Table(name = "dong_gop_tiet_kiem")
 @Data
 @Builder
 @NoArgsConstructor
@@ -22,19 +22,19 @@ public class SavingsContribution {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "savings_goal_id", nullable = false)
+    @Column(name = "id_muc_tieu", nullable = false)
     private Long savingsGoalId;
 
-    @Column(nullable = false, precision = 15, scale = 2)
+    @Column(name = "so_tien", nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
-    @Column(name = "contribution_date", nullable = false)
+    @Column(name = "ngay_dong_gop", nullable = false)
     private LocalDate contributionDate;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "ghi_chu", columnDefinition = "TEXT")
     private String notes;
 
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "ngay_tao", updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist

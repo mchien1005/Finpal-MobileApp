@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "category_rules")
+@Table(name = "quy_tac_danh_muc")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,30 +18,30 @@ public class CategoryRule {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "tu_khoa", nullable = false, length = 255)
     private String keyword;
 
-    @Column(name = "category_id", nullable = false)
+    @Column(name = "id_danh_muc", nullable = false)
     private Long categoryId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", insertable = false, updatable = false)
+    @JoinColumn(name = "id_danh_muc", insertable = false, updatable = false)
     private Category category;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "match_type", nullable = false, length = 20)
+    @Column(name = "loai_khop", nullable = false, length = 20)
     private MatchType matchType = MatchType.CONTAINS;
 
-    @Column(nullable = false)
+    @Column(name = "do_uu_tien", nullable = false)
     private Integer priority = 0;
 
-    @Column(name = "is_active")
+    @Column(name = "dang_hoat_dong")
     private Boolean isActive = true;
 
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "ngay_tao", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "ngay_cap_nhat")
     private LocalDateTime updatedAt;
 
     public enum MatchType {

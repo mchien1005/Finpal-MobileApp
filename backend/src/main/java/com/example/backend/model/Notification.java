@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notifications")
+@Table(name = "thong_bao")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,32 +18,32 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "id_nguoi_dung", nullable = false)
     private Long userId;
 
-    @Column(nullable = false, length = 50)
+    @Column(name = "loai", nullable = false, length = 50)
     private String type;
 
-    @Column(nullable = false)
+    @Column(name = "tieu_de", nullable = false)
     private String title;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "noi_dung", columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "action_url", length = 500)
+    @Column(name = "duong_dan_hanh_dong", length = 500)
     private String actionUrl;
 
-    @Column(name = "is_read")
+    @Column(name = "da_doc")
     private Boolean isRead = false;
 
-    @Column(name = "read_at")
+    @Column(name = "thoi_gian_doc")
     private LocalDateTime readAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "do_uu_tien", nullable = false)
     private NotificationPriority priority = NotificationPriority.MEDIUM;
 
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "ngay_tao", updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
