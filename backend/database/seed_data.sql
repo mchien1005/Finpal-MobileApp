@@ -52,20 +52,54 @@ VALUES (
 -- 2. DANH_MUC - Danh mục hệ thống
 -- =====================================================
 INSERT INTO danh_muc (id_cha, ten_danh_muc, loai)
-VALUES -- EXPENSE Categories (8)
+VALUES -- EXPENSE Categories (Chi tiêu - 15 danh mục)
     (NULL, 'Ăn uống', 'EXPENSE'),
+    -- 1: Nhà hàng, quán ăn, cafe, trà sữa
     (NULL, 'Di chuyển', 'EXPENSE'),
+    -- 2: Grab, taxi, xăng, gửi xe
     (NULL, 'Mua sắm', 'EXPENSE'),
+    -- 3: Quần áo, giày dép, phụ kiện
     (NULL, 'Giải trí', 'EXPENSE'),
+    -- 4: Phim, game, du lịch, sở thích
     (NULL, 'Sức khỏe', 'EXPENSE'),
+    -- 5: Khám bệnh, thuốc, gym, spa
     (NULL, 'Giáo dục', 'EXPENSE'),
-    (NULL, 'Hóa đơn', 'EXPENSE'),
-    (NULL, 'Khác', 'EXPENSE'),
-    -- INCOME Categories (4)
+    -- 6: Học phí, sách, khóa học
+    (NULL, 'Hóa đơn & Tiện ích', 'EXPENSE'),
+    -- 7: Điện, nước, internet, điện thoại
+    (NULL, 'Nhà ở', 'EXPENSE'),
+    -- 8: Thuê nhà, sửa chữa, nội thất
+    (NULL, 'Gia đình', 'EXPENSE'),
+    -- 9: Biếu bố mẹ, nuôi con, thú cưng
+    (NULL, 'Bảo hiểm', 'EXPENSE'),
+    -- 10: BHYT, BHXH, bảo hiểm nhân thọ
+    (NULL, 'Đầu tư', 'EXPENSE'),
+    -- 11: Chứng khoán, crypto, vàng
+    (NULL, 'Quà tặng', 'EXPENSE'),
+    -- 12: Sinh nhật, cưới hỏi, lễ tết
+    (NULL, 'Công việc', 'EXPENSE'),
+    -- 13: Dụng cụ, phần mềm, họp hành
+    (NULL, 'Làm đẹp', 'EXPENSE'),
+    -- 14: Tóc, nail, mỹ phẩm
+    (NULL, 'Khác (Chi)', 'EXPENSE'),
+    -- 15: Chi tiêu khác
+    -- INCOME Categories (Thu nhập - 8 danh mục)
     (NULL, 'Lương', 'INCOME'),
+    -- 16: Lương chính
     (NULL, 'Thưởng', 'INCOME'),
+    -- 17: Thưởng, KPI, lễ tết
+    (NULL, 'Làm thêm', 'INCOME'),
+    -- 18: Freelance, part-time, OT
+    (NULL, 'Kinh doanh', 'INCOME'),
+    -- 19: Bán hàng, dịch vụ
     (NULL, 'Đầu tư', 'INCOME'),
-    (NULL, 'Khác', 'INCOME');
+    -- 20: Cổ tức, lãi, crypto
+    (NULL, 'Cho vay', 'INCOME'),
+    -- 21: Thu nợ, cho vay lại
+    (NULL, 'Được tặng', 'INCOME'),
+    -- 22: Quà, lì xì, biếu
+    (NULL, 'Khác (Thu)', 'INCOME');
+-- 23: Thu nhập khác
 -- =====================================================
 -- 3. BO_PHAN_TICH_SMS - Cấu hình parse SMS ngân hàng
 -- =====================================================
@@ -136,31 +170,292 @@ VALUES -- Vietcombank (SMS format)
 -- 4. QUY_TAC_DANH_MUC - Luật AI phân loại (Global)
 -- =====================================================
 INSERT INTO quy_tac_danh_muc (tu_khoa, id_danh_muc, do_uu_tien)
-VALUES -- Ăn uống (id_danh_muc sẽ là 1)
-    ('GRAB FOOD', 1, 95),
-    ('HIGHLANDS', 1, 90),
-    ('THE COFFEE HOUSE', 1, 90),
-    ('PHUC LONG', 1, 90),
-    ('CIRCLE K', 1, 75),
-    -- Di chuyển (id_danh_muc = 2)
-    ('GRAB', 2, 85),
-    ('BE', 2, 85),
-    ('XANG', 2, 90),
-    -- Mua sắm (id_danh_muc = 3)
-    ('SHOPEE', 3, 95),
-    ('LAZADA', 3, 95),
-    ('TIKI', 3, 95),
-    ('VINMART', 3, 85),
-    -- Giải trí (id_danh_muc = 4)
-    ('CGV', 4, 95),
-    ('LOTTE CINEMA', 4, 95),
-    ('NETFLIX', 4, 90),
-    ('SPOTIFY', 4, 90),
-    -- Hóa đơn (id_danh_muc = 7)
+VALUES -- ========== ĂN UỐNG (1) ==========
+    -- Đồ uống
+    ('HIGHLANDS', 1, 95),
+    ('THE COFFEE HOUSE', 1, 95),
+    ('PHUC LONG', 1, 95),
+    ('STARBUCKS', 1, 95),
+    ('KATINAT', 1, 95),
+    ('GONGCHA', 1, 90),
+    ('GONG CHA', 1, 90),
+    ('BOBAPOP', 1, 90),
+    ('DINGTEA', 1, 90),
+    ('TOCOTOCO', 1, 90),
+    ('TOCO TOCO', 1, 90),
+    ('TRASUA', 1, 85),
+    ('TRA SUA', 1, 85),
+    ('CAFE', 1, 80),
+    ('COFFEE', 1, 80),
+    -- Đồ ăn nhanh
+    ('GRAB FOOD', 1, 98),
+    ('GRABFOOD', 1, 98),
+    ('SHOPEE FOOD', 1, 98),
+    ('SHOPEEFOOD', 1, 98),
+    ('NOW', 1, 95),
+    ('BAEMIN', 1, 95),
+    ('GOJEK', 1, 95),
+    ('KFC', 1, 95),
+    ('LOTTERIA', 1, 95),
+    ('MCDONALDS', 1, 95),
+    ('BURGER KING', 1, 95),
+    ('JOLLIBEE', 1, 95),
+    ('PIZZA HUT', 1, 95),
+    ('DOMINOS', 1, 95),
+    ('PIZZA', 1, 85),
+    -- Chuỗi nhà hàng
+    ('KICHI KICHI', 1, 95),
+    ('MANWAH', 1, 95),
+    ('SUMO BBQ', 1, 95),
+    ('GOGI', 1, 95),
+    ('HOTPOT', 1, 90),
+    ('BUFFET', 1, 90),
+    ('LAU', 1, 85),
+    ('NUONG', 1, 85),
+    -- Cửa hàng tiện lợi
+    ('CIRCLE K', 1, 80),
+    ('MINISTOP', 1, 80),
+    ('7ELEVEN', 1, 80),
+    ('7-ELEVEN', 1, 80),
+    ('FAMILYMART', 1, 80),
+    ('GS25', 1, 80),
+    ('VINMART+', 1, 75),
+    ('BACHHOAXANH', 1, 75),
+    ('BACH HOA XANH', 1, 75),
+    -- Siêu thị
+    ('COOPMART', 1, 70),
+    ('BIGC', 1, 70),
+    ('AEON', 1, 70),
+    ('EMART', 1, 70),
+    ('LOTTE MART', 1, 70),
+    ('MEGA MARKET', 1, 70),
+    ('WINMART', 1, 70),
+    -- ========== DI CHUYỂN (2) ==========
+    ('GRAB', 2, 90),
+    ('BE', 2, 90),
+    ('GOJEK', 2, 90),
+    ('XANH SM', 2, 90),
+    ('XANHSM', 2, 90),
+    ('MAI LINH', 2, 90),
+    ('VINASUN', 2, 90),
+    ('TAXI', 2, 85),
+    ('XE OM', 2, 85),
+    -- Xăng dầu
+    ('PETROLIMEX', 2, 100),
+    ('PVOIL', 2, 100),
+    ('XANG DAU', 2, 100),
+    ('XANG', 2, 95),
+    ('DO XANG', 2, 95),
+    -- Gửi xe, phí đường
+    ('GUI XE', 2, 90),
+    ('PHI GIU XE', 2, 90),
+    ('PHI DUONG', 2, 90),
+    ('VETC', 2, 95),
+    ('EPASS', 2, 95),
+    -- Vé xe, máy bay
+    ('VEXERE', 2, 95),
+    ('VE XE', 2, 90),
+    ('VIETNAM AIRLINES', 2, 95),
+    ('VIETJET', 2, 95),
+    ('BAMBOO', 2, 95),
+    ('VE MAY BAY', 2, 90),
+    -- ========== MUA SẮM (3) ==========
+    -- E-commerce
+    ('SHOPEE', 3, 98),
+    ('LAZADA', 3, 98),
+    ('TIKI', 3, 98),
+    ('SENDO', 3, 95),
+    ('THEGIOIDIDONG', 3, 95),
+    ('THE GIOI DI DONG', 3, 95),
+    ('CELLPHONES', 3, 95),
+    ('FPT SHOP', 3, 95),
+    ('DIEN MAY XANH', 3, 95),
+    ('DIENMAYXANH', 3, 95),
+    -- Thời trang
+    ('UNIQLO', 3, 95),
+    ('ZARA', 3, 95),
+    ('H&M', 3, 95),
+    ('CANIFA', 3, 90),
+    ('ROUTINE', 3, 90),
+    ('ELISE', 3, 90),
+    ('IVY MODA', 3, 90),
+    ('YAME', 3, 85),
+    ('OWEN', 3, 85),
+    ('ARISTINO', 3, 85),
+    -- ========== GIẢI TRÍ (4) ==========
+    -- Rạp phim
+    ('CGV', 4, 100),
+    ('LOTTE CINEMA', 4, 100),
+    ('GALAXY', 4, 100),
+    ('BHD', 4, 100),
+    ('BETA', 4, 100),
+    ('RAP PHIM', 4, 95),
+    ('VE PHIM', 4, 95),
+    -- Streaming
+    ('NETFLIX', 4, 100),
+    ('SPOTIFY', 4, 100),
+    ('YOUTUBE PREMIUM', 4, 100),
+    ('FPT PLAY', 4, 95),
+    ('VTV GO', 4, 95),
+    ('APPLE MUSIC', 4, 95),
+    -- Game
+    ('STEAM', 4, 95),
+    ('GAME', 4, 85),
+    ('GARENA', 4, 95),
+    ('GOOGLE PLAY', 4, 90),
+    ('APP STORE', 4, 90),
+    -- Karaoke, giải trí
+    ('KARAOKE', 4, 95),
+    ('KICH', 4, 90),
+    ('BILLIARD', 4, 90),
+    ('BOWLING', 4, 90),
+    -- ========== SỨC KHỎE (5) ==========
+    -- Bệnh viện, phòng khám
+    ('BENH VIEN', 5, 100),
+    ('PHONG KHAM', 5, 100),
+    ('VINMEC', 5, 100),
+    ('MEDLATEC', 5, 100),
+    ('NHA KHOA', 5, 100),
+    ('KHAM BENH', 5, 95),
+    -- Nhà thuốc
+    ('NHA THUOC', 5, 100),
+    ('PHARMACITY', 5, 100),
+    ('LONG CHAU', 5, 100),
+    ('AN KHANG', 5, 100),
+    ('THUOC', 5, 85),
+    -- Gym, Spa
+    ('CALIFORNIA', 5, 95),
+    ('CITIGYM', 5, 95),
+    ('GYM', 5, 90),
+    ('FITNESS', 5, 90),
+    ('YOGA', 5, 90),
+    ('SPA', 5, 85),
+    ('MASSAGE', 5, 85),
+    -- ========== GIÁO DỤC (6) ==========
+    ('HOC PHI', 6, 100),
+    ('TRUONG', 6, 90),
+    ('DAI HOC', 6, 95),
+    ('IELTS', 6, 95),
+    ('TOEIC', 6, 95),
+    ('ENGLISH', 6, 85),
+    ('TIENG ANH', 6, 85),
+    ('UDEMY', 6, 95),
+    ('COURSERA', 6, 95),
+    ('SACH', 6, 80),
+    ('FAHASA', 6, 90),
+    -- ========== HÓA ĐƠN & TIỆN ÍCH (7) ==========
+    -- Điện
     ('EVN', 7, 100),
+    ('DIEN LUC', 7, 100),
+    ('TIEN DIEN', 7, 100),
+    -- Nước
+    ('NUOC', 7, 90),
+    ('SAWACO', 7, 100),
+    ('TIEN NUOC', 7, 100),
+    -- Internet, điện thoại
     ('VNPT', 7, 100),
-    ('VIETTEL', 7, 95),
-    ('FPT', 7, 95);
+    ('VIETTEL', 7, 100),
+    ('FPT TELECOM', 7, 100),
+    ('MOBIFONE', 7, 100),
+    ('VINAPHONE', 7, 100),
+    ('NAP TIEN', 7, 90),
+    ('CUOC', 7, 85),
+    -- ========== NHÀ Ở (8) ==========
+    ('TIEN NHA', 8, 100),
+    ('THUE NHA', 8, 100),
+    ('TIEN PHONG', 8, 100),
+    ('NOI THAT', 8, 90),
+    ('IKEA', 8, 95),
+    ('UMA', 8, 90),
+    ('SUA CHUA', 8, 85),
+    -- ========== GIA ĐÌNH (9) ==========
+    ('BIEU', 9, 85),
+    ('BO ME', 9, 90),
+    ('CON', 9, 85),
+    ('THU CUNG', 9, 85),
+    ('PET', 9, 85),
+    ('CHO', 9, 80),
+    ('MEO', 9, 80),
+    -- ========== BẢO HIỂM (10) ==========
+    ('BAO HIEM', 10, 100),
+    ('BHXH', 10, 100),
+    ('BHYT', 10, 100),
+    ('PRUDENTIAL', 10, 100),
+    ('MANULIFE', 10, 100),
+    ('AIA', 10, 100),
+    ('DAI LY', 10, 80),
+    -- ========== ĐẦU TƯ CHI (11) ==========
+    ('CHUNG KHOAN', 11, 95),
+    ('CO PHIEU', 11, 95),
+    ('TCBS', 11, 100),
+    ('SSI', 11, 100),
+    ('VNDIRECT', 11, 100),
+    ('VPS', 11, 100),
+    ('CRYPTO', 11, 95),
+    ('BITCOIN', 11, 95),
+    ('BINANCE', 11, 100),
+    ('VANG', 11, 90),
+    ('SJC', 11, 95),
+    ('PNJ', 11, 90),
+    -- ========== QUÀ TẶNG (12) ==========
+    ('QUA', 12, 80),
+    ('SINH NHAT', 12, 90),
+    ('CUOI', 12, 90),
+    ('DAM CUOI', 12, 95),
+    ('LE TET', 12, 90),
+    ('LI XI', 12, 95),
+    -- ========== CÔNG VIỆC (13) ==========
+    ('VAN PHONG', 13, 85),
+    ('OFFICE', 13, 85),
+    ('MICROSOFT', 13, 90),
+    ('ZOOM', 13, 90),
+    ('CANVA', 13, 90),
+    ('ADOBE', 13, 90),
+    ('NOTION', 13, 90),
+    -- ========== LÀM ĐẸP (14) ==========
+    ('TOC', 14, 85),
+    ('CAT TOC', 14, 90),
+    ('30SHINE', 14, 100),
+    ('NAIL', 14, 90),
+    ('MY PHAM', 14, 85),
+    ('GUARDIAN', 14, 90),
+    ('HASAKI', 14, 90),
+    ('WATSONS', 14, 90),
+    ('SOCIOLLA', 14, 95),
+    -- ========== THU NHẬP - LƯƠNG (16) ==========
+    ('LUONG', 16, 100),
+    ('SALARY', 16, 100),
+    ('CONG TY', 16, 80),
+    ('COMPANY', 16, 80),
+    -- ========== THU NHẬP - THƯỞNG (17) ==========
+    ('THUONG', 17, 95),
+    ('BONUS', 17, 95),
+    ('KPI', 17, 90),
+    ('HOA HONG', 17, 90),
+    -- ========== THU NHẬP - LÀM THÊM (18) ==========
+    ('FREELANCE', 18, 95),
+    ('PART TIME', 18, 90),
+    ('LAM THEM', 18, 90),
+    ('OT', 18, 85),
+    ('TANG CA', 18, 90),
+    -- ========== THU NHẬP - KINH DOANH (19) ==========
+    ('BAN HANG', 19, 90),
+    ('DOANH THU', 19, 95),
+    ('KHACH HANG', 19, 85),
+    -- ========== THU NHẬP - ĐẦU TƯ (20) ==========
+    ('CO TUC', 20, 100),
+    ('LAI SUAT', 20, 95),
+    ('LAI', 20, 80),
+    ('TIEN LAI', 20, 95),
+    -- ========== THU NHẬP - CHO VAY (21) ==========
+    ('THU NO', 21, 95),
+    ('TRA NO', 21, 90),
+    ('HOAN TIEN', 21, 85),
+    ('REFUND', 21, 90),
+    -- ========== THU NHẬP - ĐƯỢC TẶNG (22) ==========
+    ('DUOC TANG', 22, 90),
+    ('NHAN QUA', 22, 90),
+    ('LI XI', 22, 95);
 -- =====================================================
 -- 5. DEMO DATA - Tai khoan cho user demo
 -- =====================================================
@@ -215,7 +510,7 @@ SET @tcb_account = (
             AND ten_ngan_hang = 'TCB'
         LIMIT 1
     );
--- Category IDs
+-- Category IDs (Chi tiêu)
 SET @cat_an_uong = (
         SELECT id
         FROM danh_muc
@@ -240,16 +535,109 @@ SET @cat_giai_tri = (
         WHERE ten_danh_muc = 'Giải trí'
         LIMIT 1
     );
+SET @cat_suc_khoe = (
+        SELECT id
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Sức khỏe'
+        LIMIT 1
+    );
+SET @cat_giao_duc = (
+        SELECT id
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Giáo dục'
+        LIMIT 1
+    );
 SET @cat_hoa_don = (
         SELECT id
         FROM danh_muc
-        WHERE ten_danh_muc = 'Hóa đơn'
+        WHERE ten_danh_muc = 'Hóa đơn & Tiện ích'
         LIMIT 1
     );
+SET @cat_nha_o = (
+        SELECT id
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Nhà ở'
+        LIMIT 1
+    );
+SET @cat_gia_dinh = (
+        SELECT id
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Gia đình'
+        LIMIT 1
+    );
+SET @cat_bao_hiem = (
+        SELECT id
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Bảo hiểm'
+        LIMIT 1
+    );
+SET @cat_dau_tu_chi = (
+        SELECT id
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Đầu tư'
+            AND loai = 'EXPENSE'
+        LIMIT 1
+    );
+SET @cat_qua_tang = (
+        SELECT id
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Quà tặng'
+        LIMIT 1
+    );
+SET @cat_cong_viec = (
+        SELECT id
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Công việc'
+        LIMIT 1
+    );
+SET @cat_lam_dep = (
+        SELECT id
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Làm đẹp'
+        LIMIT 1
+    );
+-- Category IDs (Thu nhập)
 SET @cat_luong = (
         SELECT id
         FROM danh_muc
         WHERE ten_danh_muc = 'Lương'
+        LIMIT 1
+    );
+SET @cat_thuong = (
+        SELECT id
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Thưởng'
+        LIMIT 1
+    );
+SET @cat_lam_them = (
+        SELECT id
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Làm thêm'
+        LIMIT 1
+    );
+SET @cat_kinh_doanh = (
+        SELECT id
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Kinh doanh'
+        LIMIT 1
+    );
+SET @cat_dau_tu_thu = (
+        SELECT id
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Đầu tư'
+            AND loai = 'INCOME'
+        LIMIT 1
+    );
+SET @cat_cho_vay = (
+        SELECT id
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Cho vay'
+        LIMIT 1
+    );
+SET @cat_duoc_tang = (
+        SELECT id
+        FROM danh_muc
+        WHERE ten_danh_muc = 'Được tặng'
         LIMIT 1
     );
 INSERT INTO giao_dich (
