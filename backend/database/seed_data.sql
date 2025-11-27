@@ -23,7 +23,6 @@ USE finpal_db;
 -- =====================================================
 -- 1. NGUOI_DUNG - Người dùng demo
 -- =====================================================
--- Password: demo123 (BCrypt hash)
 INSERT INTO nguoi_dung (
         ten_dang_nhap,
         mat_khau,
