@@ -139,4 +139,30 @@ public class AuthService {
             return new LoginResponse(false, "Có lỗi xảy ra khi đăng ký: " + e.getMessage(), null, null);
         }
     }
+
+    /**
+     * Đổi mật khẩu user
+     * - Kiểm tra mật khẩu hiện tại
+     * - Mã hóa và lưu mật khẩu mới
+     * 
+     * @param userId          ID của user
+     * @param currentPassword Mật khẩu hiện tại
+     * @param newPassword     Mật khẩu mới
+     * @return true nếu đổi thành công, false nếu thất bại
+     */
+    public boolean changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+
+        // Kiểm tra mật khẩu hiện tại
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("Mật khẩu hiện tại không đúng");
+        }
+
+        // Mã hóa và lưu mật khẩu mới
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        return true;
+    }
 }

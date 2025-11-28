@@ -1,8 +1,10 @@
 package com.example.backend.controller;
 
+import com.example.backend.dto.ChangePasswordRequest;
 import com.example.backend.dto.LoginRequest;
 import com.example.backend.dto.LoginResponse;
 import com.example.backend.dto.RegisterRequest;
+import com.example.backend.model.User;
 import com.example.backend.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -13,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -65,5 +68,26 @@ public class AuthController {
     @GetMapping("/test")
     public ResponseEntity<String> test() {
         return ResponseEntity.ok("Auth API is working!");
+    }
+
+    @Operation(summary = "Đổi mật khẩu", description = "Đổi mật khẩu cho user đã đăng nhập. Yêu cầu nhập mật khẩu hiện tại và mật khẩu mới.", responses = {
+            @ApiResponse(responseCode = "200", description = "Đổi mật khẩu thành công"),
+            @ApiResponse(responseCode = "400", description = "Mật khẩu hiện tại không đúng hoặc dữ liệu không hợp lệ"),
+            @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
+    })
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        try {
+            authService.changePassword(user.getId(), request.getCurrentPassword(), request.getNewPassword());
+            return ResponseEntity.ok().body(java.util.Map.of(
+                    "success", true,
+                    "message", "Đổi mật khẩu thành công"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "success", false,
+                    "message", e.getMessage()));
+        }
     }
 }
