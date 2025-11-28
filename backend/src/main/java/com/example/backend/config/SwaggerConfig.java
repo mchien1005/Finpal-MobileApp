@@ -7,11 +7,8 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.List;
 
 @Configuration
 public class SwaggerConfig {
@@ -61,13 +58,6 @@ public class SwaggerConfig {
                                                 .license(new License()
                                                                 .name("MIT License")
                                                                 .url("https://opensource.org/licenses/MIT")))
-                                .servers(List.of(
-                                                new Server()
-                                                                .url("http://localhost:8080")
-                                                                .description("Local Development Server"),
-                                                new Server()
-                                                                .url("http://175.41.150.228:8080")
-                                                                .description("AWS Server")))
                                 .components(new Components()
                                                 .addSecuritySchemes("bearer-jwt", new SecurityScheme()
                                                                 .type(SecurityScheme.Type.HTTP)
