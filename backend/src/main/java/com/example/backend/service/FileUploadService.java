@@ -21,6 +21,17 @@ public class FileUploadService {
     private String avatarDir;
 
     /**
+     * Get absolute upload path
+     */
+    private Path getUploadPath() {
+        // Try to get the project root directory
+        Path currentPath = Paths.get("").toAbsolutePath();
+        // If running from backend folder, use uploads inside backend
+        // Otherwise create uploads in the current working directory
+        return currentPath.resolve(uploadDir);
+    }
+
+    /**
      * Upload avatar cho user
      * 
      * @param file   File ảnh upload
@@ -45,10 +56,12 @@ public class FileUploadService {
         }
 
         // Create upload directory if not exists
-        Path uploadPath = Paths.get(uploadDir, avatarDir);
+        Path uploadPath = getUploadPath().resolve(avatarDir);
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
+
+        System.out.println("Upload path: " + uploadPath.toAbsolutePath());
 
         // Generate unique filename
         String originalFilename = file.getOriginalFilename();
@@ -61,6 +74,8 @@ public class FileUploadService {
         // Save file
         Path filePath = uploadPath.resolve(newFilename);
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+        System.out.println("File saved to: " + filePath.toAbsolutePath());
 
         // Return relative URL
         return "/uploads/" + avatarDir + "/" + newFilename;
@@ -79,7 +94,7 @@ public class FileUploadService {
         try {
             // Extract filename from URL
             String filename = avatarUrl.substring(avatarUrl.lastIndexOf("/") + 1);
-            Path filePath = Paths.get(uploadDir, avatarDir, filename);
+            Path filePath = getUploadPath().resolve(avatarDir).resolve(filename);
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
             // Log error but don't throw

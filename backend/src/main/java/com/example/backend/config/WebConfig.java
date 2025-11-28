@@ -16,11 +16,14 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Serve uploaded files
-        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
-        String uploadLocation = uploadPath.toUri().toString();
+        // Get absolute path to uploads directory
+        Path currentPath = Paths.get("").toAbsolutePath();
+        Path uploadPath = currentPath.resolve(uploadDir).toAbsolutePath().normalize();
+        String uploadLocation = "file:" + uploadPath.toString().replace("\\", "/") + "/";
 
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations(uploadLocation);
+
+        System.out.println("Static resource location configured: " + uploadLocation);
     }
 }

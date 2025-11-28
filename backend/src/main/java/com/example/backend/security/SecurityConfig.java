@@ -59,7 +59,9 @@ public class SecurityConfig {
                                 // Swagger UI endpoints
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/swagger-ui.html")
+                                "/swagger-ui.html",
+                                // Uploaded files (avatars, etc.)
+                                "/uploads/**")
                         .permitAll()
                         // Admin endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
