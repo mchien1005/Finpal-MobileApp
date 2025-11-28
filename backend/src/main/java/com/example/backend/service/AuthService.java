@@ -165,4 +165,53 @@ public class AuthService {
 
         return true;
     }
+
+    /**
+     * Lấy thông tin profile của user
+     * 
+     * @param userId ID của user
+     * @return User object
+     */
+    public User getUserProfile(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+    }
+
+    /**
+     * Cập nhật thông tin profile của user
+     * - Validate email không trùng với user khác
+     * - Cập nhật fullName, email, phone, avatarUrl
+     * 
+     * @param userId    ID của user
+     * @param fullName  Họ tên mới (có thể null nếu không thay đổi)
+     * @param email     Email mới (có thể null nếu không thay đổi)
+     * @param phone     Số điện thoại mới (có thể null nếu không thay đổi)
+     * @param avatarUrl URL ảnh đại diện mới (có thể null nếu không thay đổi)
+     * @return User đã được cập nhật
+     */
+    public User updateProfile(Long userId, String fullName, String email, String phone, String avatarUrl) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+
+        // Kiểm tra email không trùng với user khác
+        if (email != null && !email.equals(user.getEmail())) {
+            if (userRepository.existsByEmailAndIdNot(email, userId)) {
+                throw new RuntimeException("Email đã được sử dụng bởi tài khoản khác");
+            }
+            user.setEmail(email);
+        }
+
+        // Cập nhật các trường khác nếu có giá trị
+        if (fullName != null) {
+            user.setFullName(fullName);
+        }
+        if (phone != null) {
+            user.setPhone(phone);
+        }
+        if (avatarUrl != null) {
+            user.setAvatarUrl(avatarUrl);
+        }
+
+        return userRepository.save(user);
+    }
 }
