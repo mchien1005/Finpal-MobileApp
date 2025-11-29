@@ -13,6 +13,13 @@ from app.schemas.transaction import TransactionInput, CategoryPrediction
 from app.models.categorization import TransactionCategorizer
 import pandas as pd
 
+# Import training history để ghi prediction logs
+try:
+    from app.services.training_history import record_prediction
+    HAS_TRAINING_HISTORY = True
+except ImportError:
+    HAS_TRAINING_HISTORY = False
+
 router = APIRouter()
 
 # Khởi tạo model (lazy loading - chỉ load khi cần dùng)
@@ -82,6 +89,19 @@ async def predict_category(transaction: TransactionInput):
             amount=transaction.amount,
             timestamp=pd.Timestamp(transaction.timestamp) if transaction.timestamp else None
         )
+        
+        # Ghi prediction log (cho analytics và monitoring)
+        if HAS_TRAINING_HISTORY:
+            try:
+                record_prediction(
+                    model_name="Category Classification",
+                    user_id="api_user",
+                    input_text=transaction.merchant,
+                    predicted_category=category,
+                    confidence=confidence * 100
+                )
+            except Exception:
+                pass  # Silently fail - không ảnh hưởng response
         
         return CategoryPrediction(
             category=category,

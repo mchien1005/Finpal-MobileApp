@@ -23,10 +23,17 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, precision_score, recall_score, f1_score
 import joblib
 import os
 from typing import List, Tuple, Dict
+
+# Import training history để ghi dữ liệu thực
+try:
+    from app.services.training_history import record_training, record_prediction
+    HAS_TRAINING_HISTORY = True
+except ImportError:
+    HAS_TRAINING_HISTORY = False
 
 
 class TransactionCategorizer:
@@ -194,6 +201,29 @@ class TransactionCategorizer:
         # Save model
         self.save()
         
+        # Record training result to history
+        if HAS_TRAINING_HISTORY:
+            try:
+                # Calculate detailed metrics
+                precision = precision_score(y_test, y_pred, average='weighted', zero_division=0)
+                recall = recall_score(y_test, y_pred, average='weighted', zero_division=0)
+                f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0)
+                
+                record_training(
+                    model_name="Category Classification",
+                    accuracy=accuracy * 100,  # Convert to percentage
+                    metrics={
+                        "precision": round(precision * 100, 2),
+                        "recall": round(recall * 100, 2),
+                        "f1_score": round(f1 * 100, 2),
+                        "test_samples": len(X_test),
+                        "train_samples": len(X_train)
+                    }
+                )
+                print("📝 Training result recorded to history")
+            except Exception as e:
+                print(f"⚠️ Could not record training: {e}")
+        
         return accuracy
     
     def predict(
@@ -245,6 +275,19 @@ class TransactionCategorizer:
             for idx in top_indices[1:]
             if proba[idx] > 0.05  # Only include if confidence > 5%
         ]
+        
+        # Record prediction to history (for logging purposes)
+        if HAS_TRAINING_HISTORY and confidence < 0.7:  # Only log low-confidence predictions
+            try:
+                record_prediction(
+                    model_name="Category Classification",
+                    user_id="system",
+                    input_text=merchant,
+                    predicted_category=category,
+                    confidence=confidence * 100
+                )
+            except Exception:
+                pass  # Silently fail for prediction logging
         
         return category, float(confidence), alternatives
     
