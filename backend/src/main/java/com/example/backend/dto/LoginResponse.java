@@ -21,5 +21,6 @@ public class LoginResponse {
         private String username;
         private String email;
         private String fullName;
+        private String role;
     }
 }
