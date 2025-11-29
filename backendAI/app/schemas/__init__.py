@@ -12,6 +12,22 @@ from .prediction import (
     SpendingPredictionInput,
     SpendingPredictionResult
 )
+from .admin import (
+    ModelInfo,
+    ModelMetrics,
+    ModelDetailResponse,
+    ModelsListResponse,
+    AccuracyDataPoint,
+    ModelAccuracyHistory,
+    AccuracyHistoryResponse,
+    PredictionLogEntry,
+    PredictionLogsResponse,
+    RetrainRequest,
+    RetrainResponse,
+    RetrainStatus,
+    AdminStatsResponse,
+    ModelStatus
+)
 
 __all__ = [
     "TransactionInput",
@@ -19,5 +35,20 @@ __all__ = [
     "AnomalyDetectionInput",
     "AnomalyDetectionResult",
     "SpendingPredictionInput",
-    "SpendingPredictionResult"
+    "SpendingPredictionResult",
+    # Admin schemas
+    "ModelInfo",
+    "ModelMetrics",
+    "ModelDetailResponse",
+    "ModelsListResponse",
+    "AccuracyDataPoint",
+    "ModelAccuracyHistory",
+    "AccuracyHistoryResponse",
+    "PredictionLogEntry",
+    "PredictionLogsResponse",
+    "RetrainRequest",
+    "RetrainResponse",
+    "RetrainStatus",
+    "AdminStatsResponse",
+    "ModelStatus"
 ]

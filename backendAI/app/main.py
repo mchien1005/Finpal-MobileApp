@@ -6,7 +6,7 @@ FastAPI Main Application - Backend AI cho Finpal
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.api import categorization, anomaly, prediction, insights
+from app.api import categorization, anomaly, prediction, insights, admin
 
 # Tạo ứng dụng FastAPI
 # Create FastAPI application instance với metadata và cấu hình
@@ -58,6 +58,13 @@ app.include_router(
     insights.router,
     prefix=f"{settings.API_PREFIX}/insights",  # /api/insights
     tags=["AI Insights"]
+)
+
+# Router quản lý AI Models cho Admin
+app.include_router(
+    admin.router,
+    prefix=f"{settings.API_PREFIX}/admin/ai",  # /api/admin/ai
+    tags=["Admin - AI Management"]
 )
 
 
