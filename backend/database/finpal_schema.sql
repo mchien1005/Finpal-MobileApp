@@ -289,3 +289,76 @@ CREATE TABLE IF NOT EXISTS nhat_ky_he_thong (
         INDEX idx_ngay_tao (ngay_tao),
         INDEX idx_doi_tuong (loai_doi_tuong, id_doi_tuong)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS mau_thong_bao (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    ma_mau VARCHAR(20) NOT NULL UNIQUE COMMENT 'Template code: NOT001, NOT002...',
+    tieu_de VARCHAR(255) NOT NULL COMMENT 'Tiêu đề thông báo',
+    noi_dung_mau TEXT NOT NULL COMMENT 'Message template với placeholders {amount}, {category}...',
+    loai ENUM('WARNING', 'ALERT', 'SUCCESS', 'INFO') NOT NULL DEFAULT 'INFO' COMMENT 'Loại thông báo',
+    so_lan_gui INT DEFAULT 0 COMMENT 'Số lần đã gửi',
+    trang_thai ENUM('ACTIVE', 'INACTIVE', 'DRAFT') NOT NULL DEFAULT 'DRAFT' COMMENT 'Trạng thái',
+    nguoi_tao BIGINT COMMENT 'ID admin tạo',
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ngay_cap_nhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_template_status (trang_thai),
+    INDEX idx_template_type (loai),
+    FOREIGN KEY (nguoi_tao) REFERENCES nguoi_dung(id) ON DELETE
+    SET NULL
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+-- . Bảng Mẹo và Gợi ý (Tips & Suggestions)
+CREATE TABLE IF NOT EXISTS meo_goi_y (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    ma_tip VARCHAR(20) NOT NULL UNIQUE COMMENT 'Tip code: TIP001, TIP002...',
+    tieu_de VARCHAR(255) NOT NULL COMMENT 'Tiêu đề tip',
+    noi_dung TEXT NOT NULL COMMENT 'Nội dung chi tiết',
+    danh_muc ENUM(
+        'SAVING',
+        'BUDGETING',
+        'INVESTING',
+        'SPENDING',
+        'GENERAL'
+    ) DEFAULT 'GENERAL' COMMENT 'Danh mục',
+    icon VARCHAR(100) COMMENT 'Icon name hoặc emoji',
+    luot_xem INT DEFAULT 0 COMMENT 'Số lượt xem',
+    luot_thich INT DEFAULT 0 COMMENT 'Số lượt thích',
+    thu_tu INT DEFAULT 0 COMMENT 'Thứ tự hiển thị',
+    trang_thai ENUM('ACTIVE', 'INACTIVE', 'DRAFT') NOT NULL DEFAULT 'DRAFT' COMMENT 'Trạng thái',
+    nguoi_tao BIGINT COMMENT 'ID admin tạo',
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ngay_cap_nhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_tip_status (trang_thai),
+    INDEX idx_tip_category (danh_muc),
+    INDEX idx_tip_order (thu_tu),
+    FOREIGN KEY (nguoi_tao) REFERENCES nguoi_dung(id) ON DELETE
+    SET NULL
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+-- . Bảng Câu hỏi Thường gặp (FAQ)
+CREATE TABLE IF NOT EXISTS cau_hoi_thuong_gap (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    ma_faq VARCHAR(20) NOT NULL UNIQUE COMMENT 'FAQ code: FAQ001, FAQ002...',
+    cau_hoi TEXT NOT NULL COMMENT 'Câu hỏi',
+    cau_tra_loi TEXT NOT NULL COMMENT 'Câu trả lời',
+    danh_muc ENUM(
+        'ACCOUNT',
+        'TRANSACTION',
+        'BUDGET',
+        'SAVINGS',
+        'SECURITY',
+        'PAYMENT',
+        'GENERAL'
+    ) DEFAULT 'GENERAL' COMMENT 'Danh mục',
+    luot_xem INT DEFAULT 0 COMMENT 'Số lượt xem',
+    co_huu_ich INT DEFAULT 0 COMMENT 'Số lượt đánh giá hữu ích',
+    khong_huu_ich INT DEFAULT 0 COMMENT 'Số lượt đánh giá không hữu ích',
+    thu_tu INT DEFAULT 0 COMMENT 'Thứ tự hiển thị',
+    trang_thai ENUM('ACTIVE', 'INACTIVE', 'DRAFT') NOT NULL DEFAULT 'DRAFT' COMMENT 'Trạng thái',
+    nguoi_tao BIGINT COMMENT 'ID admin tạo',
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ngay_cap_nhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_faq_status (trang_thai),
+    INDEX idx_faq_category (danh_muc),
+    INDEX idx_faq_order (thu_tu),
+    FOREIGN KEY (nguoi_tao) REFERENCES nguoi_dung(id) ON DELETE
+    SET NULL
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
