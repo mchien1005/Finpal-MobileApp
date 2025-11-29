@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     API_VERSION: str = "v1"         # Phiên bản API
     
     # CORS - Cross-Origin Resource Sharing
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8080"  # Các origin được phép gọi API
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://localhost:8080,http://127.0.0.1:5173"  # Các origin được phép gọi API
     
     # Database (optional) - Cấu hình database (hiện tại chưa dùng)
     DB_HOST: str = "localhost"
