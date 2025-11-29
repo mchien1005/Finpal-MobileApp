@@ -13,7 +13,6 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
 from datetime import datetime, timedelta
 import os
-import joblib
 import random
 
 from app.schemas.admin import (
@@ -26,6 +25,15 @@ from app.schemas.admin import (
 from app.models.categorization import TransactionCategorizer
 from app.models.anomaly_detection import AnomalyDetector
 from app.models.spending_prediction import SpendingPredictor
+from app.services.training_history import (
+    get_accuracy_history,
+    get_all_models_accuracy_history,
+    get_model_stats,
+    get_prediction_logs as get_logs_from_history,
+    record_prediction,
+    record_training,
+    get_model_accuracy_from_logs
+)
 
 router = APIRouter()
 
@@ -136,9 +144,27 @@ def generate_mock_metrics(model_name: str) -> ModelMetrics:
 
 def generate_mock_accuracy_history(model_name: str, days: int = 7) -> List[AccuracyDataPoint]:
     """
-    Generate mock accuracy history cho demo
-    Trong production sẽ lấy từ database/monitoring
+    Lấy accuracy history thực tế từ training_history service
+    Fallback sang mock data nếu chưa có dữ liệu
     """
+    # Lấy dữ liệu thực từ training history
+    real_history = get_accuracy_history(model_name, days)
+    
+    if real_history:
+        history = []
+        for record in real_history:
+            # Format date: dd/mm
+            date_obj = datetime.strptime(record["date"], "%Y-%m-%d")
+            date_str = date_obj.strftime("%d/%m")
+            
+            history.append(AccuracyDataPoint(
+                date=date_str,
+                accuracy=record["accuracy"],
+                predictions_count=record.get("metrics", {}).get("predictions_count", random.randint(500, 2000))
+            ))
+        return history
+    
+    # Fallback: Generate mock data nếu chưa có real data
     base_accuracy = {
         "Category Classification": 94.0,
         "Anomaly Detection": 89.5,
@@ -146,18 +172,18 @@ def generate_mock_accuracy_history(model_name: str, days: int = 7) -> List[Accur
     }.get(model_name, 85.0)
     
     history = []
-    day_names = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"]
     
     for i in range(days):
         date = datetime.now() - timedelta(days=days - 1 - i)
-        day_name = day_names[date.weekday()]
+        date_str = date.strftime("%d/%m")
         
-        # Add some variation
-        accuracy = base_accuracy + random.uniform(-2, 2)
+        # Add some variation with slight improvement trend
+        improvement = i * 0.1  # Slight improvement over time
+        accuracy = base_accuracy + improvement + random.uniform(-1.5, 1.5)
         predictions = random.randint(500, 2000)
         
         history.append(AccuracyDataPoint(
-            date=f"T{i+1}" if i < 7 else date.strftime("%d/%m"),
+            date=date_str,
             accuracy=round(accuracy, 1),
             predictions_count=predictions
         ))
@@ -166,8 +192,30 @@ def generate_mock_accuracy_history(model_name: str, days: int = 7) -> List[Accur
 
 
 def generate_mock_prediction_logs(count: int = 20) -> List[PredictionLogEntry]:
-    """Generate mock prediction logs cho demo"""
+    """
+    Lấy prediction logs thực từ training_history service
+    Fallback sang mock data nếu chưa có
+    """
+    # Lấy logs thực từ training history service
+    result = get_logs_from_history(page=1, page_size=count)
     
+    if result["logs"]:
+        logs = []
+        for log in result["logs"]:
+            logs.append(PredictionLogEntry(
+                id=log["id"],
+                timestamp=datetime.fromisoformat(log["timestamp"]),
+                user_id=log["user_id"],
+                input_text=log["input_text"],
+                predicted_category=log["predicted_category"],
+                confidence=log["confidence"],
+                actual_category=log.get("actual_category"),
+                is_correct=log.get("is_correct"),
+                model_name=log.get("model_name", "Category Classification")
+            ))
+        return logs
+    
+    # Fallback: Generate mock logs
     sample_data = [
         ("GRAB VIETNAM", "Di chuyển", 96.5, True),
         ("SHOPEE", "Mua sắm", 89.2, True),
@@ -177,13 +225,8 @@ def generate_mock_prediction_logs(count: int = 20) -> List[PredictionLogEntry]:
         ("LAZADA", "Mua sắm", 91.5, True),
         ("UBER", "Di chuyển", 88.7, True),
         ("STARBUCKS", "Ăn uống", 65.2, False),
-        ("GRAB FOOD", "Di chuyển", 45.5, False),  # Should be Ăn uống
+        ("GRAB FOOD", "Di chuyển", 45.5, False),
         ("TIKI", "Mua sắm", 92.3, True),
-        ("LOTTE CINEMA", "Giải trí", 87.6, True),
-        ("VINMART", "Mua sắm", 94.1, True),
-        ("PHUC LONG", "Ăn uống", 81.2, True),
-        ("BEAMIN", "Ăn uống", 76.8, True),
-        ("SPOTIFY", "Giải trí", 89.5, True),
     ]
     
     logs = []
@@ -191,12 +234,8 @@ def generate_mock_prediction_logs(count: int = 20) -> List[PredictionLogEntry]:
     
     for i in range(min(count, len(sample_data) * 2)):
         data = sample_data[i % len(sample_data)]
-        
-        # Time offset
         time_offset = timedelta(minutes=random.randint(1, 60) * (i + 1))
         log_time = base_time - time_offset
-        
-        # Actual category (same as predicted if correct)
         actual = data[1] if data[3] else ("Ăn uống" if data[1] == "Di chuyển" else "Giải trí")
         
         logs.append(PredictionLogEntry(
@@ -206,7 +245,7 @@ def generate_mock_prediction_logs(count: int = 20) -> List[PredictionLogEntry]:
             input_text=data[0],
             predicted_category=data[1],
             confidence=data[2],
-            actual_category=actual if random.random() > 0.3 else None,  # 70% có feedback
+            actual_category=actual if random.random() > 0.3 else None,
             is_correct=data[3] if random.random() > 0.3 else None,
             model_name="Category Classification"
         ))
