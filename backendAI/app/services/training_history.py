@@ -452,5 +452,3 @@ def initialize_sample_data():
     print("✅ Sample training history and prediction logs created!")
 
 
-# Auto-initialize khi import
-initialize_sample_data()

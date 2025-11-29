@@ -20,7 +20,12 @@ app = FastAPI(
 
 # Cấu hình CORS (Cross-Origin Resource Sharing)
 # Cho phép frontend từ các domain khác gọi API
-origins = settings.CORS_ORIGINS.split(",")
+origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",")]
+# Thêm localhost:5173 nếu chưa có
+if "http://localhost:5173" not in origins:
+    origins.append("http://localhost:5173")
+print(f"🔧 CORS Origins: {origins}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,          # Cho phép các origin cụ thể
