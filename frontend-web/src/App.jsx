@@ -3,7 +3,28 @@ import { ConfigProvider } from 'antd';
 import viVN from 'antd/locale/vi_VN';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import authService from './services/authService';
 
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const isAuthenticated = authService.isAuthenticated();
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+};
+
+// Admin Protected Route Component
+const AdminRoute = ({ children }) => {
+  const isAuthenticated = authService.isAuthenticated();
+  const user = authService.getCurrentUser();
+  const isAdmin = user?.role === 'ADMIN';
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return children;
+};
 
 
 function App() {
