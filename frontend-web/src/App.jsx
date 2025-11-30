@@ -4,6 +4,8 @@ import viVN from 'antd/locale/vi_VN';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/user/DashboardPage';
+import SettingsPage from './pages/user/SettingsPage';
+import NotificationPage from './pages/user/NotificationPage';
 import OnboardingStep1 from './pages/user/OnboardingStep1';
 import OnboardingStep2 from './pages/user/OnboardingStep2';
 import OnboardingStep3 from './pages/user/OnboardingStep3';
@@ -50,6 +52,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+            />
+            <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationPage />
+              </ProtectedRoute>
+            }
+          />
+            <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
               </ProtectedRoute>
             }
           />
