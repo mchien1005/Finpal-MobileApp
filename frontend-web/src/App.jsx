@@ -7,6 +7,7 @@ import DashboardPage from './pages/user/DashboardPage';
 import SettingsPage from './pages/user/SettingsPage';
 import NotificationPage from './pages/user/NotificationPage';
 import ProfilePage from './pages/user/ProfilePage';
+import ChangePasswordPage from './pages/user/ChangePasswordPage';
 import OnboardingStep1 from './pages/user/OnboardingStep1';
 import OnboardingStep2 from './pages/user/OnboardingStep2';
 import OnboardingStep3 from './pages/user/OnboardingStep3';
@@ -74,6 +75,14 @@ function App() {
               </ProtectedRoute>
             }
             />
+            <Route
+            path="/settings/password"
+            element={
+              <ProtectedRoute>
+                <ChangePasswordPage />
+              </ProtectedRoute>
+            }
+          />
             <Route
             path="/settings/profile"
             element={
