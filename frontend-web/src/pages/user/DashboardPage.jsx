@@ -7,6 +7,7 @@ import {
 } from '@ant-design/icons';
 import Sidebar from '../../components/user/Sidebar';
 import { useSidebar } from '../../contexts/SidebarContext';
+import Header from '../../components/common/Header';
 
 const { Title, Text } = Typography;
 
