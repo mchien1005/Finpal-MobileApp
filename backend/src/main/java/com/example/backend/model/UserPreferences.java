@@ -43,6 +43,27 @@ public class UserPreferences {
     @Builder.Default
     private Boolean pushNotifications = true;
 
+    @Column(name = "canh_bao_giao_dich")
+    @Builder.Default
+    private Boolean transactionAlert = true;
+
+    @Column(name = "canh_bao_ngan_sach")
+    @Builder.Default
+    private Boolean budgetAlert = true;
+
+    @Column(name = "nhac_nho_muc_tieu")
+    @Builder.Default
+    private Boolean goalReminder = true;
+
+    // Periodic reports
+    @Column(name = "bao_cao_tuan")
+    @Builder.Default
+    private Boolean weeklyReport = false;
+
+    @Column(name = "bao_cao_thang")
+    @Builder.Default
+    private Boolean monthlyReport = true;
+
     @Column(name = "nguong_canh_bao_ngan_sach")
     @Builder.Default
     private Integer budgetAlertThreshold = 70;
