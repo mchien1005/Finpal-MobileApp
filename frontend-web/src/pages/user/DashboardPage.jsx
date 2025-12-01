@@ -8,6 +8,7 @@ import {
 import Sidebar from '../../components/user/Sidebar';
 import { useSidebar } from '../../contexts/SidebarContext';
 import Header from '../../components/common/Header';
+import React from 'react';
 
 const { Title, Text } = Typography;
 

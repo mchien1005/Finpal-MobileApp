@@ -1,3 +1,4 @@
+import React from 'react';
 import { LeftOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/user/Sidebar';
