@@ -11,6 +11,7 @@ import ChangePasswordPage from './pages/user/ChangePasswordPage';
 import ProfilePage from './pages/user/ProfilePage';
 import HelpCenterPage from './pages/user/HelpCenterPage';
 import NotificationSettingsPage from './pages/user/NotificationSettingsPage';
+import AboutPage from './pages/user/AboutPage';
 import OnboardingStep1 from './pages/user/OnboardingStep1';
 import OnboardingStep2 from './pages/user/OnboardingStep2';
 import OnboardingStep3 from './pages/user/OnboardingStep3';
@@ -110,6 +111,7 @@ function App() {
             }
             />
           <Route path="/settings/help" element={<ProtectedRoute><HelpCenterPage /></ProtectedRoute>} />
+          <Route path="/settings/about" element={<ProtectedRoute><AboutPage /></ProtectedRoute>} />
             <Route
             path="/settings/notifications"
             element={
