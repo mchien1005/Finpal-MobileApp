@@ -6,10 +6,13 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/user/DashboardPage';
 import SettingsPage from './pages/user/SettingsPage';
 import NotificationPage from './pages/user/NotificationPage';
+import ProfilePage from './pages/user/ProfilePage';
 import OnboardingStep1 from './pages/user/OnboardingStep1';
 import OnboardingStep2 from './pages/user/OnboardingStep2';
 import OnboardingStep3 from './pages/user/OnboardingStep3';
 import authService from './services/authService';
+import { SidebarProvider } from './contexts/SidebarContext';
+
 
 
 
@@ -70,7 +73,15 @@ function App() {
                 <SettingsPage />
               </ProtectedRoute>
             }
-          />
+            />
+            <Route
+            path="/settings/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+            />
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
