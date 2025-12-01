@@ -33,7 +33,7 @@ public class FAQ {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "danh_muc")
-    private FAQCategory category = FAQCategory.GENERAL;
+    private FAQCategory category = FAQCategory.GETTING_STARTED;
 
     @Column(name = "luot_xem")
     private Integer viewCount = 0;
@@ -72,13 +72,7 @@ public class FAQ {
     }
 
     public enum FAQCategory {
-        ACCOUNT, // Tài khoản
-        TRANSACTION, // Giao dịch
-        BUDGET, // Ngân sách
-        SAVINGS, // Tiết kiệm
-        SECURITY, // Bảo mật
-        PAYMENT, // Thanh toán
-        GENERAL // Chung
+        GETTING_STARTED, SECURITY, FEATURES, TROUBLESHOOTING
     }
 
     public enum FAQStatus {
