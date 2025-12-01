@@ -1208,8 +1208,7 @@ INSERT INTO cau_hoi_thuong_gap (
         thu_tu,
         trang_thai
     )
-VALUES 
-    -- Bắt đầu
+VALUES -- Bắt đầu
     (
         'FAQ001',
         'FinPal là gì?',

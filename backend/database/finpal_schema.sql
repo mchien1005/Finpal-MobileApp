@@ -289,7 +289,6 @@ CREATE TABLE IF NOT EXISTS nhat_ky_he_thong (
         INDEX idx_ngay_tao (ngay_tao),
         INDEX idx_doi_tuong (loai_doi_tuong, id_doi_tuong)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS mau_thong_bao (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     ma_mau VARCHAR(20) NOT NULL UNIQUE COMMENT 'Template code: NOT001, NOT002...',
@@ -340,14 +339,11 @@ CREATE TABLE IF NOT EXISTS cau_hoi_thuong_gap (
     cau_hoi TEXT NOT NULL COMMENT 'Câu hỏi',
     cau_tra_loi TEXT NOT NULL COMMENT 'Câu trả lời',
     danh_muc ENUM(
-        'ACCOUNT',
-        'TRANSACTION',
-        'BUDGET',
-        'SAVINGS',
+        'GETTING_STARTED',
         'SECURITY',
-        'PAYMENT',
-        'GENERAL'
-    ) DEFAULT 'GENERAL' COMMENT 'Danh mục',
+        'FEATURES',
+        'TROUBLESHOOTING'
+    ) DEFAULT 'GETTING_STARTED' COMMENT 'Danh mục',
     luot_xem INT DEFAULT 0 COMMENT 'Số lượt xem',
     co_huu_ich INT DEFAULT 0 COMMENT 'Số lượt đánh giá hữu ích',
     khong_huu_ich INT DEFAULT 0 COMMENT 'Số lượt đánh giá không hữu ích',
