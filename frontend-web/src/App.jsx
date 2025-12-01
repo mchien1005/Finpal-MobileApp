@@ -4,18 +4,21 @@ import viVN from 'antd/locale/vi_VN';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/user/DashboardPage';
-import SettingsPage from './pages/user/SettingsPage';
+import TransactionPage from './pages/user/TransactionPage';
 import NotificationPage from './pages/user/NotificationPage';
-import ProfilePage from './pages/user/ProfilePage';
+import SettingsPage from './pages/user/SettingsPage';
 import ChangePasswordPage from './pages/user/ChangePasswordPage';
+import ProfilePage from './pages/user/ProfilePage';
+import HelpCenterPage from './pages/user/HelpCenterPage';
 import OnboardingStep1 from './pages/user/OnboardingStep1';
 import OnboardingStep2 from './pages/user/OnboardingStep2';
 import OnboardingStep3 from './pages/user/OnboardingStep3';
+// Admin Pages
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import ContentManagementPage from './pages/admin/ContentManagementPage';
+import AIModelManagementPage from './pages/admin/AIModelManagementPage';
 import authService from './services/authService';
 import { SidebarProvider } from './contexts/SidebarContext';
-
-
-
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -50,16 +53,27 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/onboarding/step1" element={<OnboardingStep1 />} />
           <Route path="/onboarding/step2" element={<OnboardingStep2 />} />
-            <Route path="/onboarding/step3" element={<OnboardingStep3 />} />
-            <Route
+          <Route path="/onboarding/step3" element={<OnboardingStep3 />} />
+          
+          <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
                 <DashboardPage />
               </ProtectedRoute>
             }
-            />
-            <Route
+          />
+          
+          <Route
+            path="/transactions/add"
+            element={
+              <ProtectedRoute>
+                <TransactionPage />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
             path="/notifications"
             element={
               <ProtectedRoute>
@@ -67,15 +81,17 @@ function App() {
               </ProtectedRoute>
             }
           />
-            <Route
+          
+          <Route
             path="/settings"
             element={
               <ProtectedRoute>
                 <SettingsPage />
               </ProtectedRoute>
             }
-            />
-            <Route
+          />
+          
+          <Route
             path="/settings/password"
             element={
               <ProtectedRoute>
@@ -83,7 +99,8 @@ function App() {
               </ProtectedRoute>
             }
           />
-            <Route
+
+          <Route
             path="/settings/profile"
             element={
               <ProtectedRoute>
@@ -91,6 +108,42 @@ function App() {
               </ProtectedRoute>
             }
             />
+          <Route path="/settings/help" element={<ProtectedRoute><HelpCenterPage /></ProtectedRoute>} />
+
+          {/* Admin Routes */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <AdminRoute>
+                <AdminDashboardPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/content"
+            element={
+              <AdminRoute>
+                <ContentManagementPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/ai-models"
+            element={
+              <AdminRoute>
+                <AIModelManagementPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/*"
+            element={
+              <AdminRoute>
+                <AdminDashboardPage />
+              </AdminRoute>
+            }
+          />
+
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
