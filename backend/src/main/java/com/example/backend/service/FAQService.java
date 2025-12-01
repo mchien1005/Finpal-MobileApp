@@ -81,7 +81,7 @@ public class FAQService {
         faq.setFaqCode(request.getFaqCode());
         faq.setQuestion(request.getQuestion());
         faq.setAnswer(request.getAnswer());
-        faq.setCategory(request.getCategory() != null ? request.getCategory() : FAQCategory.GENERAL);
+        faq.setCategory(request.getCategory() != null ? request.getCategory() : FAQCategory.GETTING_STARTED);
         faq.setDisplayOrder(request.getDisplayOrder() != null ? request.getDisplayOrder() : 0);
         faq.setStatus(request.getStatus() != null ? request.getStatus() : FAQStatus.DRAFT);
         faq.setViewCount(0);
