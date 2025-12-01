@@ -1199,7 +1199,7 @@ VALUES (
         5,
         'ACTIVE'
     );
--- FAQ
+-- FAQ - Câu hỏi thường gặp
 INSERT INTO cau_hoi_thuong_gap (
         ma_faq,
         cau_hoi,
@@ -1208,51 +1208,104 @@ INSERT INTO cau_hoi_thuong_gap (
         thu_tu,
         trang_thai
     )
-VALUES (
+VALUES 
+    -- Bắt đầu
+    (
         'FAQ001',
-        'Làm sao để liên kết tài khoản ngân hàng?',
-        'Vào Cài đặt > Liên kết ngân hàng > Chọn ngân hàng của bạn > Đăng nhập và xác thực. Ứng dụng sử dụng kết nối bảo mật và không lưu thông tin đăng nhập ngân hàng.',
-        'ACCOUNT',
+        'FinPal là gì?',
+        'FinPal là ứng dụng quản lý tài chính cá nhân thông minh, giúp bạn theo dõi thu chi, phân loại giao dịch tự động bằng AI và đặt mục tiêu tiết kiệm.',
+        'GETTING_STARTED',
         1,
         'ACTIVE'
     ),
     (
         'FAQ002',
-        'Giao dịch SMS được đọc tự động như thế nào?',
-        'FinPal đọc tin nhắn SMS từ các ngân hàng được hỗ trợ để tự động ghi nhận giao dịch. Bạn cần cấp quyền đọc SMS trong cài đặt điện thoại.',
-        'TRANSACTION',
+        'Làm sao để bắt đầu sử dụng FinPal?',
+        'Tải ứng dụng, đăng ký tài khoản, cấp quyền đọc SMS và bắt đầu theo dõi chi tiêu của bạn ngay.',
+        'GETTING_STARTED',
         2,
         'ACTIVE'
     ),
     (
         'FAQ003',
-        'Tôi có thể tạo bao nhiêu ngân sách?',
-        'Bạn có thể tạo không giới hạn số lượng ngân sách. Mỗi ngân sách có thể theo danh mục, theo tuần/tháng/năm với số tiền tùy chỉnh.',
-        'BUDGET',
+        'FinPal có miễn phí không?',
+        'Có, FinPal hoàn toàn miễn phí với các tính năng cơ bản. Phiên bản Premium sẽ có thêm các tính năng nâng cao.',
+        'GETTING_STARTED',
         3,
         'ACTIVE'
     ),
+    -- Bảo mật & Quyền riêng tư
     (
         'FAQ004',
-        'Dữ liệu của tôi có được bảo mật không?',
-        'Có. Tất cả dữ liệu được mã hóa end-to-end, lưu trữ trên server bảo mật. Chúng tôi không bao giờ chia sẻ hoặc bán dữ liệu của bạn cho bên thứ ba.',
+        'Dữ liệu của tôi có an toàn không?',
+        'Dữ liệu của bạn được mã hóa và lưu trữ an toàn. Chúng tôi không chia sẻ thông tin cá nhân với bên thứ ba.',
         'SECURITY',
         4,
         'ACTIVE'
     ),
     (
         'FAQ005',
-        'Làm sao để xuất báo cáo chi tiêu?',
-        'Vào Thống kê > Xuất báo cáo > Chọn khoảng thời gian > Chọn định dạng (PDF/Excel). Báo cáo sẽ được gửi qua email hoặc tải xuống trực tiếp.',
-        'TRANSACTION',
+        'FinPal có chia sẻ thông tin của tôi không?',
+        'Không, chúng tôi cam kết bảo mật thông tin của bạn và không chia sẻ với bất kỳ bên thứ ba nào.',
+        'SECURITY',
         5,
         'ACTIVE'
     ),
     (
         'FAQ006',
-        'Mục tiêu tiết kiệm hoạt động như thế nào?',
-        'Bạn đặt mục tiêu với số tiền và thời hạn. Ứng dụng sẽ theo dõi tiến độ, nhắc nhở góp tiền và đề xuất số tiền cần tiết kiệm mỗi tháng để đạt mục tiêu.',
-        'SAVINGS',
+        'Làm sao để bảo vệ tài khoản tốt hơn?',
+        'Sử dụng mật khẩu mạnh, bật xác thực 2 lớp và không chia sẻ thông tin đăng nhập với người khác.',
+        'SECURITY',
         6,
+        'ACTIVE'
+    ),
+    -- Tính năng
+    (
+        'FAQ007',
+        'AI phân loại giao dịch hoạt động như thế nào?',
+        'AI của FinPal phân tích nội dung SMS ngân hàng để tự động nhận diện và phân loại giao dịch vào các danh mục phù hợp.',
+        'FEATURES',
+        7,
+        'ACTIVE'
+    ),
+    (
+        'FAQ008',
+        'Tôi có thể chỉnh sửa giao dịch không?',
+        'Có, bạn có thể chỉnh sửa danh mục, ghi chú và thông tin giao dịch bất cứ lúc nào.',
+        'FEATURES',
+        8,
+        'ACTIVE'
+    ),
+    (
+        'FAQ009',
+        'Làm sao để đặt mục tiêu tiết kiệm?',
+        'Vào tab "Mục tiêu", nhấn nút "+" để tạo mục tiêu mới. Nhập tên, số tiền mục tiêu và thời hạn, FinPal sẽ giúp bạn theo dõi tiến độ.',
+        'FEATURES',
+        9,
+        'ACTIVE'
+    ),
+    -- Khắc phục sự cố
+    (
+        'FAQ010',
+        'App không đọc được SMS từ ngân hàng?',
+        'Kiểm tra lại quyền đọc SMS trong cài đặt điện thoại. Đảm bảo FinPal có quyền truy cập tin nhắn.',
+        'TROUBLESHOOTING',
+        10,
+        'ACTIVE'
+    ),
+    (
+        'FAQ011',
+        'Giao dịch bị phân loại sai?',
+        'Bạn có thể chỉnh sửa danh mục giao dịch. AI sẽ học từ các chỉnh sửa của bạn để cải thiện độ chính xác.',
+        'TROUBLESHOOTING',
+        11,
+        'ACTIVE'
+    ),
+    (
+        'FAQ012',
+        'Quên mật khẩu thì làm sao?',
+        'Nhấn "Quên mật khẩu" trên màn hình đăng nhập, nhập email và làm theo hướng dẫn để đặt lại mật khẩu.',
+        'TROUBLESHOOTING',
+        12,
         'ACTIVE'
     );
