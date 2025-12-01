@@ -68,7 +68,8 @@ public class AuthService {
                     user.getUsername(),
                     user.getEmail(),
                     user.getFullName(),
-                    user.getRole().name());
+                    user.getRole().name(),
+                    user.getAvatarUrl());
 
             return new LoginResponse(true, "Đăng nhập thành công", token, userInfo);
 
@@ -133,7 +134,8 @@ public class AuthService {
                     user.getUsername(),
                     user.getEmail(),
                     user.getFullName(),
-                    user.getRole().name());
+                    user.getRole().name()
+                    user.getAvatarUrl());
 
             return new LoginResponse(true, "Đăng ký thành công", token, userInfo);
 
