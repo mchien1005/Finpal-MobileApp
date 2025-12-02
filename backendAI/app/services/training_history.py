@@ -150,7 +150,7 @@ def get_model_stats(model_name: str) -> Optional[Dict]:
     Lấy thống kê tổng quan của model
     
     Returns:
-        Dict với total_trainings, best_accuracy, latest_accuracy, trend
+        Dict với total_trainings, best_accuracy, latest_accuracy, latest_confidence, trend
     """
     history = _load_history()
     
@@ -179,10 +179,16 @@ def get_model_stats(model_name: str) -> Optional[Dict]:
     
     latest = records[-1] if records else None
     
+    # Lấy confidence từ metrics của record mới nhất
+    latest_confidence = None
+    if latest and "metrics" in latest:
+        latest_confidence = latest["metrics"].get("confidence")
+    
     return {
         "total_trainings": model_data["total_trainings"],
         "best_accuracy": model_data["best_accuracy"],
         "latest_accuracy": latest["accuracy"] if latest else 0,
+        "latest_confidence": latest_confidence,
         "latest_training_date": latest["date"] if latest else None,
         "trend": trend
     }
