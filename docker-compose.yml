@@ -85,6 +85,7 @@ services:
       - "8000:8000"
     volumes:
       - ai_models:/app/data/models
+      - ai_data:/app/data
     depends_on:
       mysql:
         condition: service_healthy
@@ -106,4 +107,6 @@ volumes:
   mysql_data:
     driver: local
   ai_models:
+    driver: local
+  ai_data:
     driver: local
