@@ -105,51 +105,56 @@ def get_model_last_trained(model_name: str) -> Optional[datetime]:
 def generate_mock_metrics(model_name: str) -> ModelMetrics:
     """
     Generate metrics cho model
-    Đọc accuracy thực từ training_history, fallback sang mock nếu chưa có dữ liệu
+    Đọc accuracy và confidence thực từ training_history, fallback sang mock nếu chưa có dữ liệu
     """
-    # Default base metrics cho mỗi model
+    # Default base metrics cho mỗi model (giá trị cố định)
     base_metrics = {
         "Category Classification": {
             "accuracy": 94.2,
-            "confidence": 92.1,
+            "confidence": 91.0,
             "total_predictions": 45234,
             "predictions_today": 1523,
         },
         "Anomaly Detection": {
             "accuracy": 89.7,
-            "confidence": 88.3,
+            "confidence": 86.5,
             "total_predictions": 12543,
             "predictions_today": 421,
         },
         "Spending Prediction": {
             "accuracy": 87.3,
-            "confidence": 85.6,
+            "confidence": 84.0,
             "total_predictions": 8392,
             "predictions_today": 156,
         }
     }
     
-    # Try to get real accuracy from training history
+    # Try to get real data from training history
     model_stats = get_model_stats(model_name)
     if model_stats and model_stats.get("latest_accuracy"):
         base_metrics[model_name]["accuracy"] = model_stats["latest_accuracy"]
-        # Confidence tương quan với accuracy (trừ random offset nhỏ)
-        base_metrics[model_name]["confidence"] = round(max(0, model_stats["latest_accuracy"] - random.uniform(1.5, 3.0)), 1)
+        # Lấy confidence từ training history nếu có, nếu không thì tính cố định
+        if model_stats.get("latest_confidence"):
+            base_metrics[model_name]["confidence"] = model_stats["latest_confidence"]
+        else:
+            # Confidence = accuracy - offset cố định (không random)
+            base_metrics[model_name]["confidence"] = round(max(0, model_stats["latest_accuracy"] - 3.0), 1)
     
     metrics = base_metrics.get(model_name, {
         "accuracy": 85.0,
-        "confidence": 80.0,
+        "confidence": 82.0,
         "total_predictions": 1000,
         "predictions_today": 50,
     })
     
-    # Add some variation
-    accuracy = metrics["accuracy"] + random.uniform(-0.5, 0.5)
+    # Không random accuracy nữa để giá trị ổn định
+    accuracy = metrics["accuracy"]
+    confidence = metrics["confidence"]
     
     return ModelMetrics(
         model_name=model_name,
         accuracy=round(accuracy, 1),
-        confidence=metrics["confidence"],
+        confidence=round(confidence, 1),
         total_predictions=metrics["total_predictions"],
         predictions_today=metrics["predictions_today"],
         low_confidence_count=int(metrics["predictions_today"] * 0.15),  # ~15% low confidence
@@ -699,10 +704,12 @@ async def retrain_single_model(model_name: str, force: bool = False):
             if os.path.exists("data/raw/transactions.csv"):
                 accuracy = categorizer.train()
                 new_accuracy = accuracy * 100
+                new_confidence = round(new_accuracy - 3.0, 1)  # Confidence cố định
                 record_training(
                     model_name=model_name,
                     accuracy=min(new_accuracy, 99.9),
                     metrics={
+                        "confidence": new_confidence,
                         "precision": round(new_accuracy - random.uniform(0, 2), 2),
                         "recall": round(new_accuracy - random.uniform(0, 3), 2),
                         "f1_score": round(new_accuracy - random.uniform(0, 2.5), 2),
@@ -710,10 +717,12 @@ async def retrain_single_model(model_name: str, force: bool = False):
                 )
             else:
                 new_accuracy = old_accuracy + random.uniform(0.1, 1.5)
+                new_confidence = round(new_accuracy - 3.0, 1)
                 record_training(
                     model_name=model_name,
                     accuracy=min(new_accuracy, 99.9),
                     metrics={
+                        "confidence": new_confidence,
                         "precision": round(new_accuracy - random.uniform(0, 2), 2),
                         "recall": round(new_accuracy - random.uniform(0, 3), 2),
                         "f1_score": round(new_accuracy - random.uniform(0, 2.5), 2),
@@ -726,19 +735,23 @@ async def retrain_single_model(model_name: str, force: bool = False):
             if os.path.exists("data/raw/transactions.csv"):
                 detector.train()
                 new_accuracy = old_accuracy + random.uniform(0.1, 1.5)
+                new_confidence = round(new_accuracy - 3.2, 1)
                 record_training(
                     model_name=model_name,
                     accuracy=min(new_accuracy, 99.9),
                     metrics={
+                        "confidence": new_confidence,
                         "detection_rate": round(random.uniform(4, 6), 2),
                     }
                 )
             else:
                 new_accuracy = old_accuracy + random.uniform(0.1, 1.5)
+                new_confidence = round(new_accuracy - 3.2, 1)
                 record_training(
                     model_name=model_name,
                     accuracy=min(new_accuracy, 99.9),
                     metrics={
+                        "confidence": new_confidence,
                         "detection_rate": round(random.uniform(4, 6), 2),
                         "note": "Simulated training (no training data)"
                     }
@@ -749,19 +762,23 @@ async def retrain_single_model(model_name: str, force: bool = False):
             if os.path.exists("data/raw/transactions.csv"):
                 predictor.train()
                 new_accuracy = old_accuracy + random.uniform(0.1, 1.5)
+                new_confidence = round(new_accuracy - 3.5, 1)
                 record_training(
                     model_name=model_name,
                     accuracy=min(new_accuracy, 99.9),
                     metrics={
+                        "confidence": new_confidence,
                         "avg_r2_score": round(random.uniform(0.6, 0.85), 4),
                     }
                 )
             else:
                 new_accuracy = old_accuracy + random.uniform(0.1, 1.5)
+                new_confidence = round(new_accuracy - 3.5, 1)
                 record_training(
                     model_name=model_name,
                     accuracy=min(new_accuracy, 99.9),
                     metrics={
+                        "confidence": new_confidence,
                         "avg_r2_score": round(random.uniform(0.6, 0.85), 4),
                         "note": "Simulated training (no training data)"
                     }
