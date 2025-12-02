@@ -64,7 +64,6 @@ function App() {
             }
           />
           
-          
           <Route
             path="/notifications"
             element={
@@ -121,7 +120,7 @@ function App() {
               </AdminRoute>
             }
           />
-          
+
           <Route
             path="/admin/*"
             element={
