@@ -5,6 +5,7 @@ import viVN from 'antd/locale/vi_VN';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/user/DashboardPage';
+import TransactionPage from './pages/user/TransactionPage';
 import NotificationPage from './pages/user/NotificationPage';
 import SettingsPage from './pages/user/SettingsPage';
 import ChangePasswordPage from './pages/user/ChangePasswordPage';
@@ -17,6 +18,8 @@ import OnboardingStep2 from './pages/user/OnboardingStep2';
 import OnboardingStep3 from './pages/user/OnboardingStep3';
 // Admin Pages
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import ContentManagementPage from './pages/admin/ContentManagementPage';
+import AIModelManagementPage from './pages/admin/AIModelManagementPage';
 import authService from './services/authService';
 import { SidebarProvider } from './contexts/SidebarContext';
 
@@ -60,6 +63,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/transactions/add"
+            element={
+              <ProtectedRoute>
+                <TransactionPage />
               </ProtectedRoute>
             }
           />
@@ -120,7 +132,22 @@ function App() {
               </AdminRoute>
             }
           />
-
+          <Route
+            path="/admin/content"
+            element={
+              <AdminRoute>
+                <ContentManagementPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/ai-models"
+            element={
+              <AdminRoute>
+                <AIModelManagementPage />
+              </AdminRoute>
+            }
+          />
           <Route
             path="/admin/*"
             element={
