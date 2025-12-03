@@ -16,7 +16,7 @@ import java.util.List;
 public class DashboardSummaryDTO {
 
     // Overall statistics
-    private BigDecimal totalBalance; // tổng số dư tất cả accounts
+    private BigDecimal totalBalance; // Tổng số dư = Tổng thu nhập - Tổng chi tiêu
     private BigDecimal monthlyIncome; // thu nhập tháng này
     private BigDecimal monthlyExpense; // chi tiêu tháng này
     private BigDecimal netSavings; // income - expense
@@ -26,7 +26,6 @@ public class DashboardSummaryDTO {
     private BigDecimal expenseChangePercent;
 
     // Counts
-    private Integer totalAccounts;
     private Integer monthlyTransactions;
     private Integer activeBudgets;
     private Integer activeSavingsGoals;

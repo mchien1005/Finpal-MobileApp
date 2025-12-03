@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "giao_dich", indexes = {
         @Index(name = "idx_nguoi_dung_ngay", columnList = "id_nguoi_dung,ngay_giao_dich"),
-        @Index(name = "idx_tai_khoan", columnList = "id_tai_khoan"),
-        @Index(name = "idx_danh_muc", columnList = "id_danh_muc")
+        @Index(name = "idx_danh_muc", columnList = "id_danh_muc"),
+        @Index(name = "idx_nguon_giao_dich", columnList = "nguon_giao_dich")
 })
 @Data
 @NoArgsConstructor
@@ -27,9 +27,8 @@ public class Transaction {
     @JoinColumn(name = "id_nguoi_dung", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_tai_khoan", nullable = false)
-    private Account account;
+    @Column(name = "nguon_giao_dich", length = 50)
+    private String transactionSource; // VCB, TCB, CASH, MOMO...
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_danh_muc")
@@ -57,9 +56,6 @@ public class Transaction {
 
     @Column(name = "noi_dung_sms_ma_hoa", columnDefinition = "TEXT")
     private String smsContentEncrypted;
-
-    @Column(name = "ma_ngan_hang_sms", length = 20)
-    private String smsBankCode;
 
     // Status fields
     @Column(name = "da_xac_nhan")

@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TransactionFilter {
-    private Long accountId;
+    private String transactionSource; // VCB, TCB, CASH, MOMO...
     private Long categoryId;
     private String type; // INCOME, EXPENSE
     private LocalDateTime startDate;

@@ -6,7 +6,6 @@ import com.example.backend.dto.TransactionFilter;
 import com.example.backend.dto.TransactionRequest;
 import com.example.backend.dto.TransactionResponse;
 import com.example.backend.model.*;
-import com.example.backend.repository.AccountRepository;
 import com.example.backend.repository.CategoryRepository;
 import com.example.backend.repository.TransactionRepository;
 import com.example.backend.repository.UserRepository;
@@ -31,7 +30,6 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
-    private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
     private final CategoryRuleService categoryRuleService;
     private final AICategorizationService aiCategorizationService;
@@ -53,18 +51,10 @@ public class TransactionService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Kiểm tra tài khoản có thuộc về user không
-        Account account = accountRepository.findById(request.getAccountId())
-                .orElseThrow(() -> new RuntimeException("Account not found"));
-
-        if (!account.getUserId().equals(user.getId())) {
-            throw new RuntimeException("Account does not belong to user");
-        }
-
         // Tạo đối tượng transaction mới
         Transaction transaction = new Transaction();
         transaction.setUser(user);
-        transaction.setAccount(account);
+        transaction.setTransactionSource(request.getTransactionSource()); // VCB, TCB, CASH, MOMO...
         transaction.setAmount(request.getAmount());
         transaction.setType(Transaction.TransactionType.valueOf(request.getType()));
         transaction.setMerchant(request.getMerchant());
@@ -115,7 +105,8 @@ public class TransactionService {
      * Lấy danh sách giao dịch với lọc và phân trang
      * 
      * @param username      Tên đăng nhập của user
-     * @param filter        Điều kiện lọc (accountId, categoryId, type, startDate,
+     * @param filter        Điều kiện lọc (transactionSource, categoryId, type,
+     *                      startDate,
      *                      endDate, merchant, keyword, ...)
      * @param page          Số trang (bắt đầu từ 0)
      * @param size          Số lượng items trên 1 trang
@@ -145,8 +136,8 @@ public class TransactionService {
         predicates.add(cb.equal(root.get("user").get("id"), user.getId()));
 
         if (filter != null) {
-            if (filter.getAccountId() != null) {
-                predicates.add(cb.equal(root.get("account").get("id"), filter.getAccountId()));
+            if (filter.getTransactionSource() != null && !filter.getTransactionSource().isBlank()) {
+                predicates.add(cb.equal(root.get("transactionSource"), filter.getTransactionSource()));
             }
             if (filter.getCategoryId() != null) {
                 predicates.add(cb.equal(root.get("category").get("id"), filter.getCategoryId()));
@@ -254,14 +245,9 @@ public class TransactionService {
             throw new RuntimeException("Transaction does not belong to user");
         }
 
-        // Cập nhật các trường dữ liệu
-        if (request.getAccountId() != null) {
-            Account account = accountRepository.findById(request.getAccountId())
-                    .orElseThrow(() -> new RuntimeException("Account not found"));
-            if (!account.getUserId().equals(user.getId())) {
-                throw new RuntimeException("Account does not belong to user");
-            }
-            transaction.setAccount(account);
+        // Cập nhật nguồn giao dịch nếu có
+        if (request.getTransactionSource() != null) {
+            transaction.setTransactionSource(request.getTransactionSource());
         }
 
         if (request.getCategoryId() != null) {

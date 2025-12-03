@@ -3,15 +3,11 @@ package com.example.backend.service;
 import com.example.backend.dto.ParsedSMSData;
 import com.example.backend.dto.TransactionRequest;
 import com.example.backend.dto.TransactionResponse;
-import com.example.backend.model.Account;
 import com.example.backend.model.User;
-import com.example.backend.repository.AccountRepository;
 import com.example.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
 
 /**
  * Service quản lý giao dịch từ SMS ngân hàng
@@ -23,7 +19,6 @@ public class SMSTransactionService {
 
     private final SMSParserService smsParserService;
     private final TransactionService transactionService;
-    private final AccountRepository accountRepository;
     private final UserRepository userRepository;
 
     /**
@@ -40,83 +35,22 @@ public class SMSTransactionService {
         // Parse nội dung SMS
         ParsedSMSData parsedData = smsParserService.parseSMS(smsContent, senderPhone);
 
-        // Lấy thông tin user
-        User user = userRepository.findByUsername(username)
+        // Verify user exists
+        userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Tìm hoặc tạo tài khoản ngân hàng tự động
-        Account account = findOrCreateAccount(user, parsedData);
-
-        // Xây dựng transaction request
+        // Xây dựng transaction request với nguon_giao_dich từ bankCode
         TransactionRequest transactionRequest = TransactionRequest.builder()
-                .accountId(account.getId())
+                .transactionSource(parsedData.getBankCode()) // VCB, TCB, BIDV...
                 .amount(parsedData.getAmount())
                 .type(parsedData.getType())
-                .description(parsedData.getMerchant())
+                .merchant(parsedData.getMerchant())
+                .description("Giao dịch từ SMS - " + parsedData.getMerchant())
                 .transactionDate(parsedData.getTransactionDate())
                 .isAuto(true) // Đánh dấu là tự động tạo từ SMS
                 .build();
 
         // Tạo giao dịch (sẽ tự động phân loại category)
         return transactionService.createTransaction(transactionRequest, username);
-    }
-
-    /**
-     * Tìm hoặc tạo tài khoản ngân hàng dựa trên thông tin SMS
-     * 
-     * @param user       User sở hữu tài khoản
-     * @param parsedData Dữ liệu đã parse từ SMS (chứa bankCode và accountNumber)
-     * @return Account đã tìm thấy hoặc vừa tạo mới
-     */
-    private Account findOrCreateAccount(User user, ParsedSMSData parsedData) {
-        String bankCode = parsedData.getBankCode();
-        String accountNumber = parsedData.getAccountNumber();
-
-        // Thử tìm tài khoản đã tồn tại theo bank code và 4 chữ số cuối
-        Account account = accountRepository
-                .findByUserIdAndAccountNameContaining(user.getId(), bankCode + " " + accountNumber)
-                .stream()
-                .findFirst()
-                .orElse(null);
-
-        if (account == null) {
-            // Tạo tài khoản ngân hàng mới
-            account = Account.builder()
-                    .userId(user.getId())
-                    .bankName(getBankNameFromCode(bankCode))
-                    .accountName(getBankNameFromCode(bankCode) + " " + accountNumber)
-                    .accountNumber(accountNumber)
-                    .accountType(Account.AccountType.BANK)
-                    .balance(BigDecimal.ZERO)
-                    .currency("VND")
-                    .isActive(true)
-                    .build();
-            account = accountRepository.save(account);
-        }
-
-        return account;
-    }
-
-    /**
-     * Chuyển mã ngân hàng sang tên đầy đủ (VCB → Vietcombank, TCB → Techcombank,
-     * ...)
-     */
-    private String getBankNameFromCode(String bankCode) {
-        switch (bankCode.toUpperCase()) {
-            case "VCB":
-                return "Vietcombank";
-            case "TCB":
-                return "Techcombank";
-            case "ACB":
-                return "ACB";
-            case "VTB":
-                return "VietinBank";
-            case "BIDV":
-                return "BIDV";
-            case "MB":
-                return "MB Bank";
-            default:
-                return bankCode;
-        }
     }
 }

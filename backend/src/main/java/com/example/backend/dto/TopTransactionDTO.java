@@ -23,5 +23,5 @@ public class TopTransactionDTO {
     private String categoryName;
     private String categoryIcon;
     private LocalDateTime transactionDate;
-    private String accountName;
+    private String transactionSource; // Nguồn giao dịch: VCB, TCB, MOMO...
 }

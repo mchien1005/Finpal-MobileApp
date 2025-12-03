@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 public class DashboardService {
 
         private final TransactionRepository transactionRepository;
-        private final AccountRepository accountRepository;
         private final UserRepository userRepository;
 
         /**
@@ -74,11 +73,14 @@ public class DashboardService {
                                         .multiply(BigDecimal.valueOf(100));
                 }
 
-                // Lấy tổng số dư từ tất cả tài khoản đang hoạt động
-                List<Object[]> accountBalances = accountRepository.findAccountBalancesByUserId(user.getId());
-                BigDecimal totalBalance = accountBalances.stream()
-                                .map(arr -> (BigDecimal) arr[0])
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                // Tính tổng số dư = Tổng thu nhập - Tổng chi tiêu (all time)
+                BigDecimal totalIncome = transactionRepository.sumByUserIdAndType(user.getId(),
+                                Transaction.TransactionType.INCOME);
+                BigDecimal totalExpense = transactionRepository.sumByUserIdAndType(user.getId(),
+                                Transaction.TransactionType.EXPENSE);
+                totalIncome = (totalIncome != null) ? totalIncome : BigDecimal.ZERO;
+                totalExpense = (totalExpense != null) ? totalExpense : BigDecimal.ZERO;
+                BigDecimal totalBalance = totalIncome.subtract(totalExpense);
 
                 // So sánh với tháng trước
                 LocalDate prevMonth = targetMonth.minusMonths(1);
@@ -180,8 +182,7 @@ public class DashboardService {
 
         /**
          * Tổng quan Dashboard - Tổng hợp tất cả thông tin dashboard cho màn hình chính
-         * Bao gồm: Cash flow, top categories, số tài khoản, số giao dịch
-         * (ngày/tuần/tháng)
+         * Bao gồm: Cash flow, top categories, số giao dịch (ngày/tuần/tháng)
          */
         @Transactional(readOnly = true)
         public DashboardSummaryDTO getDashboardSummary(String username) {
@@ -216,8 +217,7 @@ public class DashboardService {
                 summary.setMonthlyTransactions(cashFlow.getTransactionCount());
                 summary.setTopExpenseCategories(topCategories);
 
-                // Đếm số tài khoản, giao dịch hôm nay, giao dịch tuần
-                summary.setTotalAccounts((int) accountRepository.findByUserIdAndIsActiveTrue(user.getId()).size());
+                // Đếm số giao dịch hôm nay, giao dịch tuần
                 Long todayCount = transactionRepository.countByUserIdAndDateRange(
                                 user.getId(), now.atStartOfDay(), now.atTime(23, 59, 59));
                 summary.setTodayTransactions((todayCount != null) ? todayCount.intValue() : 0);

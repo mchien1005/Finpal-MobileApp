@@ -16,8 +16,7 @@ import java.time.LocalDateTime;
 public class TransactionResponse {
     private Long id;
     private Long userId;
-    private Long accountId;
-    private String accountName;
+    private String transactionSource; // VCB, TCB, CASH, MOMO...
     private Long categoryId;
     private String categoryName;
     private String categoryIcon;
@@ -38,8 +37,7 @@ public class TransactionResponse {
         return TransactionResponse.builder()
                 .id(transaction.getId())
                 .userId(transaction.getUser().getId())
-                .accountId(transaction.getAccount().getId())
-                .accountName(transaction.getAccount().getAccountName())
+                .transactionSource(transaction.getTransactionSource())
                 .categoryId(transaction.getCategory() != null ? transaction.getCategory().getId() : null)
                 .categoryName(transaction.getCategory() != null ? transaction.getCategory().getName() : null)
                 .amount(transaction.getAmount())

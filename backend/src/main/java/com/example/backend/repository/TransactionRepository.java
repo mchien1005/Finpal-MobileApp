@@ -24,7 +24,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
         List<Transaction> findByUserIdAndCategoryId(Long userId, Long categoryId);
 
-        List<Transaction> findByAccountId(Long accountId);
+        List<Transaction> findByUserIdAndTransactionSource(Long userId, String transactionSource);
 
         @Query("SELECT SUM(t.amount) FROM Transaction t WHERE t.user.id = :userId AND t.type = :type AND t.transactionDate BETWEEN :startDate AND :endDate")
         BigDecimal sumAmountByUserIdAndTypeAndDateBetween(
@@ -51,6 +51,12 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
                         @Param("startDate") LocalDateTime startDate,
                         @Param("endDate") LocalDateTime endDate);
 
+        // Sum by user and type (without date range - for total balance calculation)
+        @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.user.id = :userId AND t.type = :type")
+        BigDecimal sumByUserIdAndType(
+                        @Param("userId") Long userId,
+                        @Param("type") Transaction.TransactionType type);
+
         @Query("SELECT COUNT(t) FROM Transaction t WHERE t.user.id = :userId AND t.transactionDate BETWEEN :startDate AND :endDate")
         Long countByUserIdAndDateRange(
                         @Param("userId") Long userId,
@@ -61,13 +67,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
         Long countByUserIdAndTypeAndDateRange(
                         @Param("userId") Long userId,
                         @Param("type") Transaction.TransactionType type,
-                        @Param("startDate") LocalDateTime startDate,
-                        @Param("endDate") LocalDateTime endDate);
-
-        @Query("SELECT COUNT(t) FROM Transaction t WHERE t.user.id = :userId AND t.account.id = :accountId AND t.transactionDate BETWEEN :startDate AND :endDate")
-        Long countByUserIdAndAccountIdAndDateRange(
-                        @Param("userId") Long userId,
-                        @Param("accountId") Long accountId,
                         @Param("startDate") LocalDateTime startDate,
                         @Param("endDate") LocalDateTime endDate);
 
@@ -93,7 +92,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
                         @Param("endDate") LocalDateTime endDate,
                         @Param("type") Transaction.TransactionType type);
 
-        @Query("SELECT t.id, t.type, t.amount, t.merchant, t.description, t.category.name, t.transactionDate, t.account.accountName "
+        @Query("SELECT t.id, t.type, t.amount, t.merchant, t.description, t.category.name, t.transactionDate, t.transactionSource "
                         +
                         "FROM Transaction t " +
                         "WHERE t.user.id = :userId " +

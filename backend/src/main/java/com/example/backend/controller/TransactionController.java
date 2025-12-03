@@ -40,7 +40,7 @@ public class TransactionController {
     /**
      * API tạo giao dịch thủ công (Manual Entry)
      * 
-     * @param request        - Thông tin giao dịch (accountId, amount, type,
+     * @param request        - Thông tin giao dịch (transactionSource, amount, type,
      *                       merchant...)
      * @param authentication - User đang đăng nhập
      * @return TransactionResponse - Giao dịch vừa tạo
@@ -63,20 +63,21 @@ public class TransactionController {
     /**
      * API lấy danh sách giao dịch với filter, pagination và sort
      * 
-     * @param accountId     - Lọc theo tài khoản (optional)
-     * @param categoryId    - Lọc theo danh mục (optional)
-     * @param type          - Lọc theo loại: INCOME hoặc EXPENSE (optional)
-     * @param startDate     - Lọc từ ngày (optional)
-     * @param endDate       - Lọc đến ngày (optional)
-     * @param merchant      - Lọc theo merchant/cửa hàng (optional)
-     * @param isAuto        - Lọc giao dịch tự động (từ SMS) hoặc thủ công
-     *                      (optional)
-     * @param isVerified    - Lọc giao dịch đã xác minh (optional)
-     * @param keyword       - Tìm kiếm theo description hoặc merchant (optional)
-     * @param page          - Trang số (mặc định 0)
-     * @param size          - Số lượng items per page (mặc định 20)
-     * @param sortBy        - Sắp xếp theo field nào (mặc định transactionDate)
-     * @param sortDirection - ASC hoặc DESC (mặc định DESC)
+     * @param transactionSource - Lọc theo nguồn giao dịch: VCB, TCB, MOMO...
+     *                          (optional)
+     * @param categoryId        - Lọc theo danh mục (optional)
+     * @param type              - Lọc theo loại: INCOME hoặc EXPENSE (optional)
+     * @param startDate         - Lọc từ ngày (optional)
+     * @param endDate           - Lọc đến ngày (optional)
+     * @param merchant          - Lọc theo merchant/cửa hàng (optional)
+     * @param isAuto            - Lọc giao dịch tự động (từ SMS) hoặc thủ công
+     *                          (optional)
+     * @param isVerified        - Lọc giao dịch đã xác minh (optional)
+     * @param keyword           - Tìm kiếm theo description hoặc merchant (optional)
+     * @param page              - Trang số (mặc định 0)
+     * @param size              - Số lượng items per page (mặc định 20)
+     * @param sortBy            - Sắp xếp theo field nào (mặc định transactionDate)
+     * @param sortDirection     - ASC hoặc DESC (mặc định DESC)
      * @return PageResponse chứa list transactions và thông tin pagination
      * 
      *         Ví dụ:
@@ -86,7 +87,7 @@ public class TransactionController {
      */
     @GetMapping
     public ResponseEntity<PageResponse<TransactionResponse>> getTransactions(
-            @RequestParam(required = false) Long accountId,
+            @RequestParam(required = false) String transactionSource,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -103,7 +104,7 @@ public class TransactionController {
 
         // Build filter object từ request params
         TransactionFilter filter = new TransactionFilter();
-        filter.setAccountId(accountId);
+        filter.setTransactionSource(transactionSource);
         filter.setCategoryId(categoryId);
         filter.setType(type);
         filter.setStartDate(startDate != null ? startDate.atStartOfDay() : null);

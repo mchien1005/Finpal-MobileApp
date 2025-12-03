@@ -18,9 +18,8 @@ import java.time.LocalDateTime;
 @Schema(description = "Tạo giao dịch mới")
 public class TransactionRequest {
 
-    @NotNull(message = "Account ID không được để trống")
-    @Schema(description = "ID tài khoản", example = "1", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Long accountId;
+    @Schema(description = "Nguồn giao dịch (VCB, TCB, CASH, MOMO...)", example = "VCB")
+    private String transactionSource;
 
     @Schema(description = "ID danh mục (tùy chọn - nếu không có sẽ tự động phân loại bằng AI)", example = "5")
     private Long categoryId;
