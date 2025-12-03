@@ -14,7 +14,6 @@ USE finpal_db;
 -- TRUNCATE TABLE ngan_sach;
 -- TRUNCATE TABLE giao_dich;
 -- TRUNCATE TABLE muc_tieu_tiet_kiem;
--- TRUNCATE TABLE tai_khoan;
 -- TRUNCATE TABLE quy_tac_danh_muc;
 -- TRUNCATE TABLE danh_muc;
 -- TRUNCATE TABLE bo_phan_tich_sms;
@@ -456,57 +455,12 @@ VALUES -- ========== ĂN UỐNG (1) ==========
     ('NHAN QUA', 22, 90),
     ('LI XI', 22, 95);
 -- =====================================================
--- 5. DEMO DATA - Tai khoan cho user demo
+-- 5. DEMO DATA - Giao dich (30 ngày gần nhất)
 -- =====================================================
 SET @demo_user_id = (
         SELECT id
         FROM nguoi_dung
         WHERE ten_dang_nhap = 'demo'
-        LIMIT 1
-    );
-INSERT INTO tai_khoan (
-        id_nguoi_dung,
-        ten_ngan_hang,
-        so_tai_khoan,
-        ten_tai_khoan,
-        so_du
-    )
-VALUES (
-        @demo_user_id,
-        'VCB',
-        '****1234',
-        'VCB Lương',
-        5000000.00
-    ),
-    (
-        @demo_user_id,
-        'TCB',
-        '****5678',
-        'TCB Tiết kiệm',
-        10000000.00
-    ),
-    (
-        @demo_user_id,
-        'CASH',
-        NULL,
-        'Tiền mặt',
-        500000.00
-    );
--- =====================================================
--- 6. DEMO DATA - Giao dich (30 ngày gần nhất)
--- =====================================================
-SET @vcb_account = (
-        SELECT id
-        FROM tai_khoan
-        WHERE id_nguoi_dung = @demo_user_id
-            AND ten_ngan_hang = 'VCB'
-        LIMIT 1
-    );
-SET @tcb_account = (
-        SELECT id
-        FROM tai_khoan
-        WHERE id_nguoi_dung = @demo_user_id
-            AND ten_ngan_hang = 'TCB'
         LIMIT 1
     );
 -- Category IDs (Chi tiêu)
@@ -641,7 +595,7 @@ SET @cat_duoc_tang = (
     );
 INSERT INTO giao_dich (
         id_nguoi_dung,
-        id_tai_khoan,
+        nguon_giao_dich,
         id_danh_muc,
         so_tien,
         loai,
@@ -653,7 +607,7 @@ INSERT INTO giao_dich (
 VALUES -- Thu nhập
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_luong,
         15000000.00,
         'INCOME',
@@ -665,7 +619,7 @@ VALUES -- Thu nhập
     -- Chi tiêu tuần 1 (01-07/11)
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_an_uong,
         45000.00,
         'EXPENSE',
@@ -676,7 +630,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_di_chuyen,
         85000.00,
         'EXPENSE',
@@ -687,7 +641,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_an_uong,
         120000.00,
         'EXPENSE',
@@ -698,7 +652,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_mua_sam,
         350000.00,
         'EXPENSE',
@@ -709,7 +663,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_giai_tri,
         150000.00,
         'EXPENSE',
@@ -720,7 +674,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_an_uong,
         200000.00,
         'EXPENSE',
@@ -732,7 +686,7 @@ VALUES -- Thu nhập
     -- Chi tiêu tuần 2 (08-14/11)
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_hoa_don,
         350000.00,
         'EXPENSE',
@@ -743,7 +697,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_hoa_don,
         200000.00,
         'EXPENSE',
@@ -754,7 +708,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_di_chuyen,
         95000.00,
         'EXPENSE',
@@ -765,7 +719,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_an_uong,
         55000.00,
         'EXPENSE',
@@ -776,7 +730,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_mua_sam,
         1200000.00,
         'EXPENSE',
@@ -787,7 +741,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_an_uong,
         180000.00,
         'EXPENSE',
@@ -798,7 +752,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_giai_tri,
         199000.00,
         'EXPENSE',
@@ -810,7 +764,7 @@ VALUES -- Thu nhập
     -- Chi tiêu tuần 3 (15-21/11)
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_an_uong,
         50000.00,
         'EXPENSE',
@@ -821,7 +775,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_di_chuyen,
         75000.00,
         'EXPENSE',
@@ -832,7 +786,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_mua_sam,
         850000.00,
         'EXPENSE',
@@ -843,7 +797,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_an_uong,
         320000.00,
         'EXPENSE',
@@ -854,7 +808,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_giai_tri,
         250000.00,
         'EXPENSE',
@@ -865,7 +819,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_an_uong,
         45000.00,
         'EXPENSE',
@@ -877,7 +831,7 @@ VALUES -- Thu nhập
     -- Chi tiêu tuần 4 (22-26/11)
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_di_chuyen,
         120000.00,
         'EXPENSE',
@@ -888,7 +842,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_an_uong,
         280000.00,
         'EXPENSE',
@@ -899,7 +853,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_mua_sam,
         650000.00,
         'EXPENSE',
@@ -910,7 +864,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_an_uong,
         60000.00,
         'EXPENSE',
@@ -921,7 +875,7 @@ VALUES -- Thu nhập
     ),
     (
         @demo_user_id,
-        @vcb_account,
+        'VCB',
         @cat_di_chuyen,
         90000.00,
         'EXPENSE',
@@ -931,7 +885,7 @@ VALUES -- Thu nhập
         TRUE
     );
 -- =====================================================
--- 7. DEMO DATA - Ngan sach
+-- 6. DEMO DATA - Ngan sach
 -- =====================================================
 INSERT INTO ngan_sach (
         id_nguoi_dung,
@@ -982,7 +936,7 @@ VALUES (
         '2025-11-30'
     );
 -- =====================================================
--- 8. DEMO DATA - Muc tieu tiet kiem
+-- 7. DEMO DATA - Muc tieu tiet kiem
 -- =====================================================
 INSERT INTO muc_tieu_tiet_kiem (
         id_nguoi_dung,
@@ -1017,7 +971,7 @@ VALUES (
         'COMPLETED'
     );
 -- =====================================================
--- 9. DEMO DATA - Giao dich dinh ky (AI đã học)
+-- 8. DEMO DATA - Giao dich dinh ky (AI đã học)
 -- =====================================================
 INSERT INTO giao_dich_dinh_ky (
         id_nguoi_dung,
@@ -1065,7 +1019,7 @@ VALUES (
         '2025-11-26'
     );
 -- =====================================================
--- 10. DEMO DATA - Thong bao
+-- 9. DEMO DATA - Thong bao
 -- =====================================================
 INSERT INTO thong_bao (id_nguoi_dung, loai, tieu_de, noi_dung, da_doc)
 VALUES (

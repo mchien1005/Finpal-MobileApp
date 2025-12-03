@@ -45,43 +45,21 @@ CREATE TABLE IF NOT EXISTS danh_muc (
         INDEX idx_id_cha (id_cha)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 3. BẢNG TAI_KHOAN (ACCOUNTS) - Tài khoản ngân hàng
--- =====================================================
-CREATE TABLE IF NOT EXISTS tai_khoan (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    id_nguoi_dung BIGINT NOT NULL,
-    ten_ngan_hang VARCHAR(100) NOT NULL COMMENT 'Vietcombank, Techcombank, ACB...',
-    ten_tai_khoan VARCHAR(100) COMMENT 'Tên tài khoản',
-    so_tai_khoan VARCHAR(50) COMMENT 'Số tài khoản (plain text hoặc masked)',
-    so_tai_khoan_ma_hoa VARCHAR(500) COMMENT 'Số tài khoản được mã hóa',
-    loai_tai_khoan ENUM('BANK', 'CASH', 'CREDIT_CARD', 'E_WALLET') DEFAULT 'BANK',
-    so_du DECIMAL(15, 2) DEFAULT 0.00,
-    don_vi_tien_te VARCHAR(3) DEFAULT 'VND',
-    dang_hoat_dong BOOLEAN DEFAULT TRUE,
-    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ngay_cap_nhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id) ON DELETE CASCADE,
-    INDEX idx_id_nguoi_dung (id_nguoi_dung),
-    INDEX idx_ten_ngan_hang (ten_ngan_hang),
-    INDEX idx_so_tai_khoan (so_tai_khoan)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
--- =====================================================
--- 4. BẢNG GIAO_DICH (TRANSACTIONS) - Giao dịch tài chính
+-- 3. BẢNG GIAO_DICH (TRANSACTIONS) - Giao dịch tài chính
 -- =====================================================
 CREATE TABLE IF NOT EXISTS giao_dich (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     id_nguoi_dung BIGINT NOT NULL,
-    id_tai_khoan BIGINT NOT NULL,
     id_danh_muc BIGINT NULL,
     so_tien DECIMAL(15, 2) NOT NULL,
     loai ENUM('INCOME', 'EXPENSE') NOT NULL,
+    nguon_giao_dich VARCHAR(50) COMMENT 'Nguồn giao dịch: VCB, TCB, CASH, MOMO...',
     don_vi_chap_nhan VARCHAR(255) COMMENT 'Đơn vị nhận tiền: GRAB, SHOPEE, CGV...',
     mo_ta TEXT COMMENT 'Mô tả giao dịch',
     ngay_giao_dich DATETIME NOT NULL,
     -- Thông tin SMS
     tu_dong BOOLEAN DEFAULT FALSE COMMENT 'TRUE: từ SMS, FALSE: nhập tay',
     noi_dung_sms_ma_hoa TEXT COMMENT 'Nội dung SMS gốc (mã hóa)',
-    ma_ngan_hang_sms VARCHAR(20) COMMENT 'Mã ngân hàng trong SMS',
     -- Trạng thái
     da_xac_nhan BOOLEAN DEFAULT FALSE COMMENT 'Người dùng đã xác nhận',
     bat_thuong BOOLEAN DEFAULT FALSE COMMENT 'Giao dịch bất thường',
@@ -91,18 +69,17 @@ CREATE TABLE IF NOT EXISTS giao_dich (
     ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ngay_cap_nhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id) ON DELETE CASCADE,
-    FOREIGN KEY (id_tai_khoan) REFERENCES tai_khoan(id) ON DELETE CASCADE,
     FOREIGN KEY (id_danh_muc) REFERENCES danh_muc(id) ON DELETE
     SET NULL,
         INDEX idx_nguoi_dung_ngay (id_nguoi_dung, ngay_giao_dich),
-        INDEX idx_tai_khoan (id_tai_khoan),
         INDEX idx_danh_muc (id_danh_muc),
         INDEX idx_loai (loai),
+        INDEX idx_nguon_giao_dich (nguon_giao_dich),
         INDEX idx_don_vi_chap_nhan (don_vi_chap_nhan),
         INDEX idx_ngay_giao_dich (ngay_giao_dich)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 5. BẢNG NGAN_SACH (BUDGETS) - Ngân sách
+-- 4. BẢNG NGAN_SACH (BUDGETS) - Ngân sách
 -- =====================================================
 CREATE TABLE IF NOT EXISTS ngan_sach (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -124,7 +101,7 @@ CREATE TABLE IF NOT EXISTS ngan_sach (
         INDEX idx_ngay (ngay_bat_dau, ngay_ket_thuc)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 6. BẢNG MUC_TIEU_TIET_KIEM (SAVINGS_GOALS) - Hũ tiết kiệm
+-- 5. BẢNG MUC_TIEU_TIET_KIEM (SAVINGS_GOALS) - Hũ tiết kiệm
 -- =====================================================
 CREATE TABLE IF NOT EXISTS muc_tieu_tiet_kiem (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -143,7 +120,7 @@ CREATE TABLE IF NOT EXISTS muc_tieu_tiet_kiem (
     INDEX idx_han_chot (han_chot)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 7. BẢNG DONG_GOP_TIET_KIEM (SAVINGS_CONTRIBUTIONS)
+-- 6. BẢNG DONG_GOP_TIET_KIEM (SAVINGS_CONTRIBUTIONS)
 -- =====================================================
 CREATE TABLE IF NOT EXISTS dong_gop_tiet_kiem (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -157,7 +134,7 @@ CREATE TABLE IF NOT EXISTS dong_gop_tiet_kiem (
     INDEX idx_ngay (ngay_dong_gop)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
--- 7.1. BẢNG GIAO_DICH_DINH_KY (RECURRING_TRANSACTIONS)
+-- 7. BẢNG GIAO_DICH_DINH_KY (RECURRING_TRANSACTIONS)
 -- =====================================================
 CREATE TABLE IF NOT EXISTS giao_dich_dinh_ky (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -244,6 +221,11 @@ CREATE TABLE IF NOT EXISTS cai_dat_nguoi_dung (
     bat_thong_bao BOOLEAN DEFAULT TRUE,
     thong_bao_email BOOLEAN DEFAULT TRUE,
     thong_bao_day BOOLEAN DEFAULT TRUE,
+    canh_bao_giao_dich BOOLEAN DEFAULT TRUE COMMENT 'Cảnh báo giao dịch mới',
+    canh_bao_ngan_sach BOOLEAN DEFAULT TRUE COMMENT 'Cảnh báo vượt ngân sách',
+    nhac_nho_muc_tieu BOOLEAN DEFAULT TRUE COMMENT 'Nhắc nhở mục tiêu tiết kiệm',
+    bao_cao_tuan BOOLEAN DEFAULT FALSE COMMENT 'Báo cáo chi tiêu hàng tuần',
+    bao_cao_thang BOOLEAN DEFAULT TRUE COMMENT 'Báo cáo chi tiêu hàng tháng',
     nguong_canh_bao_ngan_sach INT DEFAULT 70,
     giao_dien VARCHAR(20) DEFAULT 'light',
     ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
