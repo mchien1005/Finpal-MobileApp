@@ -1,0 +1,112 @@
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: finpal-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: finpal_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/database/finpal_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./backend/database/seed_data.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    networks:
+      - finpal-network
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password --init-connect='SET NAMES utf8mb4'
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # phpMyAdmin - Web Interface for MySQL
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: finpal-phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root
+    ports:
+      - "8081:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - finpal-network
+    restart: unless-stopped
+
+  # Backend Java Spring Boot
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: finpal-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/finpal_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&useUnicode=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQLDialect
+      JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      JWT_EXPIRATION: 86400000
+      SMS_API_KEY: your-sms-api-key
+      AI_SERVICE_URL: http://backend-ai:8000
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - finpal-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Backend AI Python FastAPI
+  backend-ai:
+    build:
+      context: ./backendAI
+      dockerfile: Dockerfile
+    container_name: finpal-backend-ai
+    environment:
+      BACKEND_URL: http://backend:8080
+      DATABASE_URL: mysql://root:root@mysql:3306/finpal_db
+      MODEL_PATH: /app/data/models
+      PYTHONUNBUFFERED: 1
+    ports:
+      - "8000:8000"
+    volumes:
+      - ai_models:/app/data/models
+      - ai_data:/app/data
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - finpal-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import requests; requests.get(\"http://localhost:8000/health\")'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  finpal-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  ai_models:
+    driver: local
+  ai_data:
+    driver: local
