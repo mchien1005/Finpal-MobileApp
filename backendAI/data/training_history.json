@@ -1,0 +1,195 @@
+{
+  "models": {
+    "Category Classification": {
+      "training_records": [
+        {
+          "date": "2025-11-29",
+          "timestamp": "2025-11-29T13:26:49.235559",
+          "accuracy": 78.17,
+          "metrics": {
+            "precision": 82.03,
+            "recall": 78.17,
+            "f1_score": 77.46,
+            "test_samples": 12600,
+            "train_samples": 50400
+          }
+        },
+        {
+          "date": "2025-11-29",
+          "timestamp": "2025-11-29T13:27:06.682566",
+          "accuracy": 78.17,
+          "metrics": {
+            "precision": 82.03,
+            "recall": 78.17,
+            "f1_score": 77.46,
+            "test_samples": 12600,
+            "train_samples": 50400
+          }
+        },
+        {
+          "date": "2025-11-29",
+          "timestamp": "2025-11-29T13:27:25.107828",
+          "accuracy": 78.17,
+          "metrics": {
+            "precision": 82.03,
+            "recall": 78.17,
+            "f1_score": 77.46,
+            "test_samples": 12600,
+            "train_samples": 50400
+          }
+        },
+        {
+          "date": "2025-11-29",
+          "timestamp": "2025-11-29T13:55:26.637485",
+          "accuracy": 78.17,
+          "metrics": {
+            "precision": 82.03,
+            "recall": 78.17,
+            "f1_score": 77.46,
+            "test_samples": 12600,
+            "train_samples": 50400
+          }
+        }
+      ],
+      "total_trainings": 4,
+      "best_accuracy": 78.17
+    },
+    "Anomaly Detection": {
+      "training_records": [
+        {
+          "date": "2025-11-29",
+          "timestamp": "2025-11-29T13:26:50.492364",
+          "accuracy": 95.0,
+          "metrics": {
+            "detection_rate": 5.0,
+            "anomalies_detected": 3150,
+            "total_samples": 63000,
+            "contamination": 0.05
+          }
+        },
+        {
+          "date": "2025-11-29",
+          "timestamp": "2025-11-29T13:27:07.930127",
+          "accuracy": 95.0,
+          "metrics": {
+            "detection_rate": 5.0,
+            "anomalies_detected": 3150,
+            "total_samples": 63000,
+            "contamination": 0.05
+          }
+        },
+        {
+          "date": "2025-11-29",
+          "timestamp": "2025-11-29T13:27:26.360726",
+          "accuracy": 95.0,
+          "metrics": {
+            "detection_rate": 5.0,
+            "anomalies_detected": 3150,
+            "total_samples": 63000,
+            "contamination": 0.05
+          }
+        },
+        {
+          "date": "2025-11-29",
+          "timestamp": "2025-11-29T13:55:28.211002",
+          "accuracy": 95.0,
+          "metrics": {
+            "detection_rate": 5.0,
+            "anomalies_detected": 3150,
+            "total_samples": 63000,
+            "contamination": 0.05
+          }
+        }
+      ],
+      "total_trainings": 4,
+      "best_accuracy": 95.0
+    },
+    "Spending Prediction": {
+      "training_records": [
+        {
+          "date": "2025-11-29",
+          "timestamp": "2025-11-29T13:26:55.787015",
+          "accuracy": 71.82,
+          "metrics": {
+            "avg_r2_score": 0.0608,
+            "models_trained": 9,
+            "categories": [
+              "Di chuyển",
+              "Giáo dục",
+              "Giải trí",
+              "Hóa đơn",
+              "Mua sắm",
+              "Sức khỏe",
+              "Ăn uống",
+              "Chi tiêu khác",
+              "Làm đẹp"
+            ]
+          }
+        },
+        {
+          "date": "2025-11-29",
+          "timestamp": "2025-11-29T13:27:13.337011",
+          "accuracy": 71.82,
+          "metrics": {
+            "avg_r2_score": 0.0608,
+            "models_trained": 9,
+            "categories": [
+              "Di chuyển",
+              "Giáo dục",
+              "Giải trí",
+              "Hóa đơn",
+              "Mua sắm",
+              "Sức khỏe",
+              "Ăn uống",
+              "Chi tiêu khác",
+              "Làm đẹp"
+            ]
+          }
+        },
+        {
+          "date": "2025-11-29",
+          "timestamp": "2025-11-29T13:27:32.309359",
+          "accuracy": 71.82,
+          "metrics": {
+            "avg_r2_score": 0.0608,
+            "models_trained": 9,
+            "categories": [
+              "Di chuyển",
+              "Giáo dục",
+              "Giải trí",
+              "Hóa đơn",
+              "Mua sắm",
+              "Sức khỏe",
+              "Ăn uống",
+              "Chi tiêu khác",
+              "Làm đẹp"
+            ]
+          }
+        },
+        {
+          "date": "2025-11-29",
+          "timestamp": "2025-11-29T13:55:35.252205",
+          "accuracy": 71.82,
+          "metrics": {
+            "avg_r2_score": 0.0608,
+            "models_trained": 9,
+            "categories": [
+              "Di chuyển",
+              "Giáo dục",
+              "Giải trí",
+              "Hóa đơn",
+              "Mua sắm",
+              "Sức khỏe",
+              "Ăn uống",
+              "Chi tiêu khác",
+              "Làm đẹp"
+            ]
+          }
+        }
+      ],
+      "total_trainings": 4,
+      "best_accuracy": 71.82
+    }
+  },
+  "created_at": "2025-11-29T13:26:49.235536"
+}
