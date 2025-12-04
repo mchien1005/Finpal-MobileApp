@@ -16,7 +16,6 @@ import Sidebar from '../../components/user/Sidebar';
 import Header from '../../components/common/Header';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { createTransaction, getTransactions } from '../../services/transactionService';
-import { getAccounts } from '../../services/accountService';
 import { getCategories } from '../../services/categoryService';
 import dayjs from 'dayjs';
 import SuccessModal from '../../components/common/SuccessModal';
@@ -31,34 +30,26 @@ const TransactionPage = () => {
   const [category, setCategory] = useState(null);
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(dayjs());
-  const [account, setAccount] = useState(null);
+  const [transactionSource, setTransactionSource] = useState('CASH'); // VCB, TCB, CASH, MOMO...
   const [merchant, setMerchant] = useState('');
   
   // API data states
-  const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // Load accounts, categories và giao dịch gần đây từ API
+  // Load categories và giao dịch gần đây từ API
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [accountsData, categoriesData, transactionsData] = await Promise.all([
-        getAccounts(),
+      const [categoriesData, transactionsData] = await Promise.all([
         getCategories(),
         getTransactions({ page: 0, size: 6 }),
       ]);
-      setAccounts(accountsData || []);
       setCategories(categoriesData || []);
       setRecentTransactions(transactionsData?.content || []);
-      
-      // Set default account nếu có
-      if (accountsData && accountsData.length > 0) {
-        setAccount(accountsData[0].id);
-      }
     } catch (error) {
       console.error('Error fetching data:', error);
       message.error('Không thể tải dữ liệu. Vui lòng thử lại!');
@@ -82,10 +73,21 @@ const TransactionPage = () => {
     label: cat.name,
   }));
 
-  const accountOptions = accounts.map((acc) => ({
-    value: acc.id,
-    label: `${acc.accountName} - ${acc.bankName}`,
-  }));
+  // Nguồn giao dịch options
+  const transactionSourceOptions = [
+    { value: 'CASH', label: 'Tiền mặt' },
+    { value: 'VCB', label: 'Vietcombank' },
+    { value: 'TCB', label: 'Techcombank' },
+    { value: 'MB', label: 'MB Bank' },
+    { value: 'VPB', label: 'VPBank' },
+    { value: 'ACB', label: 'ACB' },
+    { value: 'BIDV', label: 'BIDV' },
+    { value: 'VTB', label: 'Vietinbank' },
+    { value: 'MOMO', label: 'Ví MoMo' },
+    { value: 'ZALOPAY', label: 'ZaloPay' },
+    { value: 'VNPAY', label: 'VNPay' },
+    { value: 'OTHER', label: 'Khác' },
+  ];
 
   // Reset category khi đổi tab
   useEffect(() => {
@@ -112,10 +114,6 @@ const TransactionPage = () => {
   // Xử lý thêm giao dịch
   const handleAddTransaction = async () => {
     // Validate
-    if (!account) {
-      message.error('Vui lòng chọn tài khoản!');
-      return;
-    }
     if (!amount || parseFloat(amount.replace(/,/g, '')) <= 0) {
       message.error('Vui lòng nhập số tiền hợp lệ!');
       return;
@@ -124,7 +122,7 @@ const TransactionPage = () => {
     setSubmitting(true);
     try {
       const transactionData = {
-        accountId: account,
+        transactionSource: transactionSource || 'CASH',
         categoryId: category || null,
         amount: parseFloat(amount.replace(/,/g, '')),
         type: activeTab === 'expense' ? 'EXPENSE' : 'INCOME',
@@ -142,6 +140,7 @@ const TransactionPage = () => {
       setDescription('');
       setMerchant('');
       setDate(dayjs());
+      setTransactionSource('CASH');
       
       // Refresh danh sách giao dịch
       const transactionsData = await getTransactions({ page: 0, size: 5 });
@@ -269,17 +268,17 @@ const TransactionPage = () => {
               />
             </div>
 
-            {/* Tài khoản */}
+            {/* Nguồn giao dịch */}
             <div style={{ marginBottom: 16 }}>
               <Text style={{ display: 'block', marginBottom: 8, fontSize: 14, color: '#0a0a0a' }}>
-                Tài khoản <span style={{ color: '#E7000B' }}>*</span>
+                Nguồn giao dịch
               </Text>
               <Select
-                placeholder="Chọn tài khoản"
-                value={account}
-                onChange={setAccount}
+                placeholder="Chọn nguồn giao dịch"
+                value={transactionSource}
+                onChange={setTransactionSource}
                 style={{ width: '100%', height: 36 }}
-                options={accountOptions}
+                options={transactionSourceOptions}
                 dropdownStyle={{ borderRadius: 8 }}
                 className="custom-select"
               />
@@ -448,7 +447,7 @@ const TransactionPage = () => {
                           color: tx.type === 'INCOME' ? '#016630' : '#193CB8',
                         }}
                       >
-                        {tx.accountName || tx.categoryName || 'Chưa phân loại'}
+                        {tx.transactionSource || tx.categoryName || 'Chưa phân loại'}
                       </span>
                       <span
                         style={{
