@@ -1,116 +1,30 @@
-import React, { useState } from 'react';
-import { Button, Space } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Button, Space, Spin, message } from 'antd';
 import {
   PlusOutlined,
   SendOutlined,
   EditOutlined,
   DeleteOutlined,
+  LoadingOutlined,
 } from '@ant-design/icons';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import { useSidebar } from '../../contexts/SidebarContext';
-
-// Dữ liệu mẫu thông báo
-const NOTIFICATION_TEMPLATES = [
-  {
-    id: 'NOT001',
-    title: 'Chi tiêu vượt ngân sách',
-    message: 'Bạn đã chi {amount} cho {category}, vượt {percent}% so với kế hoạch!',
-    type: 'warning',
-    typeLabel: 'warning',
-    sent: 234,
-    status: 'Active',
-  },
-  {
-    id: 'NOT002',
-    title: 'Giao dịch bất thường',
-    message: 'Phát hiện giao dịch {amount} tại {location}, không khớp với thói quen của bạn',
-    type: 'alert',
-    typeLabel: 'alert',
-    sent: 45,
-    status: 'Active',
-  },
-  {
-    id: 'NOT003',
-    title: 'Tiết kiệm tốt',
-    message: 'Tuyệt vời! Bạn đã tiết kiệm được {amount} trong tháng này 🎉',
-    type: 'success',
-    typeLabel: 'success',
-    sent: 567,
-    status: 'Active',
-  },
-];
-
-// Dữ liệu mẹo và gợi ý
-const TIPS_DATA = [
-  {
-    id: 'TIP001',
-    title: 'Quy tắc 50/30/20',
-    content: 'Chia thu nhập: 50% nhu cầu thiết yếu, 30% mong muốn, 20% tiết kiệm',
-    category: 'Tiết kiệm',
-    views: 1234,
-    status: 'Active',
-  },
-  {
-    id: 'TIP002',
-    title: 'Theo dõi chi tiêu hàng ngày',
-    content: 'Ghi chép mọi khoản chi để hiểu rõ thói quen tiêu dùng của bạn',
-    category: 'Quản lý',
-    views: 856,
-    status: 'Active',
-  },
-  {
-    id: 'TIP003',
-    title: 'Lập quỹ khẩn cấp',
-    content: 'Nên có quỹ dự phòng bằng 3-6 tháng chi tiêu để đối phó tình huống bất ngờ',
-    category: 'Tiết kiệm',
-    views: 2341,
-    status: 'Active',
-  },
-  {
-    id: 'TIP004',
-    title: 'Đầu tư sớm',
-    content: 'Bắt đầu đầu tư càng sớm càng tốt để tận dụng lãi kép',
-    category: 'Đầu tư',
-    views: 1567,
-    status: 'Draft',
-  },
-];
-
-// Dữ liệu câu hỏi thường gặp
-const FAQ_DATA = [
-  {
-    id: 'FAQ001',
-    question: 'Làm thế nào để thêm giao dịch mới?',
-    answer: 'Bạn có thể thêm giao dịch bằng cách nhấn nút "+" trên màn hình chính hoặc vào mục "Thêm giao dịch" trong menu.',
-    category: 'Hướng dẫn',
-    helpful: 156,
-    status: 'Active',
-  },
-  {
-    id: 'FAQ002',
-    question: 'FinPal có bảo mật thông tin của tôi không?',
-    answer: 'Có, FinPal sử dụng mã hóa AES-256 và không chia sẻ dữ liệu của bạn với bên thứ ba.',
-    category: 'Bảo mật',
-    helpful: 234,
-    status: 'Active',
-  },
-  {
-    id: 'FAQ003',
-    question: 'Làm sao để đặt mục tiêu tiết kiệm?',
-    answer: 'Vào mục "Mục tiêu tiết kiệm" trong menu, nhấn "Thêm mục tiêu" và nhập thông tin mục tiêu của bạn.',
-    category: 'Hướng dẫn',
-    helpful: 189,
-    status: 'Active',
-  },
-  {
-    id: 'FAQ004',
-    question: 'AI gợi ý hoạt động như thế nào?',
-    answer: 'AI phân tích thói quen chi tiêu của bạn và đưa ra gợi ý cá nhân hóa để tiết kiệm hiệu quả hơn.',
-    category: 'Tính năng',
-    helpful: 312,
-    status: 'Active',
-  },
-];
+import ConfirmModal from '../../components/common/ConfirmModal';
+import SuccessModal from '../../components/common/SuccessModal';
+import NotificationTemplateModal from '../../components/admin/NotificationTemplateModal';
+import {
+  getAllNotificationTemplates,
+  getAllTips,
+  getAllFAQs,
+  getTemplateTypeLabel,
+  getStatusLabel,
+  getTipCategoryLabel,
+  getFAQCategoryLabel,
+  sendNotificationFromTemplate,
+  createNotificationTemplate,
+  updateNotificationTemplate,
+  deleteNotificationTemplate,
+} from '../../services/contentService';
 
 const tabs = ['Mẫu thông báo', 'Mẹo và gợi ý', 'Câu hỏi thường gặp'];
 
@@ -127,20 +41,223 @@ const typeStyles = {
     background: '#DCFCE7',
     color: '#008236',
   },
+  info: {
+    background: '#E0F2FE',
+    color: '#0369A1',
+  },
 };
 
 const categoryStyles = {
   'Tiết kiệm': { background: '#E0F2FE', color: '#0369A1' },
+  'Ngân sách': { background: '#FEF3C7', color: '#B45309' },
   'Quản lý': { background: '#FEF3C7', color: '#B45309' },
   'Đầu tư': { background: '#DCFCE7', color: '#15803D' },
+  'Chi tiêu': { background: '#FFE2E2', color: '#C10007' },
+  'Tổng quan': { background: '#F3E8FF', color: '#7C3AED' },
   'Hướng dẫn': { background: '#E0E7FF', color: '#4338CA' },
   'Bảo mật': { background: '#FCE7F3', color: '#BE185D' },
   'Tính năng': { background: '#F3E8FF', color: '#7C3AED' },
+  'Khắc phục': { background: '#FEF3C7', color: '#B45309' },
 };
 
 const ContentManagementPage = () => {
   const { collapsed } = useSidebar();
   const [activeTab, setActiveTab] = useState(0);
+  
+  // State for data
+  const [notificationTemplates, setNotificationTemplates] = useState([]);
+  const [tips, setTips] = useState([]);
+  const [faqs, setFaqs] = useState([]);
+  
+  // Loading states
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [loadingTips, setLoadingTips] = useState(false);
+  const [loadingFaqs, setLoadingFaqs] = useState(false);
+
+  // Send notification states
+  const [sendingTemplate, setSendingTemplate] = useState(null);
+  const [showConfirmSend, setShowConfirmSend] = useState(false);
+  const [showSuccessSend, setShowSuccessSend] = useState(false);
+  const [sendResult, setSendResult] = useState(null);
+  const [isSending, setIsSending] = useState(false);
+
+  // Template modal states (thêm/sửa)
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [isSubmittingTemplate, setIsSubmittingTemplate] = useState(false);
+
+  // Delete template states
+  const [deletingTemplate, setDeletingTemplate] = useState(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Fetch notification templates
+  const fetchNotificationTemplates = async () => {
+    setLoadingTemplates(true);
+    try {
+      const data = await getAllNotificationTemplates();
+      setNotificationTemplates(data);
+    } catch (error) {
+      console.error('Error fetching notification templates:', error);
+      message.error('Không thể tải mẫu thông báo');
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  // Fetch tips
+  const fetchTips = async () => {
+    setLoadingTips(true);
+    try {
+      const data = await getAllTips();
+      setTips(data);
+    } catch (error) {
+      console.error('Error fetching tips:', error);
+      message.error('Không thể tải mẹo và gợi ý');
+    } finally {
+      setLoadingTips(false);
+    }
+  };
+
+  // Fetch FAQs
+  const fetchFaqs = async () => {
+    setLoadingFaqs(true);
+    try {
+      const data = await getAllFAQs();
+      setFaqs(data);
+    } catch (error) {
+      console.error('Error fetching FAQs:', error);
+      message.error('Không thể tải câu hỏi thường gặp');
+    } finally {
+      setLoadingFaqs(false);
+    }
+  };
+
+  // Fetch data on mount
+  useEffect(() => {
+    fetchNotificationTemplates();
+    fetchTips();
+    fetchFaqs();
+  }, []);
+
+  // Handle send notification
+  const handleSendClick = (template) => {
+    if (template.status !== 'ACTIVE') {
+      message.warning('Chỉ có thể gửi mẫu thông báo đang Active');
+      return;
+    }
+    setSendingTemplate(template);
+    setShowConfirmSend(true);
+  };
+
+  const handleConfirmSend = async () => {
+    if (!sendingTemplate) return;
+    
+    setIsSending(true);
+    try {
+      const result = await sendNotificationFromTemplate({
+        templateId: sendingTemplate.id,
+        userIds: null, // null = gửi cho tất cả users
+      });
+      setSendResult(result);
+      setShowConfirmSend(false);
+      setShowSuccessSend(true);
+      // Refresh to update sentCount
+      fetchNotificationTemplates();
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      message.error('Không thể gửi thông báo: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleCancelSend = () => {
+    setShowConfirmSend(false);
+    setSendingTemplate(null);
+  };
+
+  const handleCloseSuccess = () => {
+    setShowSuccessSend(false);
+    setSendingTemplate(null);
+    setSendResult(null);
+  };
+
+  // Handle Add Template
+  const handleAddClick = () => {
+    setEditingTemplate(null);
+    setShowTemplateModal(true);
+  };
+
+  // Handle Edit Template
+  const handleEditClick = (template) => {
+    setEditingTemplate(template);
+    setShowTemplateModal(true);
+  };
+
+  // Handle Submit Template (Add/Edit)
+  const handleTemplateSubmit = async (data) => {
+    setIsSubmittingTemplate(true);
+    try {
+      if (editingTemplate) {
+        // Update existing template
+        await updateNotificationTemplate(editingTemplate.id, data);
+        message.success('Cập nhật template thành công!');
+      } else {
+        // Create new template
+        await createNotificationTemplate(data);
+        message.success('Thêm template thành công!');
+      }
+      setShowTemplateModal(false);
+      setEditingTemplate(null);
+      fetchNotificationTemplates();
+    } catch (error) {
+      console.error('Error submitting template:', error);
+      message.error(
+        error.response?.data?.message || 
+        (editingTemplate ? 'Không thể cập nhật template' : 'Không thể thêm template')
+      );
+    } finally {
+      setIsSubmittingTemplate(false);
+    }
+  };
+
+  // Handle Close Template Modal
+  const handleCloseTemplateModal = () => {
+    setShowTemplateModal(false);
+    setEditingTemplate(null);
+  };
+
+  // Handle Delete Click
+  const handleDeleteClick = (template) => {
+    setDeletingTemplate(template);
+    setShowConfirmDelete(true);
+  };
+
+  // Handle Confirm Delete
+  const handleConfirmDelete = async () => {
+    if (!deletingTemplate) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteNotificationTemplate(deletingTemplate.id);
+      message.success('Xóa template thành công!');
+      setShowConfirmDelete(false);
+      setDeletingTemplate(null);
+      fetchNotificationTemplates();
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      message.error(error.response?.data?.message || 'Không thể xóa template');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Handle Cancel Delete
+  const handleCancelDelete = () => {
+    setShowConfirmDelete(false);
+    setDeletingTemplate(null);
+  };
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#F9FAFB' }}>
@@ -252,6 +369,7 @@ const ContentManagementPage = () => {
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
+                onClick={handleAddClick}
                 style={{
                   background: '#155DFC',
                   borderRadius: 8,
@@ -273,6 +391,11 @@ const ContentManagementPage = () => {
                 overflow: 'hidden',
               }}
             >
+              {loadingTemplates ? (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
+                  <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
+                </div>
+              ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
@@ -286,32 +409,105 @@ const ContentManagementPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {NOTIFICATION_TEMPLATES.map((item, index) => (
-                    <tr key={item.id} style={{ borderBottom: index < NOTIFICATION_TEMPLATES.length - 1 ? '1px solid rgba(0,0,0,0.1)' : 'none' }}>
-                      <td style={{ padding: '13px 8px', fontSize: 14, color: '#155DFC', fontFamily: 'Arimo, sans-serif' }}>{item.id}</td>
-                      <td style={{ padding: '13px 8px', fontSize: 14, color: '#0A0A0A', fontFamily: 'Arimo, sans-serif' }}>{item.title}</td>
-                      <td style={{ padding: '13px 8px', fontSize: 14, color: '#4A5565', fontFamily: 'Arimo, sans-serif' }}>{item.message}</td>
-                      <td style={{ padding: '13px 8px' }}>
-                        <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 8, fontSize: 12, fontFamily: 'Arimo, sans-serif', background: typeStyles[item.type]?.background || '#ECECF0', color: typeStyles[item.type]?.color || '#6A7282' }}>{item.typeLabel}</span>
+                  {notificationTemplates.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: '#6A7282', fontFamily: 'Arimo, sans-serif' }}>
+                        Chưa có mẫu thông báo nào
                       </td>
-                      <td style={{ padding: '13px 8px', fontSize: 14, color: '#0A0A0A', fontFamily: 'Arimo, sans-serif' }}>{item.sent}</td>
+                    </tr>
+                  ) : (
+                  notificationTemplates.map((item, index) => {
+                    const typeLabel = getTemplateTypeLabel(item.type);
+                    const statusLabel = getStatusLabel(item.status);
+                    return (
+                    <tr key={item.id} style={{ borderBottom: index < notificationTemplates.length - 1 ? '1px solid rgba(0,0,0,0.1)' : 'none' }}>
+                      <td style={{ padding: '13px 8px', fontSize: 14, color: '#155DFC', fontFamily: 'Arimo, sans-serif' }}>{item.templateCode || `NOT${String(item.id).padStart(3, '0')}`}</td>
+                      <td style={{ padding: '13px 8px', fontSize: 14, color: '#0A0A0A', fontFamily: 'Arimo, sans-serif' }}>{item.title}</td>
+                      <td style={{ padding: '13px 8px', fontSize: 14, color: '#4A5565', fontFamily: 'Arimo, sans-serif' }}>{item.messageTemplate}</td>
                       <td style={{ padding: '13px 8px' }}>
-                        <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 8, fontSize: 12, fontFamily: 'Arimo, sans-serif', background: '#DCFCE7', color: '#008236' }}>{item.status}</span>
+                        <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 8, fontSize: 12, fontFamily: 'Arimo, sans-serif', background: typeStyles[typeLabel]?.background || '#ECECF0', color: typeStyles[typeLabel]?.color || '#6A7282' }}>{typeLabel}</span>
+                      </td>
+                      <td style={{ padding: '13px 8px', fontSize: 14, color: '#0A0A0A', fontFamily: 'Arimo, sans-serif' }}>{item.sentCount || 0}</td>
+                      <td style={{ padding: '13px 8px' }}>
+                        <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 8, fontSize: 12, fontFamily: 'Arimo, sans-serif', background: item.status === 'ACTIVE' ? '#DCFCE7' : '#FEF3C7', color: item.status === 'ACTIVE' ? '#008236' : '#B45309' }}>{statusLabel}</span>
                       </td>
                       <td style={{ padding: '13px 8px', textAlign: 'right' }}>
                         <Space size={8}>
-                          <Button type="text" icon={<SendOutlined style={{ fontSize: 16, color: '#6B7280' }} />} style={{ width: 36, height: 32, padding: 0 }} />
-                          <Button type="text" icon={<EditOutlined style={{ fontSize: 16, color: '#6B7280' }} />} style={{ width: 36, height: 32, padding: 0 }} />
-                          <Button type="text" icon={<DeleteOutlined style={{ fontSize: 16, color: '#EF4444' }} />} style={{ width: 36, height: 32, padding: 0 }} />
+                          <Button 
+                            type="text" 
+                            icon={<SendOutlined style={{ fontSize: 16, color: item.status === 'ACTIVE' ? '#155DFC' : '#D1D5DB' }} />} 
+                            style={{ width: 36, height: 32, padding: 0 }} 
+                            onClick={() => handleSendClick(item)}
+                            disabled={item.status !== 'ACTIVE'}
+                            title={item.status === 'ACTIVE' ? 'Gửi thông báo' : 'Chỉ có thể gửi mẫu Active'}
+                          />
+                          <Button 
+                            type="text" 
+                            icon={<EditOutlined style={{ fontSize: 16, color: '#6B7280' }} />} 
+                            style={{ width: 36, height: 32, padding: 0 }} 
+                            onClick={() => handleEditClick(item)}
+                            title="Chỉnh sửa"
+                          />
+                          <Button 
+                            type="text" 
+                            icon={<DeleteOutlined style={{ fontSize: 16, color: '#EF4444' }} />} 
+                            style={{ width: 36, height: 32, padding: 0 }} 
+                            onClick={() => handleDeleteClick(item)}
+                            title="Xóa"
+                          />
                         </Space>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })
+                  )}
                 </tbody>
               </table>
+              )}
             </div>
           </div>
         )}
+
+        {/* Confirm Send Modal */}
+        <ConfirmModal
+          open={showConfirmSend}
+          onConfirm={handleConfirmSend}
+          onCancel={handleCancelSend}
+          title="Xác nhận gửi thông báo"
+          content={sendingTemplate ? `Bạn có chắc muốn gửi thông báo "${sendingTemplate.title}" đến tất cả người dùng?` : ''}
+          confirmText={isSending ? 'Đang gửi...' : 'Gửi thông báo'}
+          cancelText="Hủy"
+          danger={false}
+        />
+
+        {/* Success Send Modal */}
+        <SuccessModal
+          open={showSuccessSend}
+          onClose={handleCloseSuccess}
+          message={sendResult ? `Đã gửi thông báo đến ${sendResult.sentCount} người dùng.` : 'Thông báo đã được gửi thành công.'}
+          buttonText="Đóng"
+        />
+
+        {/* Template Add/Edit Modal */}
+        <NotificationTemplateModal
+          open={showTemplateModal}
+          onClose={handleCloseTemplateModal}
+          onSubmit={handleTemplateSubmit}
+          template={editingTemplate}
+          loading={isSubmittingTemplate}
+        />
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmModal
+          open={showConfirmDelete}
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+          title="Xác nhận xóa"
+          content={deletingTemplate ? `Bạn có chắc muốn xóa mẫu thông báo "${deletingTemplate.title}"?` : ''}
+          confirmText={isDeleting ? 'Đang xóa...' : 'Xóa'}
+          cancelText="Hủy"
+          danger={true}
+        />
 
         {/* Tab 2: Mẹo và gợi ý */}
         {activeTab === 1 && (
@@ -325,6 +521,11 @@ const ContentManagementPage = () => {
             </div>
 
             <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 14, overflow: 'hidden' }}>
+              {loadingTips ? (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
+                  <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
+                </div>
+              ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
@@ -338,17 +539,27 @@ const ContentManagementPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {TIPS_DATA.map((item, index) => (
-                    <tr key={item.id} style={{ borderBottom: index < TIPS_DATA.length - 1 ? '1px solid rgba(0,0,0,0.1)' : 'none' }}>
-                      <td style={{ padding: '13px 8px', fontSize: 14, color: '#155DFC', fontFamily: 'Arimo, sans-serif' }}>{item.id}</td>
+                  {tips.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: '#6A7282', fontFamily: 'Arimo, sans-serif' }}>
+                        Chưa có mẹo nào
+                      </td>
+                    </tr>
+                  ) : (
+                  tips.map((item, index) => {
+                    const categoryLabel = getTipCategoryLabel(item.category);
+                    const statusLabel = getStatusLabel(item.status);
+                    return (
+                    <tr key={item.id} style={{ borderBottom: index < tips.length - 1 ? '1px solid rgba(0,0,0,0.1)' : 'none' }}>
+                      <td style={{ padding: '13px 8px', fontSize: 14, color: '#155DFC', fontFamily: 'Arimo, sans-serif' }}>{item.tipCode || `TIP${String(item.id).padStart(3, '0')}`}</td>
                       <td style={{ padding: '13px 8px', fontSize: 14, color: '#0A0A0A', fontFamily: 'Arimo, sans-serif' }}>{item.title}</td>
                       <td style={{ padding: '13px 8px', fontSize: 14, color: '#4A5565', fontFamily: 'Arimo, sans-serif' }}>{item.content}</td>
                       <td style={{ padding: '13px 8px' }}>
-                        <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 8, fontSize: 12, fontFamily: 'Arimo, sans-serif', background: categoryStyles[item.category]?.background || '#ECECF0', color: categoryStyles[item.category]?.color || '#6A7282' }}>{item.category}</span>
+                        <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 8, fontSize: 12, fontFamily: 'Arimo, sans-serif', background: categoryStyles[categoryLabel]?.background || '#ECECF0', color: categoryStyles[categoryLabel]?.color || '#6A7282' }}>{categoryLabel}</span>
                       </td>
-                      <td style={{ padding: '13px 8px', fontSize: 14, color: '#0A0A0A', fontFamily: 'Arimo, sans-serif' }}>{item.views}</td>
+                      <td style={{ padding: '13px 8px', fontSize: 14, color: '#0A0A0A', fontFamily: 'Arimo, sans-serif' }}>{item.viewCount || 0}</td>
                       <td style={{ padding: '13px 8px' }}>
-                        <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 8, fontSize: 12, fontFamily: 'Arimo, sans-serif', background: item.status === 'Active' ? '#DCFCE7' : '#FEF3C7', color: item.status === 'Active' ? '#008236' : '#B45309' }}>{item.status}</span>
+                        <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 8, fontSize: 12, fontFamily: 'Arimo, sans-serif', background: item.status === 'ACTIVE' ? '#DCFCE7' : '#FEF3C7', color: item.status === 'ACTIVE' ? '#008236' : '#B45309' }}>{statusLabel}</span>
                       </td>
                       <td style={{ padding: '13px 8px', textAlign: 'right' }}>
                         <Space size={8}>
@@ -357,9 +568,12 @@ const ContentManagementPage = () => {
                         </Space>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })
+                  )}
                 </tbody>
               </table>
+              )}
             </div>
           </div>
         )}
@@ -376,6 +590,11 @@ const ContentManagementPage = () => {
             </div>
 
             <div style={{ background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 14, overflow: 'hidden' }}>
+              {loadingFaqs ? (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
+                  <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
+                </div>
+              ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
@@ -389,17 +608,27 @@ const ContentManagementPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {FAQ_DATA.map((item, index) => (
-                    <tr key={item.id} style={{ borderBottom: index < FAQ_DATA.length - 1 ? '1px solid rgba(0,0,0,0.1)' : 'none' }}>
-                      <td style={{ padding: '13px 8px', fontSize: 14, color: '#155DFC', fontFamily: 'Arimo, sans-serif' }}>{item.id}</td>
+                  {faqs.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: '#6A7282', fontFamily: 'Arimo, sans-serif' }}>
+                        Chưa có câu hỏi nào
+                      </td>
+                    </tr>
+                  ) : (
+                  faqs.map((item, index) => {
+                    const categoryLabel = getFAQCategoryLabel(item.category);
+                    const statusLabel = getStatusLabel(item.status);
+                    return (
+                    <tr key={item.id} style={{ borderBottom: index < faqs.length - 1 ? '1px solid rgba(0,0,0,0.1)' : 'none' }}>
+                      <td style={{ padding: '13px 8px', fontSize: 14, color: '#155DFC', fontFamily: 'Arimo, sans-serif' }}>{item.faqCode || `FAQ${String(item.id).padStart(3, '0')}`}</td>
                       <td style={{ padding: '13px 8px', fontSize: 14, color: '#0A0A0A', fontFamily: 'Arimo, sans-serif' }}>{item.question}</td>
                       <td style={{ padding: '13px 8px', fontSize: 14, color: '#4A5565', fontFamily: 'Arimo, sans-serif', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.answer}</td>
                       <td style={{ padding: '13px 8px' }}>
-                        <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 8, fontSize: 12, fontFamily: 'Arimo, sans-serif', background: categoryStyles[item.category]?.background || '#ECECF0', color: categoryStyles[item.category]?.color || '#6A7282' }}>{item.category}</span>
+                        <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 8, fontSize: 12, fontFamily: 'Arimo, sans-serif', background: categoryStyles[categoryLabel]?.background || '#ECECF0', color: categoryStyles[categoryLabel]?.color || '#6A7282' }}>{categoryLabel}</span>
                       </td>
-                      <td style={{ padding: '13px 8px', fontSize: 14, color: '#0A0A0A', fontFamily: 'Arimo, sans-serif' }}>{item.helpful}</td>
+                      <td style={{ padding: '13px 8px', fontSize: 14, color: '#0A0A0A', fontFamily: 'Arimo, sans-serif' }}>{item.helpfulCount || 0}</td>
                       <td style={{ padding: '13px 8px' }}>
-                        <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 8, fontSize: 12, fontFamily: 'Arimo, sans-serif', background: '#DCFCE7', color: '#008236' }}>{item.status}</span>
+                        <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 8, fontSize: 12, fontFamily: 'Arimo, sans-serif', background: item.status === 'ACTIVE' ? '#DCFCE7' : '#FEF3C7', color: item.status === 'ACTIVE' ? '#008236' : '#B45309' }}>{statusLabel}</span>
                       </td>
                       <td style={{ padding: '13px 8px', textAlign: 'right' }}>
                         <Space size={8}>
@@ -408,9 +637,12 @@ const ContentManagementPage = () => {
                         </Space>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })
+                  )}
                 </tbody>
               </table>
+              )}
             </div>
           </div>
         )}
