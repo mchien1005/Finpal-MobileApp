@@ -5,7 +5,7 @@ import { CheckOutlined } from '@ant-design/icons';
 const SuccessModal = ({ 
   open, 
   onClose, 
-  message = 'Thao tác thành công!',
+  message = 'Thêm giao dịch thành công!',
   buttonText = 'Đồng ý'
 }) => {
   return (
@@ -15,11 +15,12 @@ const SuccessModal = ({
       footer={null}
       centered
       closable={false}
-      width={340}
+      width={360}
       styles={{
         content: {
-          borderRadius: 16,
-          padding: '40px 24px 32px',
+          borderRadius: 24,
+          padding: '24px 20px 24px',
+          boxShadow: '13px 5px 50px 49px rgba(0, 0, 0, 0.25)',
         },
         mask: {
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -27,34 +28,59 @@ const SuccessModal = ({
       }}
     >
       <div style={{ textAlign: 'center' }}>
-        {/* Success Icon */}
+        {/* Success Icon with glow effect */}
         <div
           style={{
-            width: 80,
-            height: 80,
-            borderRadius: '50%',
-            border: '3px solid #22C55E',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 24px',
+            position: 'relative',
+            width: 60,
+            height: 60,
+            margin: '0 auto 14px',
           }}
         >
-          <CheckOutlined
+          {/* Glow background */}
+          <div
             style={{
-              fontSize: 40,
-              color: '#22C55E',
+              position: 'absolute',
+              width: 60,
+              height: 60,
+              borderRadius: '50%',
+              background: '#dcfce7',
+              filter: 'blur(16px)',
             }}
           />
+          {/* Icon container */}
+          <div
+            style={{
+              position: 'relative',
+              width: 60,
+              height: 60,
+              borderRadius: '50%',
+              border: '3px solid #00C950',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: '#FFFFFF',
+            }}
+          >
+            <CheckOutlined
+              style={{
+                fontSize: 28,
+                color: '#00C950',
+                fontWeight: 'bold',
+              }}
+            />
+          </div>
         </div>
 
         {/* Message */}
         <div
           style={{
-            fontSize: 18,
-            fontWeight: 600,
-            color: '#1F2937',
-            marginBottom: 32,
+            fontSize: 16,
+            fontWeight: 400,
+            color: '#101828',
+            marginBottom: 14,
+            lineHeight: '30px',
+            fontFamily: 'Arimo, sans-serif',
           }}
         >
           {message}
@@ -63,23 +89,26 @@ const SuccessModal = ({
         {/* Button */}
         <button
           onClick={onClose}
-          style={{
-            width: '100%',
+    style={{
+            width: 320,
+            maxWidth: '100%',
             height: 48,
-            background: '#22C55E',
+            background: '#00C950',
             border: 'none',
-            borderRadius: 12,
+            borderRadius: 14,
             color: '#FFFFFF',
-            fontSize: 16,
-            fontWeight: 600,
+            fontSize: 14,
+            fontWeight: 700,
             cursor: 'pointer',
             transition: 'background 0.2s',
+            fontFamily: 'Arimo, sans-serif',
+            lineHeight: '20px',
           }}
           onMouseEnter={(e) => {
-            e.target.style.background = '#16A34A';
+            e.target.style.background = '#00B347';
           }}
           onMouseLeave={(e) => {
-            e.target.style.background = '#22C55E';
+            e.target.style.background = '#00C950';
           }}
         >
           {buttonText}

@@ -1,5 +1,5 @@
 import React from 'react';
-//import { useState } from 'react';
+import { useState } from 'react';
 import { Avatar, message } from 'antd';
 import {
   AppstoreOutlined,
@@ -17,6 +17,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSidebar } from '../../contexts/SidebarContext';
 import authService from '../../services/authService';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 // Get API base URL for avatar
 const getBaseUrl = () => {
@@ -29,7 +30,7 @@ const AdminSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { collapsed, setCollapsed } = useSidebar();
-  //const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Lấy thông tin admin
   const user = authService.getCurrentUser();
@@ -336,7 +337,7 @@ const AdminSidebar = () => {
 
         {/* Logout Button */}
         <div
-          onClick={handleLogout}
+          onClick={() => setShowLogoutModal(true)}
           title={collapsed ? 'Đăng xuất' : ''}
           style={{
             display: 'flex',
@@ -362,6 +363,17 @@ const AdminSidebar = () => {
           {!collapsed && <span>Đăng xuất</span>}
         </div>
       </div>
+      {/* Logout Confirm Modal */}
+      <ConfirmModal
+        open={showLogoutModal}
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutModal(false)}
+        title="Xác nhận đăng xuất"
+        content="Bạn có chắc chắn muốn đăng xuất khỏi tài khoản? Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng FinPal."
+        confirmText="Đăng xuất"
+        cancelText="Hủy"
+        danger={true}
+      />
     </div>
   );
 };
