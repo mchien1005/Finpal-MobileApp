@@ -23,12 +23,12 @@ const AIModelManagementPage = () => {
   // State
   const [loading, setLoading] = useState(true);
   const [retraining, setRetraining] = useState(false);
-  const [retrainingModel, setRetrainingModel] = useState(null); // Track which model is retraining
+  const [retrainingModel, setRetrainingModel] = useState(null);
   const [stats, setStats] = useState(null);
   const [models, setModels] = useState([]);
   const [predictionLogs, setPredictionLogs] = useState([]);
   const [logsFromApi, setLogsFromApi] = useState(false);
-  const [modelsFromApi, setModelsFromApi] = useState(false); // Track if models data is from API
+  const [modelsFromApi, setModelsFromApi] = useState(false);
   const [accuracyHistory, setAccuracyHistory] = useState([]);
 
   // Fetch data on mount
@@ -183,6 +183,7 @@ const AIModelManagementPage = () => {
       } else {
         message.warning(result.message);
       }
+      
     } catch {
       message.error('Lỗi khi retrain models');
     } finally {
@@ -568,17 +569,27 @@ const AIModelManagementPage = () => {
               )}
             </div>
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: '20%' }} />{/* Model Name */}
+              <col style={{ width: '10%' }} />{/* Version */}
+              <col style={{ width: '16%' }} />{/* Accuracy */}
+              <col style={{ width: '11%' }} />{/* Confidence */}
+              <col style={{ width: '13%' }} />{/* Last Trained */}
+              <col style={{ width: '12%' }} />{/* Predictions */}
+              <col style={{ width: '10%' }} />{/* Status */}
+              <col style={{ width: '8%' }} />{/* Actions */}
+            </colgroup>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
                 {['Model Name', 'Version', 'Accuracy', 'Confidence', 'Last Trained', 'Predictions', 'Status', 'Actions'].map((header, idx) => (
                   <th
                     key={header}
                     style={{
-                      padding: '10px 8px',
-                      textAlign: idx === 7 ? 'right' : 'left',
+                      padding: '12px 16px',
+                      textAlign: idx === 7 ? 'center' : 'left',
                       fontSize: 14,
-                      fontWeight: 400,
+                      fontWeight: 500,
                       color: '#0A0A0A',
                       fontFamily: 'Arimo, sans-serif',
                     }}
@@ -596,10 +607,10 @@ const AIModelManagementPage = () => {
                     borderBottom: index < models.length - 1 ? '1px solid rgba(0,0,0,0.1)' : 'none',
                   }}
                 >
-                  <td style={{ padding: '13px 8px', fontSize: 14, color: '#0A0A0A', fontFamily: 'Arimo, sans-serif' }}>
+                  <td style={{ padding: '14px 16px', fontSize: 14, color: '#0A0A0A', fontFamily: 'Arimo, sans-serif' }}>
                     {model.info?.name}
                   </td>
-                  <td style={{ padding: '13px 8px' }}>
+                  <td style={{ padding: '14px 16px' }}>
                     <span
                       style={{
                         display: 'inline-block',
@@ -614,9 +625,9 @@ const AIModelManagementPage = () => {
                       {model.info?.version}
                     </span>
                   </td>
-                  <td style={{ padding: '13px 8px' }}>
+                  <td style={{ padding: '14px 16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 64, height: 8, background: '#E5E7EB', borderRadius: 999 }}>
+                      <div style={{ width: 60, height: 8, background: '#E5E7EB', borderRadius: 999 }}>
                         <div
                           style={{
                             width: `${model.metrics?.accuracy || 0}%`,
@@ -629,33 +640,25 @@ const AIModelManagementPage = () => {
                       <span style={{ fontSize: 14, fontFamily: 'Arimo, sans-serif' }}>{model.metrics?.accuracy?.toFixed(1)}%</span>
                     </div>
                   </td>
-                  <td style={{ padding: '13px 8px', fontSize: 14, fontFamily: 'Arimo, sans-serif' }}>
+                  <td style={{ padding: '14px 16px', fontSize: 14, fontFamily: 'Arimo, sans-serif' }}>
                     {model.metrics?.confidence?.toFixed(1)}%
                   </td>
-                  <td style={{ padding: '13px 8px', fontSize: 14, fontFamily: 'Arimo, sans-serif' }}>
+                  <td style={{ padding: '14px 16px', fontSize: 14, fontFamily: 'Arimo, sans-serif' }}>
                     {formatDate(model.info?.last_trained)}
                   </td>
-                  <td style={{ padding: '13px 8px', fontSize: 14, fontFamily: 'Arimo, sans-serif' }}>
+                  <td style={{ padding: '14px 16px', fontSize: 14, fontFamily: 'Arimo, sans-serif' }}>
                     {formatNumber(model.metrics?.total_predictions)}
                   </td>
-                  <td style={{ padding: '13px 8px' }}>{getStatusBadge(model.info?.status)}</td>
-                  <td style={{ padding: '13px 8px', textAlign: 'right' }}>
-                    <Space size={8}>
-                      <Button
-                        type="text"
-                        icon={<SettingOutlined style={{ fontSize: 16, color: '#6B7280' }} />}
-                        style={{ width: 36, height: 32, padding: 0 }}
-                        title="Cài đặt model"
-                      />
-                      <Button
-                        type="text"
-                        icon={retrainingModel === model.info?.name ? <LoadingOutlined style={{ fontSize: 16, color: '#155DFC' }} spin /> : <SyncOutlined style={{ fontSize: 16, color: '#6B7280' }} />}
-                        style={{ width: 36, height: 32, padding: 0 }}
-                        onClick={() => handleRetrainSingle(model.info?.name)}
-                        disabled={retrainingModel !== null}
-                        title={`Retrain ${model.info?.name}`}
-                      />
-                    </Space>
+                  <td style={{ padding: '14px 16px' }}>{getStatusBadge(model.info?.status)}</td>
+                  <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                    <Button
+                      type="text"
+                      icon={retrainingModel === model.info?.name ? <LoadingOutlined style={{ fontSize: 16, color: '#155DFC' }} spin /> : <SyncOutlined style={{ fontSize: 16, color: '#6B7280' }} />}
+                      style={{ width: 36, height: 32, padding: 0 }}
+                      onClick={() => handleRetrainSingle(model.info?.name)}
+                      disabled={retrainingModel !== null}
+                      title={`Retrain ${model.info?.name}`}
+                    />
                   </td>
                 </tr>
               ))}
@@ -692,17 +695,26 @@ const AIModelManagementPage = () => {
               )}
             </div>
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: '15%' }} />{/* Time */}
+              <col style={{ width: '15%' }} />{/* User */}
+              <col style={{ width: '20%' }} />{/* Input */}
+              <col style={{ width: '15%' }} />{/* Predicted */}
+              <col style={{ width: '15%' }} />{/* Confidence */}
+              <col style={{ width: '10%' }} />{/* Actual */}
+              <col style={{ width: '10%' }} />{/* Result */}
+            </colgroup>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
-                {['Time', 'User', 'Input', 'Predicted', 'Confidence', 'Actual', 'Result'].map((header) => (
+                {['Time', 'User', 'Input', 'Predicted', 'Confidence', 'Actual', 'Result'].map((header, idx) => (
                   <th
                     key={header}
                     style={{
-                      padding: '10px 8px',
-                      textAlign: 'left',
+                      padding: '12px 16px',
+                      textAlign: idx === 6 ? 'center' : 'left',
                       fontSize: 14,
-                      fontWeight: 400,
+                      fontWeight: 500,
                       color: '#0A0A0A',
                       fontFamily: 'Arimo, sans-serif',
                     }}
@@ -720,16 +732,16 @@ const AIModelManagementPage = () => {
                     borderBottom: index < predictionLogs.length - 1 ? '1px solid rgba(0,0,0,0.1)' : 'none',
                   }}
                 >
-                  <td style={{ padding: '10px 8px', fontSize: 14, color: '#6A7282', fontFamily: 'Arimo, sans-serif' }}>
+                  <td style={{ padding: '14px 16px', fontSize: 14, color: '#6A7282', fontFamily: 'Arimo, sans-serif' }}>
                     {formatTime(log.timestamp)}
                   </td>
-                  <td style={{ padding: '10px 8px', fontSize: 14, color: '#155DFC', fontFamily: 'Arimo, sans-serif' }}>
+                  <td style={{ padding: '14px 16px', fontSize: 14, color: '#155DFC', fontFamily: 'Arimo, sans-serif' }}>
                     {log.user_id}
                   </td>
-                  <td style={{ padding: '10px 8px', fontSize: 14, color: '#0A0A0A', fontFamily: 'Cousine, monospace' }}>
+                  <td style={{ padding: '14px 16px', fontSize: 14, color: '#0A0A0A', fontFamily: 'Cousine, monospace' }}>
                     {log.input_text}
                   </td>
-                  <td style={{ padding: '10px 8px' }}>
+                  <td style={{ padding: '14px 16px' }}>
                     <span
                       style={{
                         display: 'inline-block',
@@ -746,7 +758,7 @@ const AIModelManagementPage = () => {
                   </td>
                   <td
                     style={{
-                      padding: '10px 8px',
+                      padding: '14px 16px',
                       fontSize: 14,
                       color: getConfidenceColor(log.confidence),
                       fontFamily: 'Arimo, sans-serif',
@@ -754,7 +766,7 @@ const AIModelManagementPage = () => {
                   >
                     {log.confidence?.toFixed(1)}%
                   </td>
-                  <td style={{ padding: '10px 8px' }}>
+                  <td style={{ padding: '14px 16px' }}>
                     {log.actual_category ? (
                       <span
                         style={{
@@ -773,7 +785,7 @@ const AIModelManagementPage = () => {
                       <span style={{ color: '#9CA3AF', fontSize: 12 }}>-</span>
                     )}
                   </td>
-                  <td style={{ padding: '10px 8px' }}>
+                  <td style={{ padding: '14px 16px', textAlign: 'center' }}>
                     {log.is_correct === true ? (
                       <CheckCircleOutlined style={{ fontSize: 20, color: '#22C55E' }} />
                     ) : log.is_correct === false ? (
