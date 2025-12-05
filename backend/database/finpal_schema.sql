@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS danh_muc (
     la_he_thong BOOLEAN DEFAULT FALSE COMMENT 'Category hệ thống không thể xóa',
     thu_tu_hien_thi INT DEFAULT 0,
     ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ngay_cap_nhat TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (id_cha) REFERENCES danh_muc(id) ON DELETE
     SET NULL,
         INDEX idx_loai (loai),
