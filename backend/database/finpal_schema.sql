@@ -63,6 +63,9 @@ CREATE TABLE IF NOT EXISTS giao_dich (
     -- Trạng thái
     da_xac_nhan BOOLEAN DEFAULT FALSE COMMENT 'Người dùng đã xác nhận',
     bat_thuong BOOLEAN DEFAULT FALSE COMMENT 'Giao dịch bất thường',
+    -- AI Categorization
+    nguon_phan_loai VARCHAR(20) COMMENT 'Nguồn phân loại: AI, RULE_BASED, USER',
+    do_tin_cay_ai DOUBLE COMMENT 'Độ tin cậy AI (0.0 - 1.0)',
     -- Metadata
     anh_hoa_don VARCHAR(500) COMMENT 'Ảnh hóa đơn/bill',
     ghi_chu TEXT COMMENT 'Ghi chú của người dùng',

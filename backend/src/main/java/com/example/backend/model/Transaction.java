@@ -77,6 +77,13 @@ public class Transaction {
     @Column(name = "ngay_cap_nhat")
     private LocalDateTime updatedAt;
 
+    // AI Categorization fields
+    @Column(name = "nguon_phan_loai", length = 20)
+    private String categorizationSource; // AI, RULE_BASED, USER
+
+    @Column(name = "do_tin_cay_ai")
+    private Double aiConfidence; // 0.0 - 1.0
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
