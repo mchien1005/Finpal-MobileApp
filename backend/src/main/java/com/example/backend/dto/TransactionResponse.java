@@ -33,6 +33,11 @@ public class TransactionResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // Nguồn phân loại category: AI, RULE_BASED, USER, hoặc null
+    private String categorizationSource;
+    // Độ tin cậy của AI (nếu dùng AI)
+    private Double aiConfidence;
+
     public static TransactionResponse fromEntity(Transaction transaction) {
         return TransactionResponse.builder()
                 .id(transaction.getId())
@@ -51,6 +56,8 @@ public class TransactionResponse {
                 .notes(transaction.getNotes())
                 .createdAt(transaction.getCreatedAt())
                 .updatedAt(transaction.getUpdatedAt())
+                .categorizationSource(transaction.getCategorizationSource())
+                .aiConfidence(transaction.getAiConfidence())
                 .build();
     }
 }

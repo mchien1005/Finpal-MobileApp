@@ -39,10 +39,11 @@ public class AICategorizationService {
      * @param merchant    Tên merchant (ví dụ: "GRAB", "SHOPEE")
      * @param amount      Số tiền giao dịch
      * @param description Mô tả giao dịch (tùy chọn)
+     * @param userId      ID người dùng (để tracking trong AI logs)
      * @return CategoryPrediction chứa category và độ confidence, hoặc null nếu AI
      *         lỗi
      */
-    public CategoryPrediction predictCategory(String merchant, Double amount, String description) {
+    public CategoryPrediction predictCategory(String merchant, Double amount, String description, Long userId) {
         if (!aiEnabled) {
             log.debug("AI categorization is disabled");
             return null;
@@ -56,6 +57,7 @@ public class AICategorizationService {
             requestBody.put("merchant", merchant != null ? merchant : "");
             requestBody.put("amount", amount != null ? amount : 0.0);
             requestBody.put("description", description != null ? description : "");
+            requestBody.put("user_id", userId != null ? "USR" + String.format("%03d", userId) : null);
 
             // Thiết lập headers
             HttpHeaders headers = new HttpHeaders();

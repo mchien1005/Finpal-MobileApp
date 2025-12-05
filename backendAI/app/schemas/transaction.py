@@ -26,6 +26,7 @@ class TransactionInput(BaseModel):
     amount: float = Field(..., gt=0, description="Số tiền giao dịch (phải > 0)")
     description: Optional[str] = Field(None, description="Mô tả giao dịch (tùy chọn)")
     timestamp: Optional[datetime] = Field(default_factory=datetime.now, description="Thời gian giao dịch")
+    user_id: Optional[str] = Field(None, description="ID người dùng (từ Java Backend)")
     
     class Config:
         json_schema_extra = {
@@ -33,7 +34,8 @@ class TransactionInput(BaseModel):
                 "merchant": "GRAB",
                 "amount": 50000,
                 "description": "Grab đi làm",
-                "timestamp": "2025-11-20T10:30:00"
+                "timestamp": "2025-11-20T10:30:00",
+                "user_id": "USR001"
             }
         }
 

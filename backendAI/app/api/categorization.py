@@ -95,7 +95,7 @@ async def predict_category(transaction: TransactionInput):
             try:
                 record_prediction(
                     model_name="Category Classification",
-                    user_id="api_user",
+                    user_id=transaction.user_id or "anonymous",
                     input_text=transaction.merchant,
                     predicted_category=category,
                     confidence=confidence * 100

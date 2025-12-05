@@ -12,6 +12,7 @@ import com.example.backend.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
  * hoặc rule-based
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class TransactionService {
 
@@ -70,12 +72,14 @@ public class TransactionService {
             Category category = categoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new RuntimeException("Category not found"));
             transaction.setCategory(category);
+            transaction.setCategorizationSource("USER"); // User tự chọn category
         } else if (request.getMerchant() != null && !request.getMerchant().trim().isEmpty()) {
             // Bước 1: Thử dùng AI để phân loại trước
             CategoryPrediction aiPrediction = aiCategorizationService.predictCategory(
                     request.getMerchant(),
                     request.getAmount().doubleValue(),
-                    request.getDescription());
+                    request.getDescription(),
+                    user.getId()); // Truyền userId để AI Backend tracking
 
             if (aiPrediction != null && aiCategorizationService.isConfidentPrediction(aiPrediction)) {
                 // Dùng kết quả AI nếu confidence >= threshold (mặc định 70%)
@@ -83,6 +87,10 @@ public class TransactionService {
                         .orElse(null);
                 if (category != null) {
                     transaction.setCategory(category);
+                    transaction.setCategorizationSource("AI"); // Phân loại bằng AI
+                    transaction.setAiConfidence(aiPrediction.getConfidence());
+                    log.info("Transaction categorized by AI: {} -> {} (confidence: {}%)",
+                            request.getMerchant(), category.getName(), aiPrediction.getConfidence() * 100);
                 }
             } else {
                 // Fallback to rule-based categorization
@@ -92,6 +100,9 @@ public class TransactionService {
                             .orElse(null);
                     if (category != null) {
                         transaction.setCategory(category);
+                        transaction.setCategorizationSource("RULE_BASED"); // Phân loại bằng rule
+                        log.info("Transaction categorized by RULE: {} -> {}",
+                                request.getMerchant(), category.getName());
                     }
                 }
             }
