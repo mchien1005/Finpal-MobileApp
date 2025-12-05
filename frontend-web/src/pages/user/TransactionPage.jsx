@@ -279,7 +279,7 @@ const TransactionPage = () => {
                 onChange={setTransactionSource}
                 style={{ width: '100%', height: 36 }}
                 options={transactionSourceOptions}
-                dropdownStyle={{ borderRadius: 8 }}
+                popupClassName="custom-select-popup"
                 className="custom-select"
               />
             </div>
@@ -296,7 +296,7 @@ const TransactionPage = () => {
                 style={{ width: '100%', height: 36 }}
                 options={categoryOptions}
                 allowClear
-                dropdownStyle={{ borderRadius: 8 }}
+                popupClassName="custom-select-popup"
                 className="custom-select"
               />
             </div>

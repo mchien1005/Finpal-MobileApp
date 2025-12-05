@@ -1,7 +1,7 @@
 import React from 'react';
 import { Typography, Row, Col, Card, Statistic } from 'antd';
 import {
-  UserOutlined,
+  UserOutlined, 
   TransactionOutlined,
   DollarOutlined,
   RiseOutlined,
