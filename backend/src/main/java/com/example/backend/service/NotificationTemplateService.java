@@ -4,6 +4,7 @@ import com.example.backend.dto.NotificationTemplateDTO;
 import com.example.backend.model.Notification;
 import com.example.backend.model.NotificationTemplate;
 import com.example.backend.model.NotificationTemplate.TemplateStatus;
+import com.example.backend.model.Role;
 import com.example.backend.model.User;
 import com.example.backend.repository.NotificationRepository;
 import com.example.backend.repository.NotificationTemplateRepository;
@@ -66,17 +67,23 @@ public class NotificationTemplateService {
      */
     @Transactional
     public NotificationTemplateDTO createTemplate(NotificationTemplateDTO.CreateRequest request, Long adminId) {
-        // Check duplicate code
-        if (templateRepository.existsByTemplateCode(request.getTemplateCode())) {
-            throw new RuntimeException("Template code already exists: " + request.getTemplateCode());
+        // Tự động generate templateCode nếu không được cung cấp
+        String templateCode = request.getTemplateCode();
+        if (templateCode == null || templateCode.trim().isEmpty()) {
+            templateCode = generateNextTemplateCode();
+        } else {
+            // Check duplicate code nếu được cung cấp
+            if (templateRepository.existsByTemplateCode(templateCode)) {
+                throw new RuntimeException("Template code already exists: " + templateCode);
+            }
         }
 
         NotificationTemplate template = new NotificationTemplate();
-        template.setTemplateCode(request.getTemplateCode());
+        template.setTemplateCode(templateCode);
         template.setTitle(request.getTitle());
         template.setMessageTemplate(request.getMessageTemplate());
         template.setType(request.getType() != null ? request.getType() : NotificationTemplate.TemplateType.INFO);
-        template.setStatus(request.getStatus() != null ? request.getStatus() : TemplateStatus.DRAFT);
+        template.setStatus(request.getStatus() != null ? request.getStatus() : TemplateStatus.ACTIVE);
         template.setSentCount(0);
         template.setCreatedBy(adminId);
 
@@ -84,6 +91,15 @@ public class NotificationTemplateService {
         log.info("Created notification template: {} by admin {}", template.getTemplateCode(), adminId);
 
         return convertToDTO(template);
+    }
+
+    /**
+     * Generate template code tiếp theo (NOT001, NOT002, ...)
+     */
+    private String generateNextTemplateCode() {
+        Integer maxNumber = templateRepository.findMaxTemplateCodeNumber();
+        int nextNumber = (maxNumber != null ? maxNumber : 0) + 1;
+        return String.format("NOT%03d", nextNumber);
     }
 
     /**
@@ -127,6 +143,7 @@ public class NotificationTemplateService {
 
     /**
      * Gửi notification từ template cho users
+     * Chỉ gửi đến users có role USER (không gửi cho ADMIN)
      */
     @Transactional
     public int sendNotificationFromTemplate(NotificationTemplateDTO.SendRequest request, Long adminId) {
@@ -137,13 +154,17 @@ public class NotificationTemplateService {
             throw new RuntimeException("Template is not active");
         }
 
-        // Get target users
+        // Get target users - chỉ lấy users có role USER và đang hoạt động
         List<User> targetUsers;
         if (request.getUserIds() != null && request.getUserIds().length > 0) {
-            targetUsers = userRepository.findAllById(List.of(request.getUserIds()));
+            // Nếu chỉ định userIds, lọc chỉ lấy những user có role USER
+            targetUsers = userRepository.findAllById(List.of(request.getUserIds()))
+                    .stream()
+                    .filter(u -> u.getRole() == Role.USER && Boolean.TRUE.equals(u.getIsActive()))
+                    .toList();
         } else {
-            // Send to all users
-            targetUsers = userRepository.findAll();
+            // Gửi cho tất cả users có role USER và đang hoạt động
+            targetUsers = userRepository.findByRoleAndIsActive(Role.USER, true);
         }
 
         // Replace placeholders in message
