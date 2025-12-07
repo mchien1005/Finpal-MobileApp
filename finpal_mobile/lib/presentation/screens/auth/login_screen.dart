@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/custom_button.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -32,7 +33,8 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 40.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 40.0),
             child: Form(
               key: _formKey,
               child: Column(
@@ -67,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // Login Card
                   Container(
                     padding: const EdgeInsets.all(32),
@@ -95,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        
+
                         // Email field
                         CustomTextField(
                           label: 'Email hoặc Số điện thoại',
@@ -115,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                         ),
                         const SizedBox(height: 16),
-                        
+
                         // Password field
                         CustomTextField(
                           label: 'Mật khẩu',
@@ -149,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                         ),
                         const SizedBox(height: 8),
-                        
+
                         // Remember me & Forgot password
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -170,7 +172,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     side: BorderSide(
-                                      color: AppColors.inputBorder.withOpacity(0.1),
+                                      color: AppColors.inputBorder
+                                          .withOpacity(0.1),
                                       width: 1.5,
                                     ),
                                   ),
@@ -205,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                         const SizedBox(height: 24),
-                        
+
                         // Login Button
                         CustomButton(
                           text: 'Đăng nhập',
@@ -216,7 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                         ),
                         const SizedBox(height: 24),
-                        
+
                         // Divider with "Hoặc"
                         Row(
                           children: [
@@ -245,7 +248,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                         const SizedBox(height: 24),
-                        
+
                         // Sign up text
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -259,7 +262,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             TextButton(
                               onPressed: () {
-                                // TODO: Navigate to sign up screen
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const RegisterScreen(),
+                                  ),
+                                );
                               },
                               style: TextButton.styleFrom(
                                 padding: const EdgeInsets.only(left: 4),
@@ -280,70 +289,48 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Terms and Privacy
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              'Bằng việc đăng nhập, bạn đồng ý với ',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppColors.textTertiary,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                // TODO: Open terms of service
-                              },
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 0),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'Điều khoản sử dụng',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ),
-                          ],
+                        const Text(
+                          'Bằng việc đăng nhập, bạn đồng ý với ',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textTertiary,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              'và ',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppColors.textTertiary,
-                              ),
+                        GestureDetector(
+                          onTap: () {},
+                          child: const Text(
+                            'Điều khoản sử dụng',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.primary,
                             ),
-                            TextButton(
-                              onPressed: () {
-                                // TODO: Open privacy policy
-                              },
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 0),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'Chính sách bảo mật',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.primary,
-                                ),
-                              ),
+                          ),
+                        ),
+                        const Text(
+                          ' và ',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {},
+                          child: const Text(
+                            'Chính sách bảo mật',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.primary,
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
