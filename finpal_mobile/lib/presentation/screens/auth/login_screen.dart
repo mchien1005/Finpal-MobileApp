@@ -41,13 +41,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Container(
                       width: 80,
                       height: 80,
-                      // decoration: BoxDecoration(
-                      //   color: AppColors.primary,
-                      //   borderRadius: BorderRadius.circular(16),
-                      // ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.asset('assets/images/logo.png'),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          width: 80,
+                          height: 80,
+                        ),
                       ),
                     ),
                   ),
@@ -151,14 +155,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                       });
                                     },
                                     shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadiusGeometry.circular(4),
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
-                                    side: BorderSide(
-                                      color: AppColors.inputBorder
-                                          .withOpacity(0.1),
+                                    side: const BorderSide(
+                                      color: AppColors.primary,
                                       width: 1.5,
                                     ),
+                                    fillColor: WidgetStateProperty.resolveWith(
+                                      (states) {
+                                        if (states
+                                            .contains(WidgetState.selected)) {
+                                          return AppColors.primary;
+                                        }
+                                        return Colors.transparent;
+                                      },
+                                    ),
+                                    checkColor: Colors.white,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
