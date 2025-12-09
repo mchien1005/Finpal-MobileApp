@@ -1,3 +1,4 @@
+import 'package:finpal_mobile/core/constants/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -23,7 +24,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: const Color(0xFFD7006E),
+      backgroundColor: AppColors.primary,
       elevation: 0,
       automaticallyImplyLeading: false,
       title: Column(
@@ -51,8 +52,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         Stack(
           children: [
             IconButton(
-              icon:
-                  const Icon(Icons.notifications_outlined, color: Colors.white),
+              icon: const Icon(
+                Icons.notifications_outlined,
+                color: Colors.white,
+              ),
               onPressed: onNotificationPressed ?? () {},
             ),
             if (notificationCount > 0)
@@ -72,7 +75,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   child: Text(
                     notificationCount > 9 ? '9+' : '$notificationCount',
                     style: const TextStyle(
-                      color: Color(0xFFD7006E),
+                      color: AppColors.primary,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),

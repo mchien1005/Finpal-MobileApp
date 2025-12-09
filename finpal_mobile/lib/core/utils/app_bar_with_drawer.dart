@@ -1,6 +1,8 @@
+import 'package:finpal_mobile/core/constants/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_drawer.dart';
+import '../widgets/confirmation_dialog.dart';
 import '../../presentation/screens/auth/login_screen.dart';
 
 /// Wrapper widget that provides both AppBar and Drawer functionality
@@ -38,10 +40,21 @@ class AppBarWithDrawer extends StatelessWidget {
       notificationCount: notificationCount,
       onNotificationPressed: onNotificationPressed,
       onLogoutPressed: () {
-        Navigator.pushAndRemoveUntil(
+        ConfirmationDialog.show(
           context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-          (route) => false,
+          title: 'Xác nhận đăng xuất',
+          message:
+              'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản? Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng FinPal.',
+          confirmText: 'Đăng xuất',
+          cancelText: 'Hủy',
+          confirmColor: AppColors.primary,
+          onConfirm: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+              (route) => false,
+            );
+          },
         );
       },
       onSettingsPressed: () {
