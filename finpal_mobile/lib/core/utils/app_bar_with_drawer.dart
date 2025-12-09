@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_drawer.dart';
+import '../../presentation/screens/auth/login_screen.dart';
 
 /// Wrapper widget that provides both AppBar and Drawer functionality
 /// Use this in Scaffold instead of separate appBar and endDrawer
@@ -24,20 +25,60 @@ class AppBarWithDrawer extends StatelessWidget {
     this.onThemeChanged,
   });
 
+  /// Factory constructor with common shared event handlers
+  /// Use this for consistent behavior across all screens
+  factory AppBarWithDrawer.common(
+    BuildContext context, {
+    String userName = 'Nguyễn Văn A',
+    int notificationCount = 0,
+    VoidCallback? onNotificationPressed,
+  }) {
+    return AppBarWithDrawer(
+      userName: userName,
+      notificationCount: notificationCount,
+      onNotificationPressed: onNotificationPressed,
+      onLogoutPressed: () {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+      },
+      onSettingsPressed: () {
+        // TODO: Navigate to settings screen
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Chức năng cài đặt đang phát triển')),
+        );
+      },
+      onLanguageChanged: (language) {
+        // TODO: Implement language change logic
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Đổi ngôn ngữ: $language')));
+      },
+      onThemeChanged: (isDark) {
+        // TODO: Implement theme change logic
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Đổi chủ đề: ${isDark ? "Tối" : "Sáng"}')),
+        );
+      },
+    );
+  }
+
   /// Returns the AppBar widget
   PreferredSizeWidget get appBar => CustomAppBar(
-        userName: userName,
-        notificationCount: notificationCount,
-        onNotificationPressed: onNotificationPressed,
-      );
+    userName: userName,
+    notificationCount: notificationCount,
+    onNotificationPressed: onNotificationPressed,
+  );
 
   /// Returns the Drawer widget
   Widget get drawer => CustomDrawer(
-        onLogoutPressed: onLogoutPressed,
-        onSettingsPressed: onSettingsPressed,
-        onLanguageChanged: onLanguageChanged,
-        onThemeChanged: onThemeChanged,
-      );
+    onLogoutPressed: onLogoutPressed,
+    onSettingsPressed: onSettingsPressed,
+    onLanguageChanged: onLanguageChanged,
+    onThemeChanged: onThemeChanged,
+  );
 
   @override
   Widget build(BuildContext context) {
