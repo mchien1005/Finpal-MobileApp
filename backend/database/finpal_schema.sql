@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS nguoi_dung (
     ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ngay_cap_nhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     lan_dang_nhap_cuoi TIMESTAMP NULL,
+    lan_hoat_dong_cuoi TIMESTAMP NULL COMMENT 'Lần hoạt động cuối cùng của người dùng',
     INDEX idx_ten_dang_nhap (ten_dang_nhap),
     INDEX idx_email (email),
     INDEX idx_ngay_tao (ngay_tao),

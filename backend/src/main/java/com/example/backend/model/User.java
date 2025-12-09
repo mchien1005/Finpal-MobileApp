@@ -60,6 +60,9 @@ public class User implements UserDetails {
     @Column(name = "lan_dang_nhap_cuoi")
     private LocalDateTime lastLoginAt;
 
+    @Column(name = "lan_hoat_dong_cuoi")
+    private LocalDateTime lastActiveAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
