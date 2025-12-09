@@ -1,3 +1,4 @@
+import 'package:finpal_mobile/presentation/screens/onboarding/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/custom_button.dart';
@@ -307,6 +308,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 );
                                 return;
                               }
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const OnboardingScreen(),
+                                ),
+                              );
                               // TODO: Implement register functionality
                             }
                           },
