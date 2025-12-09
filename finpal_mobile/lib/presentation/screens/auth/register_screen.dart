@@ -37,8 +37,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 40.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 40.0,
+            ),
             child: Form(
               key: _formKey,
               child: Column(
@@ -103,9 +105,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         // Name field
                         _buildRequiredField(
                           label: 'Tên đăng nhập',
-                          placeholder: 'Nguyễn Văn A',
+                          placeholder: 'vana123',
                           controller: _usernameController,
-                          icon: Icons.person_outline,
+                          icon: Icons.account_circle_outlined,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Vui lòng nhập tên đăng nhập';
@@ -126,8 +128,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             if (value == null || value.isEmpty) {
                               return 'Vui lòng nhập email';
                             }
-                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                                .hasMatch(value)) {
+                            if (!RegExp(
+                              r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                            ).hasMatch(value)) {
                               return 'Email không hợp lệ';
                             }
                             return null;
@@ -153,7 +156,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         // Password field
                         _buildRequiredPasswordField(
                           label: 'Mật khẩu',
-                          placeholder: 'Ít nhất 6 ký tự',
+                          placeholder: 'Ít nhất 8 ký tự',
                           controller: _passwordController,
                           obscureText: _obscurePassword,
                           onToggleVisibility: () {
@@ -165,8 +168,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             if (value == null || value.isEmpty) {
                               return 'Vui lòng nhập mật khẩu';
                             }
-                            if (value.length < 6) {
-                              return 'Mật khẩu phải có ít nhất 6 ký tự';
+                            if (value.length < 8) {
+                              return 'Mật khẩu phải có ít nhất 8 ký tự';
                             }
                             return null;
                           },
@@ -218,14 +221,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   color: AppColors.primary,
                                   width: 1.5,
                                 ),
-                                fillColor: WidgetStateProperty.resolveWith(
-                                  (states) {
-                                    if (states.contains(WidgetState.selected)) {
-                                      return AppColors.primary;
-                                    }
-                                    return Colors.transparent;
-                                  },
-                                ),
+                                fillColor: WidgetStateProperty.resolveWith((
+                                  states,
+                                ) {
+                                  if (states.contains(WidgetState.selected)) {
+                                    return AppColors.primary;
+                                  }
+                                  return Colors.transparent;
+                                }),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -298,7 +301,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(
-                                        'Vui lòng đồng ý với điều khoản sử dụng'),
+                                      'Vui lòng đồng ý với điều khoản sử dụng',
+                                    ),
                                   ),
                                 );
                                 return;
@@ -374,10 +378,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const Text(
               ' *',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFFFB2C36),
-              ),
+              style: TextStyle(fontSize: 14, color: Color(0xFFFB2C36)),
             ),
           ],
         ),
@@ -391,10 +392,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             controller: controller,
             keyboardType: keyboardType,
             validator: validator,
-            style: const TextStyle(
-              fontSize: 16,
-              color: AppColors.textPrimary,
-            ),
+            style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
             decoration: InputDecoration(
               hintText: placeholder,
               hintStyle: const TextStyle(
@@ -404,7 +402,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               prefixIcon: Icon(
                 icon,
                 color: AppColors.textPlaceholder,
-                size: 20,
+                size: 24,
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -454,10 +452,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const Text(
               ' *',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFFFB2C36),
-              ),
+              style: TextStyle(fontSize: 14, color: Color(0xFFFB2C36)),
             ),
           ],
         ),
@@ -471,10 +466,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             controller: controller,
             obscureText: obscureText,
             validator: validator,
-            style: const TextStyle(
-              fontSize: 16,
-              color: AppColors.textPrimary,
-            ),
+            style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
             decoration: InputDecoration(
               hintText: placeholder,
               hintStyle: const TextStyle(
@@ -484,12 +476,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
               prefixIcon: const Padding(
                 padding: EdgeInsets.all(10),
                 child: SizedBox(
-                  width: 20,
-                  height: 20,
+                  width: 24,
+                  height: 24,
                   child: Icon(
                     Icons.lock_outline,
                     color: AppColors.textPlaceholder,
-                    size: 20,
+                    size: 24,
                   ),
                 ),
               ),
@@ -499,7 +491,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ? Icons.visibility_outlined
                       : Icons.visibility_off_outlined,
                   color: AppColors.textPlaceholder,
-                  size: 20,
+                  size: 24,
                 ),
                 onPressed: onToggleVisibility,
               ),
