@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
-import 'presentation/screens/auth/login_screen.dart';
+import 'core/theme/app_theme.dart';
+import 'presentation/screens/home/dashboard_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,12 +12,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Finpal',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyApp(),
+      title: 'FinPal',
+      theme: AppTheme.lightTheme,
+      debugShowCheckedModeBanner: false,
+      home: const DashboardScreen(),
     );
   }
 }
