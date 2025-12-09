@@ -9,11 +9,16 @@ API endpoints dành cho admin để:
 5. Trigger retrain models
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, UploadFile, File, Form
 from typing import List, Optional
 from datetime import datetime, timedelta
 import os
 import random
+import json
+import csv
+import io
+import shutil
+from pathlib import Path
 
 from app.schemas.admin import (
     ModelInfo, ModelMetrics, ModelDetailResponse, ModelsListResponse,
@@ -802,4 +807,232 @@ async def retrain_single_model(model_name: str, force: bool = False):
             model_name=model_name,
             status="failed",
             message=str(e)
+        )
+
+
+# ============================================================================
+# UPLOAD TRAINING DATA ENDPOINT
+# ============================================================================
+
+# Mapping model names to their data directories
+MODEL_DATA_PATHS = {
+    "Category Classification": "data/raw/transactions.csv",
+    "Anomaly Detection": "data/raw/transactions.csv", 
+    "Spending Prediction": "data/raw/transactions.csv",
+    "SMS Parser": "data/raw/sms_training.csv",
+}
+
+
+@router.post("/upload-training-data")
+async def upload_training_data(
+    file: UploadFile = File(...),
+    model_name: Optional[str] = Form(None)
+):
+    """
+    Upload training data file (CSV or JSON) for AI model training
+    
+    Args:
+        file: CSV or JSON file containing training data
+        model_name: Optional model name to associate data with
+        
+    Returns:
+        dict: Upload result with records count and file info
+    """
+    try:
+        # Validate file extension
+        filename = file.filename.lower()
+        if not (filename.endswith('.csv') or filename.endswith('.json')):
+            raise HTTPException(
+                status_code=400,
+                detail="Only CSV and JSON files are supported"
+            )
+        
+        # Read file content
+        content = await file.read()
+        content_str = content.decode('utf-8')
+        
+        # Parse file based on extension
+        records = []
+        if filename.endswith('.csv'):
+            # Parse CSV
+            csv_reader = csv.DictReader(io.StringIO(content_str))
+            records = list(csv_reader)
+        else:
+            # Parse JSON
+            data = json.loads(content_str)
+            if isinstance(data, list):
+                records = data
+            elif isinstance(data, dict) and 'data' in data:
+                records = data['data']
+            else:
+                records = [data]
+        
+        if not records:
+            raise HTTPException(
+                status_code=400,
+                detail="No records found in the uploaded file"
+            )
+        
+        # Determine target path based on model or file content
+        target_path = "data/raw/uploaded_training_data.csv"
+        
+        if model_name:
+            target_path = MODEL_DATA_PATHS.get(model_name, target_path)
+        else:
+            # Auto-detect based on columns
+            first_record = records[0]
+            columns = set(first_record.keys())
+            
+            if 'sms_text' in columns or 'sms' in columns:
+                target_path = "data/raw/sms_training.csv"
+            elif 'is_anomaly' in columns or 'anomaly_score' in columns:
+                target_path = "data/raw/anomaly_training.csv"
+            elif 'category' in columns or 'merchant' in columns:
+                target_path = "data/raw/transactions.csv"
+        
+        # Ensure directory exists
+        Path(target_path).parent.mkdir(parents=True, exist_ok=True)
+        
+        # Check if file exists and append or create new
+        file_exists = os.path.exists(target_path)
+        existing_count = 0
+        
+        if file_exists and target_path.endswith('.csv'):
+            # Count existing records
+            with open(target_path, 'r', encoding='utf-8') as f:
+                existing_count = sum(1 for _ in f) - 1  # Subtract header
+            
+            # Append new records
+            with open(target_path, 'a', newline='', encoding='utf-8') as f:
+                if records:
+                    writer = csv.DictWriter(f, fieldnames=records[0].keys())
+                    for record in records:
+                        writer.writerow(record)
+        else:
+            # Create new file with header
+            with open(target_path, 'w', newline='', encoding='utf-8') as f:
+                if records:
+                    writer = csv.DictWriter(f, fieldnames=records[0].keys())
+                    writer.writeheader()
+                    writer.writerows(records)
+        
+        # Get column info
+        columns_info = list(records[0].keys()) if records else []
+        
+        return {
+            "success": True,
+            "message": f"Successfully uploaded {len(records)} records",
+            "records_count": len(records),
+            "existing_records": existing_count,
+            "total_records": existing_count + len(records),
+            "file_name": file.filename,
+            "file_size": len(content),
+            "target_path": target_path,
+            "model_name": model_name,
+            "columns": columns_info,
+            "uploaded_at": datetime.now().isoformat()
+        }
+        
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid JSON format"
+        )
+    except UnicodeDecodeError:
+        raise HTTPException(
+            status_code=400,
+            detail="File encoding error. Please use UTF-8 encoding."
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing file: {str(e)}"
+        )
+
+
+@router.get("/training-data-info")
+async def get_training_data_info():
+    """
+    Get information about available training data files
+    
+    Returns:
+        dict: Information about training data files
+    """
+    try:
+        data_files = []
+        data_dir = Path("data/raw")
+        
+        if data_dir.exists():
+            for file_path in data_dir.glob("*.csv"):
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        reader = csv.DictReader(f)
+                        rows = list(reader)
+                        columns = reader.fieldnames or []
+                        
+                    data_files.append({
+                        "file_name": file_path.name,
+                        "file_path": str(file_path),
+                        "records_count": len(rows),
+                        "columns": columns,
+                        "file_size": file_path.stat().st_size,
+                        "modified_at": datetime.fromtimestamp(file_path.stat().st_mtime).isoformat()
+                    })
+                except Exception:
+                    continue
+        
+        return {
+            "success": True,
+            "data_files": data_files,
+            "total_files": len(data_files)
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error getting training data info: {str(e)}"
+        )
+
+
+@router.delete("/training-data/{file_name}")
+async def delete_training_data(file_name: str):
+    """
+    Delete a training data file
+    
+    Args:
+        file_name: Name of the file to delete
+        
+    Returns:
+        dict: Deletion result
+    """
+    try:
+        file_path = Path(f"data/raw/{file_name}")
+        
+        if not file_path.exists():
+            raise HTTPException(
+                status_code=404,
+                detail=f"File {file_name} not found"
+            )
+        
+        # Create backup before deleting
+        backup_dir = Path("data/backup")
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        backup_path = backup_dir / f"{file_name}.{datetime.now().strftime('%Y%m%d_%H%M%S')}.bak"
+        shutil.copy(file_path, backup_path)
+        
+        # Delete the file
+        file_path.unlink()
+        
+        return {
+            "success": True,
+            "message": f"File {file_name} deleted successfully",
+            "backup_path": str(backup_path)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error deleting file: {str(e)}"
         )
