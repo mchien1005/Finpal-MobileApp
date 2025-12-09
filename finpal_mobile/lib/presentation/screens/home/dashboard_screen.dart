@@ -261,8 +261,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildWarningCard() {
     return const WarningCard(
       title: 'Hạng mục chi nhiều nhất',
-      subtitle: 'Ăn uống',
-      description: '- 3.5M đ',
+      subtitle: 'Ăn uống - 3.5M đ',
+      description: 'Chiếm 40% tổng chi tiêu',
     );
   }
 }
