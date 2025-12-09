@@ -38,6 +38,9 @@ public class User implements UserDetails {
     @Column(name = "so_dien_thoai", length = 20)
     private String phone;
 
+    @Column(name = "ngay_sinh")
+    private java.time.LocalDate dateOfBirth;
+
     @Column(name = "anh_dai_dien", length = 500)
     private String avatarUrl;
 

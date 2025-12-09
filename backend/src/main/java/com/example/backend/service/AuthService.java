@@ -193,7 +193,7 @@ public class AuthService {
      * @param avatarUrl URL ảnh đại diện mới (có thể null nếu không thay đổi)
      * @return User đã được cập nhật
      */
-    public User updateProfile(Long userId, String fullName, String email, String phone, String avatarUrl) {
+    public User updateProfile(Long userId, String fullName, String email, String phone, java.time.LocalDate dateOfBirth, String avatarUrl) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User không tồn tại"));
 
@@ -211,6 +211,9 @@ public class AuthService {
         }
         if (phone != null) {
             user.setPhone(phone);
+        }
+        if (dateOfBirth != null) {
+            user.setDateOfBirth(dateOfBirth);
         }
         if (avatarUrl != null) {
             user.setAvatarUrl(avatarUrl);
