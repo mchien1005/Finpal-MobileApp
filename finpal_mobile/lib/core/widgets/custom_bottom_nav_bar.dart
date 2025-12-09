@@ -76,36 +76,46 @@ class CustomBottomNavBar extends StatelessWidget {
     return Expanded(
       child: InkWell(
         onTap: () => onTap(index),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            icon is IconData
-                ? Icon(
-                    icon,
-                    color: isSelected ? AppColors.primary : Colors.grey[600],
-                    size: 28,
-                  )
-                : SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: ColorFiltered(
-                      colorFilter: ColorFilter.mode(
-                        isSelected ? AppColors.primary : Colors.grey[600]!,
-                        BlendMode.srcIn,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.primary.withOpacity(0.1)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              icon is IconData
+                  ? Icon(
+                      icon,
+                      color: isSelected ? AppColors.primary : Colors.grey[600],
+                      size: 24,
+                    )
+                  : SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: ColorFiltered(
+                        colorFilter: ColorFilter.mode(
+                          isSelected ? AppColors.primary : Colors.grey[600]!,
+                          BlendMode.srcIn,
+                        ),
+                        child: icon,
                       ),
-                      child: icon,
                     ),
-                  ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                color: isSelected ? AppColors.primary : Colors.grey[600],
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isSelected ? AppColors.primary : Colors.grey[600],
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
