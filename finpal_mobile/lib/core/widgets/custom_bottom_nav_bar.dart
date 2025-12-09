@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -35,23 +37,23 @@ class CustomBottomNavBar extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildNavItem(
-                    icon: Icons.home_outlined,
+                    icon: SvgPicture.asset('assets/icons/home.svg'),
                     label: 'Tổng quan',
                     index: 0,
                   ),
                   _buildNavItem(
-                    icon: Icons.receipt_long_outlined,
+                    icon: MdiIcons.formatListBulleted,
                     label: 'Lịch sử',
                     index: 1,
                   ),
                   const Expanded(child: SizedBox()), // Spacer for center button
                   _buildNavItem(
-                    icon: Icons.lightbulb_outline,
-                    label: 'AI Cố vấn',
+                    icon: SvgPicture.asset('assets/icons/brain.svg'),
+                    label: 'AI Gợi ý',
                     index: 3,
                   ),
                   _buildNavItem(
-                    icon: Icons.track_changes_outlined,
+                    icon: MdiIcons.bullseye,
                     label: 'Mục tiêu',
                     index: 4,
                   ),
@@ -66,7 +68,7 @@ class CustomBottomNavBar extends StatelessWidget {
   }
 
   Widget _buildNavItem({
-    required IconData icon,
+    required dynamic icon,
     required String label,
     required int index,
   }) {
@@ -77,11 +79,23 @@ class CustomBottomNavBar extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: isSelected ? AppColors.primary : Colors.grey[600],
-              size: 24,
-            ),
+            icon is IconData
+                ? Icon(
+                    icon,
+                    color: isSelected ? AppColors.primary : Colors.grey[600],
+                    size: 28,
+                  )
+                : SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: ColorFiltered(
+                      colorFilter: ColorFilter.mode(
+                        isSelected ? AppColors.primary : Colors.grey[600]!,
+                        BlendMode.srcIn,
+                      ),
+                      child: icon,
+                    ),
+                  ),
             const SizedBox(height: 4),
             Text(
               label,
