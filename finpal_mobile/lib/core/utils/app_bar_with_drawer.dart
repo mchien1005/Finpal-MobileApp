@@ -4,6 +4,7 @@ import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_drawer.dart';
 import '../widgets/confirmation_dialog.dart';
 import '../../presentation/screens/auth/login_screen.dart';
+import '../../presentation/screens/profile/app_settings_screen.dart';
 
 /// Wrapper widget that provides both AppBar and Drawer functionality
 /// Use this in Scaffold instead of separate appBar and endDrawer
@@ -58,9 +59,9 @@ class AppBarWithDrawer extends StatelessWidget {
         );
       },
       onSettingsPressed: () {
-        // TODO: Navigate to settings screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Chức năng cài đặt đang phát triển')),
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AppSettingsScreen()),
         );
       },
       onLanguageChanged: (language) {
