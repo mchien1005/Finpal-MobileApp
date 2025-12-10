@@ -1,4 +1,5 @@
 import 'package:finpal_mobile/core/constants/app_colors.dart';
+import 'package:finpal_mobile/presentation/screens/notification_screen.dart';
 import 'package:flutter/material.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -56,7 +57,16 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 Icons.notifications_outlined,
                 color: Colors.white,
               ),
-              onPressed: onNotificationPressed ?? () {},
+              onPressed:
+                  onNotificationPressed ??
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationScreen(),
+                      ),
+                    );
+                  },
             ),
             if (notificationCount > 0)
               Positioned(
