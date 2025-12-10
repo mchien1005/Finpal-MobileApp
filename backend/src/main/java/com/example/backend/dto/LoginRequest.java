@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Schema(description = "Đăng nhập request")
 public class LoginRequest {
     @JsonProperty(value = "username", required = true)
-    @Schema(description = "Tên đăng nhập", example = "demo", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Tên đăng nhập hoặc Email", example = "demo hoặc demo@example.com", requiredMode = Schema.RequiredMode.REQUIRED)
     private String username;
 
     @JsonProperty(value = "password", required = true)

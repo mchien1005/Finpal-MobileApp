@@ -37,22 +37,22 @@ public class AuthService {
      * @return LoginResponse chứa token, userInfo, và message thành công/thất bại
      */
     public LoginResponse login(LoginRequest request) {
-        String username = request.getUsername();
+        String usernameOrEmail = request.getUsername();
         String password = request.getPassword();
 
         // Kiểm tra đầu vào
-        if (username == null || username.trim().isEmpty() ||
+        if (usernameOrEmail == null || usernameOrEmail.trim().isEmpty() ||
                 password == null || password.trim().isEmpty()) {
-            return new LoginResponse(false, "Username và password không được để trống", null, null);
+            return new LoginResponse(false, "Username/Email và password không được để trống", null, null);
         }
 
         try {
-            // Xác thực user qua Spring Security
+            // Xác thực user qua Spring Security (hỗ trợ cả username và email)
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(username, password));
+                    new UsernamePasswordAuthenticationToken(usernameOrEmail, password));
 
-            // Lấy thông tin user từ database
-            User user = userRepository.findByUsername(username)
+            // Lấy thông tin user từ database (tìm theo username hoặc email)
+            User user = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             // Cập nhật thời gian đăng nhập cuối
