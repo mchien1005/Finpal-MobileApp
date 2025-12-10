@@ -1,8 +1,8 @@
 // TODO: Savings goals screen
 import 'package:flutter/material.dart';
 import '../../../core/widgets/custom_bottom_nav_bar.dart';
-import '../../../core/widgets/custom_app_bar.dart';
-import '../../../core/widgets/custom_drawer.dart';
+import '../../../core/utils/bottom_nav_helper.dart';
+import '../../../core/utils/app_bar_with_drawer.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class SavingsGoalsScreen extends StatefulWidget {
@@ -13,24 +13,18 @@ class SavingsGoalsScreen extends StatefulWidget {
 }
 
 class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
-  int _currentIndex = 4; // Mục tiêu is index 4
-
-  void _onNavItemTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-    // TODO: Navigate to different screens based on index
-  }
-
   @override
   Widget build(BuildContext context) {
+    final appBarDrawer = AppBarWithDrawer.common(
+      context,
+      userName: 'Nguyễn Văn A',
+      notificationCount: 0,
+    );
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const CustomAppBar(
-        userName: 'Nguyễn Văn A',
-        notificationCount: 0,
-      ),
-      endDrawer: const CustomDrawer(),
+      appBar: appBarDrawer.appBar,
+      endDrawer: appBarDrawer.drawer,
       // backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
@@ -116,8 +110,10 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
         ),
       ),
       bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onNavItemTapped,
+        currentIndex: 4,
+        onTap: (index) {
+          BottomNavHelper.navigateToIndex(context, index, 4);
+        },
       ),
     );
   }

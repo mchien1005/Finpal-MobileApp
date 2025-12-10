@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/widgets/custom_bottom_nav_bar.dart';
-import '../../../core/widgets/custom_app_bar.dart';
-import '../../../core/widgets/custom_drawer.dart';
 import '../../../core/utils/bottom_nav_helper.dart';
+import '../../../core/utils/app_bar_with_drawer.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class AIInsightsScreen extends StatefulWidget {
@@ -15,13 +14,16 @@ class AIInsightsScreen extends StatefulWidget {
 class _AIInsightsScreenState extends State<AIInsightsScreen> {
   @override
   Widget build(BuildContext context) {
+    final appBarDrawer = AppBarWithDrawer.common(
+      context,
+      userName: 'Nguyễn Văn A',
+      notificationCount: 0,
+    );
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const CustomAppBar(
-        userName: 'Nguyễn Văn A',
-        notificationCount: 0,
-      ),
-      endDrawer: const CustomDrawer(),
+      appBar: appBarDrawer.appBar,
+      endDrawer: appBarDrawer.drawer,
       body: SafeArea(
         child: Column(
           children: [

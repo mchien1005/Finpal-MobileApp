@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_bottom_nav_bar.dart';
-import '../../../core/widgets/custom_drawer.dart';
 import '../../../core/utils/bottom_nav_helper.dart';
+import '../../../core/utils/app_bar_with_drawer.dart';
 import '../../widgets/dashboard_card.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -17,35 +16,15 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
+    final appBarDrawer = AppBarWithDrawer.common(
+      context,
+      userName: 'Nguyễn Văn A',
+      notificationCount: 3,
+    );
+
     return Scaffold(
-      appBar: const CustomAppBar(
-        userName: 'Nguyễn Văn A',
-        notificationCount: 3,
-      ),
-      endDrawer: CustomDrawer(
-        onLogoutPressed: () {
-          // TODO: Implement logout
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Đăng xuất')));
-        },
-        onSettingsPressed: () {
-          // TODO: Navigate to settings
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Cài đặt')));
-        },
-        onLanguageChanged: (language) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Đổi ngôn ngữ: $language')));
-        },
-        onThemeChanged: (isDark) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Chủ đề: ${isDark ? "Tối" : "Sáng"}')),
-          );
-        },
-      ),
+      appBar: appBarDrawer.appBar,
+      endDrawer: appBarDrawer.drawer,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
