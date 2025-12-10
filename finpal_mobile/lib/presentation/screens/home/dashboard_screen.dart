@@ -16,15 +16,10 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
-    final appBarDrawer = AppBarWithDrawer.common(
+    return AppBarWithDrawer.scrollable(
       context,
       userName: 'Nguyễn Văn A',
       notificationCount: 3,
-    );
-
-    return Scaffold(
-      appBar: appBarDrawer.appBar,
-      endDrawer: appBarDrawer.drawer,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -38,22 +33,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
             stops: [0.0, 0.045, 1.0],
           ),
         ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSummaryCards(),
-                const SizedBox(height: 16),
-                _buildProgressCard(),
-                const SizedBox(height: 16),
-                _buildCategoryCard(),
-                const SizedBox(height: 16),
-                _buildWarningCard(),
-                const SizedBox(height: 20),
-              ],
-            ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSummaryCards(),
+              const SizedBox(height: 16),
+              _buildProgressCard(),
+              const SizedBox(height: 16),
+              _buildCategoryCard(),
+              const SizedBox(height: 16),
+              _buildWarningCard(),
+              const SizedBox(height: 20),
+            ],
           ),
         ),
       ),

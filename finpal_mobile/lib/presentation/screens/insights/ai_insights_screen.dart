@@ -14,93 +14,76 @@ class AIInsightsScreen extends StatefulWidget {
 class _AIInsightsScreenState extends State<AIInsightsScreen> {
   @override
   Widget build(BuildContext context) {
-    final appBarDrawer = AppBarWithDrawer.common(
+    return AppBarWithDrawer.scrollable(
       context,
       userName: 'Nguyễn Văn A',
-      notificationCount: 0,
-    );
-
-    return Scaffold(
+      notificationCount: 3,
       backgroundColor: Colors.white,
-      appBar: appBarDrawer.appBar,
-      endDrawer: appBarDrawer.drawer,
-      body: SafeArea(
+      body: Padding(
+        padding: const EdgeInsets.all(10),
         child: Column(
           children: [
-            // Header
-            // _buildHeader(),
+            const SizedBox(height: 16),
 
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 16),
+            // AI Assistant Card
+            _buildAIAssistantCard(),
 
-                    // AI Assistant Card
-                    _buildAIAssistantCard(),
+            const SizedBox(height: 16),
 
-                    const SizedBox(height: 16),
-
-                    // Alert Cards
-                    _buildAlertCard(
-                      type: AlertType.warning,
-                      title: 'Cảnh báo chi tiêu',
-                      message:
-                          'Bạn đã chi 70% hạn mức "Ăn uống" của tháng này, chỉ còn 10 ngày nữa là hết tháng.',
-                      category: 'Ăn uống',
-                      action: 'Xem chi tiết →',
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    _buildAlertCard(
-                      type: AlertType.suggestion,
-                      title: 'Gợi ý tiết kiệm',
-                      message:
-                          'FinPal nhận thấy bạn chi trung bình 200.000đ cho "Trà sữa" mỗi tuần. Nếu bạn giảm còn 100.000đ, bạn sẽ tiết kiệm được 400.000đ/tháng.',
-                      category: 'Ăn uống',
-                      action: 'Đặt mục tiêu →',
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    _buildAlertCard(
-                      type: AlertType.anomaly,
-                      title: 'Phát hiện bất thường',
-                      message:
-                          'Hóa đơn tiền điện tháng này của bạn (500.000đ) cao hơn 30% so với trung bình (350.000đ).',
-                      category: 'Hóa đơn',
-                      action: 'Xem lịch sử →',
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    _buildAlertCard(
-                      type: AlertType.achievement,
-                      title: 'Thành tích',
-                      message:
-                          'Chúc mừng! Bạn đã tiết kiệm được 500.000đ so với tháng trước.',
-                      category: 'Tiết kiệm',
-                      action: 'Xem báo cáo →',
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Weekly Trend Card
-                    _buildWeeklyTrendCard(),
-
-                    const SizedBox(height: 16),
-
-                    // Category Analysis Card
-                    _buildCategoryAnalysisCard(),
-
-                    const SizedBox(height: 16), // Bottom navigation spacing
-                  ],
-                ),
-              ),
+            // Alert Cards
+            _buildAlertCard(
+              type: AlertType.warning,
+              title: 'Cảnh báo chi tiêu',
+              message:
+                  'Bạn đã chi 70% hạn mức "Ăn uống" của tháng này, chỉ còn 10 ngày nữa là hết tháng.',
+              category: 'Ăn uống',
+              action: 'Xem chi tiết →',
             ),
+
+            const SizedBox(height: 12),
+
+            _buildAlertCard(
+              type: AlertType.suggestion,
+              title: 'Gợi ý tiết kiệm',
+              message:
+                  'FinPal nhận thấy bạn chi trung bình 200.000đ cho "Trà sữa" mỗi tuần. Nếu bạn giảm còn 100.000đ, bạn sẽ tiết kiệm được 400.000đ/tháng.',
+              category: 'Ăn uống',
+              action: 'Đặt mục tiêu →',
+            ),
+
+            const SizedBox(height: 12),
+
+            _buildAlertCard(
+              type: AlertType.anomaly,
+              title: 'Phát hiện bất thường',
+              message:
+                  'Hóa đơn tiền điện tháng này của bạn (500.000đ) cao hơn 30% so với trung bình (350.000đ).',
+              category: 'Hóa đơn',
+              action: 'Xem lịch sử →',
+            ),
+
+            const SizedBox(height: 12),
+
+            _buildAlertCard(
+              type: AlertType.achievement,
+              title: 'Thành tích',
+              message:
+                  'Chúc mừng! Bạn đã tiết kiệm được 500.000đ so với tháng trước.',
+              category: 'Tiết kiệm',
+              action: 'Xem báo cáo →',
+            ),
+
+            const SizedBox(height: 16),
+
+            // Weekly Trend Card
+            _buildWeeklyTrendCard(),
+
+            const SizedBox(height: 16),
+
+            // Category Analysis Card
+            _buildCategoryAnalysisCard(),
+
+            const SizedBox(height: 16), // Bottom navigation spacing
           ],
         ),
       ),
