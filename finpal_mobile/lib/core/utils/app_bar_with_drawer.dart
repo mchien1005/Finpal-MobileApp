@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_drawer.dart';
 import '../widgets/confirmation_dialog.dart';
+import '../widgets/scrollable_app_bar_scaffold.dart';
+import '../../presentation/screens/auth/login_screen.dart';
+import '../../presentation/screens/profile/app_settings_screen.dart';
+import '../../presentation/screens/notification_screen.dart';
 
 /// Wrapper widget that provides both AppBar and Drawer functionality
 /// Use this in Scaffold instead of separate appBar and endDrawer
@@ -57,9 +61,9 @@ class AppBarWithDrawer extends StatelessWidget {
         );
       },
       onSettingsPressed: () {
-        // TODO: Navigate to settings screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Chức năng cài đặt đang phát triển')),
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AppSettingsScreen()),
         );
       },
       onLanguageChanged: (language) {
@@ -70,6 +74,61 @@ class AppBarWithDrawer extends StatelessWidget {
       },
       onThemeChanged: (isDark) {
         // TODO: Implement theme change logic
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Đổi chủ đề: ${isDark ? "Tối" : "Sáng"}')),
+        );
+      },
+    );
+  }
+
+  /// Factory constructor that returns a scrollable scaffold with app bar
+  /// The app bar will hide when scrolling down and show when scrolling up
+  static Widget scrollable(
+    BuildContext context, {
+    required Widget body,
+    String userName = 'Nguyễn Văn A',
+    int notificationCount = 0,
+    Widget? bottomNavigationBar,
+    Color? backgroundColor,
+    VoidCallback? onNotificationPressed,
+  }) {
+    return ScrollableAppBarScaffold(
+      userName: userName,
+      notificationCount: notificationCount,
+      body: body,
+      bottomNavigationBar: bottomNavigationBar,
+      backgroundColor: backgroundColor,
+      onNotificationPressed: onNotificationPressed,
+      onLogoutPressed: () {
+        ConfirmationDialog.show(
+          context,
+          title: 'Xác nhận đăng xuất',
+          message:
+              'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản? Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng FinPal.',
+          confirmText: 'Đăng xuất',
+          cancelText: 'Hủy',
+          confirmColor: AppColors.primary,
+          onConfirm: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+              (route) => false,
+            );
+          },
+        );
+      },
+      onSettingsPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AppSettingsScreen()),
+        );
+      },
+      onLanguageChanged: (language) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Đổi ngôn ngữ: $language')));
+      },
+      onThemeChanged: (isDark) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Đổi chủ đề: ${isDark ? "Tối" : "Sáng"}')),
         );
