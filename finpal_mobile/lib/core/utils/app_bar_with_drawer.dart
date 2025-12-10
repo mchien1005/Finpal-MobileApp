@@ -51,13 +51,13 @@ class AppBarWithDrawer extends StatelessWidget {
           confirmText: 'Đăng xuất',
           cancelText: 'Hủy',
           confirmColor: AppColors.primary,
-          onConfirm: () {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-              (route) => false,
-            );
-          },
+          // onConfirm: () {
+          //   Navigator.pushAndRemoveUntil(
+          //     context,
+          //     MaterialPageRoute(builder: (context) => const LoginScreen()),
+          //     (route) => false,
+          //   );
+          // },
         );
       },
       onSettingsPressed: () {
