@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_drawer.dart';
 import '../widgets/confirmation_dialog.dart';
-import '../../presentation/screens/auth/login_screen.dart';
 
 /// Wrapper widget that provides both AppBar and Drawer functionality
 /// Use this in Scaffold instead of separate appBar and endDrawer
@@ -48,13 +47,13 @@ class AppBarWithDrawer extends StatelessWidget {
           confirmText: 'Đăng xuất',
           cancelText: 'Hủy',
           confirmColor: AppColors.primary,
-          onConfirm: () {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-              (route) => false,
-            );
-          },
+          // onConfirm: () {
+          //   Navigator.pushAndRemoveUntil(
+          //     context,
+          //     MaterialPageRoute(builder: (context) => const LoginScreen()),
+          //     (route) => false,
+          //   );
+          // },
         );
       },
       onSettingsPressed: () {
