@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/custom_bottom_nav_bar.dart';
 import '../../../core/utils/app_bar_with_drawer.dart';
+import '../../../core/utils/bottom_nav_helper.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -398,9 +399,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 2,
         onTap: (index) {
-          // TODO: Navigate to different screens based on index
-          if (index == 2) return; // Already on add transaction screen
-          // Handle navigation to other screens
+          BottomNavHelper.navigateToIndex(context, index, 2);
         },
       ),
     );

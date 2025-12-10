@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_bottom_nav_bar.dart';
 import '../../../core/widgets/custom_drawer.dart';
+import '../../../core/utils/bottom_nav_helper.dart';
 import '../../widgets/dashboard_card.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -14,8 +15,6 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  int _selectedIndex = 0;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,20 +25,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       endDrawer: CustomDrawer(
         onLogoutPressed: () {
           // TODO: Implement logout
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đăng xuất')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Đăng xuất')));
         },
         onSettingsPressed: () {
           // TODO: Navigate to settings
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Cài đặt')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Cài đặt')));
         },
         onLanguageChanged: (language) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Đổi ngôn ngữ: $language')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Đổi ngôn ngữ: $language')));
         },
         onThemeChanged: (isDark) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -80,11 +79,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
       bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _selectedIndex,
+        currentIndex: 0,
         onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+          BottomNavHelper.navigateToIndex(context, index, 0);
         },
       ),
     );
@@ -133,130 +130,124 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildCategoryCard() {
-  return Container(
-    padding: const EdgeInsets.all(24),
-    decoration: BoxDecoration(
-      color: AppColors.white,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(
-        color: AppColors.borderColor,
-        width: 1.12,
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderColor, width: 1.12),
       ),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Phân loại chi tiêu',
-          style: TextStyle(
-            fontSize: 16,
-            color: AppColors.textPrimary,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Phân loại chi tiêu',
+            style: TextStyle(fontSize: 16, color: AppColors.textPrimary),
           ),
-        ),
-        const SizedBox(height: 24),
-        SizedBox(
-          height: 300,
-          child: PieChart(
-            PieChartData(
-              sectionsSpace: 2,
-              centerSpaceRadius: 0,
-              startDegreeOffset: -90,
-              borderData: FlBorderData(show: false),
-              sections: [
-                PieChartSectionData(
-                  value: 40,
-                  title: 'Ăn uống\n40%',
-                  color: AppColors.categoryFood,
-                  radius: 110,
-                  titleStyle: const TextStyle(
-                    fontSize: 11,
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 300,
+            child: PieChart(
+              PieChartData(
+                sectionsSpace: 2,
+                centerSpaceRadius: 0,
+                startDegreeOffset: -90,
+                borderData: FlBorderData(show: false),
+                sections: [
+                  PieChartSectionData(
+                    value: 40,
+                    title: 'Ăn uống\n40%',
                     color: AppColors.categoryFood,
-                    fontWeight: FontWeight.w600,
+                    radius: 110,
+                    titleStyle: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.categoryFood,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    titlePositionPercentageOffset: 1.4,
                   ),
-                  titlePositionPercentageOffset: 1.4,
-                ),
-                PieChartSectionData(
-                  value: 17,
-                  title: 'Di chuyển\n17%',
-                  color: AppColors.categoryTransport,
-                  radius: 110,
-                  titleStyle: const TextStyle(
-                    fontSize: 11,
+                  PieChartSectionData(
+                    value: 17,
+                    title: 'Di chuyển\n17%',
                     color: AppColors.categoryTransport,
-                    fontWeight: FontWeight.w600,
+                    radius: 110,
+                    titleStyle: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.categoryTransport,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    titlePositionPercentageOffset: 1.4,
                   ),
-                  titlePositionPercentageOffset: 1.4,
-                ),
-                PieChartSectionData(
-                  value: 23,
-                  title: 'Mua sắm\n23%',
-                  color: AppColors.categoryShopping,
-                  radius: 110,
-                  titleStyle: const TextStyle(
-                    fontSize: 11,
+                  PieChartSectionData(
+                    value: 23,
+                    title: 'Mua sắm\n23%',
                     color: AppColors.categoryShopping,
-                    fontWeight: FontWeight.w600,
+                    radius: 110,
+                    titleStyle: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.categoryShopping,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    titlePositionPercentageOffset: 1.4,
                   ),
-                  titlePositionPercentageOffset: 1.4,
-                ),
-                PieChartSectionData(
-                  value: 9,
-                  title: 'Giải trí\n9%',
-                  color: AppColors.categoryEntertainment,
-                  radius: 110,
-                  titleStyle: const TextStyle(
-                    fontSize: 11,
+                  PieChartSectionData(
+                    value: 9,
+                    title: 'Giải trí\n9%',
                     color: AppColors.categoryEntertainment,
-                    fontWeight: FontWeight.w600,
+                    radius: 110,
+                    titleStyle: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.categoryEntertainment,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    titlePositionPercentageOffset: 1.4,
                   ),
-                  titlePositionPercentageOffset: 1.4,
-                ),
-                PieChartSectionData(
-                  value: 11,
-                  title: 'Hóa đơn\n11%',
-                  color: AppColors.categoryBills,
-                  radius: 110,
-                  titleStyle: const TextStyle(
-                    fontSize: 11,
+                  PieChartSectionData(
+                    value: 11,
+                    title: 'Hóa đơn\n11%',
                     color: AppColors.categoryBills,
-                    fontWeight: FontWeight.w600,
+                    radius: 110,
+                    titleStyle: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.categoryBills,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    titlePositionPercentageOffset: 1.4,
                   ),
-                  titlePositionPercentageOffset: 1.4,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        const CategoryLegendItem(
-          color: AppColors.categoryFood,
-          label: 'Ăn uống',
-          amount: '3.500.000 đ',
-        ),
-        const CategoryLegendItem(
-          color: AppColors.categoryTransport,
-          label: 'Di chuyển',
-          amount: '1.500.000 đ',
-        ),
-        const CategoryLegendItem(
-          color: AppColors.categoryShopping,
-          label: 'Mua sắm',
-          amount: '2.000.000 đ',
-        ),
-        const CategoryLegendItem(
-          color: AppColors.categoryEntertainment,
-          label: 'Giải trí',
-          amount: '800.000 đ',
-        ),
-        const CategoryLegendItem(
-          color: AppColors.categoryBills,
-          label: 'Hóa đơn',
-          amount: '950.000 đ',
-        ),
-      ],
-    ),
-  );
-}
+          const SizedBox(height: 16),
+          const CategoryLegendItem(
+            color: AppColors.categoryFood,
+            label: 'Ăn uống',
+            amount: '3.500.000 đ',
+          ),
+          const CategoryLegendItem(
+            color: AppColors.categoryTransport,
+            label: 'Di chuyển',
+            amount: '1.500.000 đ',
+          ),
+          const CategoryLegendItem(
+            color: AppColors.categoryShopping,
+            label: 'Mua sắm',
+            amount: '2.000.000 đ',
+          ),
+          const CategoryLegendItem(
+            color: AppColors.categoryEntertainment,
+            label: 'Giải trí',
+            amount: '800.000 đ',
+          ),
+          const CategoryLegendItem(
+            color: AppColors.categoryBills,
+            label: 'Hóa đơn',
+            amount: '950.000 đ',
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildWarningCard() {
     return const WarningCard(

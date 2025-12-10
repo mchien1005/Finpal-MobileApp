@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/widgets/custom_bottom_nav_bar.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_drawer.dart';
+import '../../../core/utils/bottom_nav_helper.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class AIInsightsScreen extends StatefulWidget {
@@ -12,15 +13,6 @@ class AIInsightsScreen extends StatefulWidget {
 }
 
 class _AIInsightsScreenState extends State<AIInsightsScreen> {
-  int _currentIndex = 3; // AI Cố vấn is index 3
-
-  void _onNavItemTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-    // TODO: Navigate to different screens based on index
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -111,8 +103,10 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
         ),
       ),
       bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onNavItemTapped,
+        currentIndex: 3,
+        onTap: (index) {
+          BottomNavHelper.navigateToIndex(context, index, 3);
+        },
       ),
     );
   }

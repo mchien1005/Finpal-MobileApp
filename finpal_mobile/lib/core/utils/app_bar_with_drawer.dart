@@ -6,7 +6,6 @@ import '../widgets/confirmation_dialog.dart';
 import '../widgets/scrollable_app_bar_scaffold.dart';
 import '../../presentation/screens/auth/login_screen.dart';
 import '../../presentation/screens/profile/app_settings_screen.dart';
-import '../../presentation/screens/notification_screen.dart';
 
 /// Wrapper widget that provides both AppBar and Drawer functionality
 /// Use this in Scaffold instead of separate appBar and endDrawer

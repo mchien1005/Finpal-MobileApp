@@ -1,3 +1,5 @@
+import 'package:finpal_mobile/presentation/screens/home/dashboard_screen.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../presentation/screens/transactions/add_transaction_screen.dart';
 import 'package:flutter/material.dart';
@@ -210,8 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    const AddTransactionScreen(),
+                                builder: (context) => const DashboardScreen(),
                               ),
                             );
                           },
