@@ -38,11 +38,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_completed', true);
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
-      );
-    }
+    // if (mounted) {
+    //   Navigator.of(context).pushReplacement(
+    //     MaterialPageRoute(builder: (context) => const DashboardScreen()),
+    //   );
+    // }
   }
 
   @override
@@ -713,8 +713,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             'Gợi ý tiết kiệm',
             '"Giảm trà sữa từ 200k xuống 100k/tuần, tiết kiệm 400k/tháng"',
           ),
-          const SizedBox(height: 32),
-
+          const SizedBox(height: 20),
           // Start button
           SizedBox(
             width: double.infinity,
