@@ -24,70 +24,213 @@ fake = Faker(['vi_VN'])  # Sử dụng Vietnamese locale
 # Vietnamese categories and merchants - Danh mục và merchants Việt Nam
 CATEGORIES = {
     'Ăn uống': {
-        'merchants': ['GRAB FOOD', 'SHOPEE FOOD', 'HIGHLANDS COFFEE', 'STARBUCKS', 
-                     'PHO 24', 'LOTTERIA', 'KFC', 'JOLLIBEE', 'THE COFFEE HOUSE',
-                     'BÚN CHẢ HÀNG THAN', 'CƠM TẤM SƯƠ̛N', 'PHỞ BÒ'],
-        'amount_range': (15000, 200000),  # 15k-200k VND
-        'frequency': 0.30  # 30% của tất cả giao dịch
+        'merchants': ['GRAB FOOD', 'SHOPEE FOOD', 'BAEMIN', 'NOW', 'GOJEK FOOD',
+                     'HIGHLANDS COFFEE', 'STARBUCKS', 'THE COFFEE HOUSE', 'PHUC LONG',
+                     'KATINAT', 'GONG CHA', 'TOCO TOCO', 'DING TEA', 'BOBAPOP',
+                     'PHO 24', 'PHO THIN', 'PHO BO', 'BUN CHA', 'BUN BO HUE',
+                     'COM TAM', 'COM RANG', 'BANH MI', 'BANH MI PATE',
+                     'LOTTERIA', 'KFC', 'JOLLIBEE', 'MCDONALDS', 'BURGER KING',
+                     'PIZZA HUT', 'DOMINOS', 'PIZZA 4PS', 'AL FRESCO',
+                     'KICHI KICHI', 'MANWAH', 'SUMO BBQ', 'GOGI', 'HOTPOT STORY',
+                     'HUTONG', 'QUÁN LẨU', 'QUÁN NƯỚNG', 'NHÀ HÀNG',
+                     'CIRCLE K', 'MINISTOP', '7-ELEVEN', 'FAMILY MART', 'GS25',
+                     'BACHHOAXANH', 'VINMART+', 'CO.OP FOOD', 'WINMART+',
+                     'QUAN AN', 'QUAN COM', 'CHE', 'SUA CHUA', 'YOGURT'],
+        'amount_range': (15000, 300000),  # 15k-300k VND
+        'frequency': 0.25  # 25% của tất cả giao dịch
     },
     'Di chuyển': {
-        'merchants': ['GRAB', 'BE', 'GOJEK', 'XĂNG PETROLIMEX', 'CỬA HÀNG XE MÁY',
-                     'BẾN XE MIỀN ĐÔNG', 'VÉ TÀU HỎA'],
-        'amount_range': (10000, 500000),
-        'frequency': 0.15
+        'merchants': ['GRAB', 'GRAB BIKE', 'GRAB CAR', 'BE', 'BE BIKE', 'BE CAR',
+                     'GOJEK', 'XANH SM', 'MAI LINH', 'VINASUN', 'TAXI',
+                     'PETROLIMEX', 'PVOIL', 'SHELL', 'TOTAL', 'XANG DAU', 'DO XANG',
+                     'GUI XE', 'BAI DO XE', 'PHI GIU XE', 'VETC', 'EPASS',
+                     'VEXERE', 'FUTA BUS', 'PHUONG TRANG', 'BEN XE',
+                     'VIETNAM AIRLINES', 'VIETJET', 'BAMBOO AIRWAYS', 'PACIFIC AIRLINES',
+                     'VE MAY BAY', 'VE TAU', 'DUONG SAT', 'XE BUYT', 'XE OM CONG NGHE'],
+        'amount_range': (10000, 5000000),
+        'frequency': 0.12
     },
     'Mua sắm': {
-        'merchants': ['SHOPEE', 'LAZADA', 'TIKI', 'SENDO', 'VINMART', 'CO.OP MART',
-                     'BIG C', 'LOTTE MART', 'CIRCLE K', 'FAMILY MART'],
-        'amount_range': (50000, 2000000),
-        'frequency': 0.20
+        'merchants': ['SHOPEE', 'LAZADA', 'TIKI', 'SENDO', 'AMAZON',
+                     'THEGIOIDIDONG', 'CELLPHONES', 'FPT SHOP', 'DIENMAYXANH', 'PICO',
+                     'VINMART', 'VINMART+', 'CO.OP MART', 'BIG C', 'LOTTE MART',
+                     'AEON', 'EMART', 'MEGA MARKET', 'SATRA', 'GO!',
+                     'UNIQLO', 'ZARA', 'H&M', 'MANGO', 'PULL&BEAR',
+                     'CANIFA', 'ROUTINE', 'IVY MODA', 'ELISE', 'YAME', 'OWEN',
+                     'NINOMAXX', 'BITI\'S', 'ANANAS', 'JUNO', 'PEDRO',
+                     'ADIDAS', 'NIKE', 'PUMA', 'CONVERSE', 'VANS',
+                     'CHO', 'SAN', 'CUA HANG', 'BOOK STORE'],
+        'amount_range': (50000, 5000000),
+        'frequency': 0.15
     },
     'Giải trí': {
-        'merchants': ['CGV CINEMA', 'LOTTE CINEMA', 'GALAXY CINEMA', 'SPOTIFY',
-                     'NETFLIX', 'YOUTUBE PREMIUM', 'GAME LIEN QUAN'],
-        'amount_range': (50000, 500000),
-        'frequency': 0.10
-    },
-    'Hóa đơn': {
-        'merchants': ['ĐIỆN EVN', 'NƯỚC SAWACO', 'INTERNET VIETTEL', 'INTERNET FPT',
-                     'GAS PETROLIMEX', 'PHÍ QUẢN LÝ CHUNG CƯ'],
-        'amount_range': (100000, 1500000),
+        'merchants': ['CGV', 'LOTTE CINEMA', 'GALAXY', 'BHD STAR', 'BETA CINEMAS',
+                     'PLATINUM', 'CINESTAR', 'MEGA GS', 'VE PHIM', 'RAP PHIM',
+                     'NETFLIX', 'SPOTIFY', 'YOUTUBE PREMIUM', 'FPT PLAY', 'VTV GO',
+                     'APPLE MUSIC', 'ZING MP3', 'NHACCUATUI', 'SOUNDCLOUD',
+                     'STEAM', 'GARENA', 'RIOT GAMES', 'BLIZZARD', 'EA GAMES',
+                     'GOOGLE PLAY', 'APP STORE', 'ITUNES', 'PLAYSTATION', 'XBOX',
+                     'KARAOKE', 'KARAOKE ARIRANG', 'KARAOKE MUSIC BOX',
+                     'BILLIARD', 'BOWLING', 'GAME CENTER', 'KHU VUI CHOI',
+                     'DAM SEN', 'SUI TIEN', 'VINPEARL', 'BAO TANG', 'TOURIST',
+                     'DU LICH', 'KHACH SAN', 'RESORT'],
+        'amount_range': (50000, 2000000),
         'frequency': 0.08
     },
     'Sức khỏe': {
-        'merchants': ['PHARMACITY', 'GUARDIAN', 'BỆNH VIỆN ĐA KHOA', 'NHA KHOA KIM',
-                     'PHÒNG KHÁM FAMILY MEDICAL'],
-        'amount_range': (50000, 3000000),
+        'merchants': ['BENH VIEN', 'PHONG KHAM', 'VINMEC', 'MEDLATEC', 'HONG NGOC',
+                     'COLUMBIA ASIA', 'FAMILY MEDICAL', 'TRIEN VONG', 'Y HOC CO TRUYEN',
+                     'NHA KHOA', 'NHAN TAM', 'DENTAL CLINIC', 'IMPLANT',
+                     'PHARMACITY', 'LONG CHAU', 'AN KHANG', 'GUARDIAN', 'MEDICARE',
+                     'PHANO', 'NHA THUOC', 'THUOC', 'KHAM BENH',
+                     'CALIFORNIA FITNESS', 'CITIGYM', 'ELITE FITNESS', 'YOGA+',
+                     'YOGA', 'FITNESS', 'GYM', 'PILATES', 'BOXING',
+                     'SPA', 'MASSAGE', 'THAM MY VIEN', 'SKINCARE', 'THU GIAN'],
+        'amount_range': (50000, 5000000),
         'frequency': 0.05
     },
     'Giáo dục': {
-        'merchants': ['HỌC PHÍ ĐẠI HỌC', 'COURSERA', 'UDEMY', 'NHÀ SÁCH FAHASA',
-                     'TRUNG TÂM ANH NGỮ'],
-        'amount_range': (100000, 5000000),
-        'frequency': 0.05
-    },
-    'Làm đẹp': {
-        'merchants': ['SALON TÓC', 'SPA', 'GUARDIAN', 'THE FACE SHOP', 'INNISFREE'],
-        'amount_range': (100000, 1000000),
+        'merchants': ['HOC PHI', 'TRUONG', 'TRUONG DAI HOC', 'TRUONG MN', 'TRUONG CAP 1',
+                     'IELTS', 'TOEIC', 'TOEFL', 'IIG', 'BRITISH COUNCIL',
+                     'TIENG ANH', 'ENGLISH CENTER', 'APOLLO', 'ILA', 'WALL STREET',
+                     'UDEMY', 'COURSERA', 'SKILLSHARE', 'EDUMALL', 'UNICA',
+                     'FAHASA', 'NHA SACH', 'TIKI BOOKS', 'PHUONG NAM', 'MINH KHAI',
+                     'KHOA HOC', 'LUYEN THI', 'HUAN LUYEN', 'HOC THEM'],
+        'amount_range': (100000, 10000000),
         'frequency': 0.04
     },
-    'Chi tiêu khác': {
-        'merchants': ['ATM RÚT TIỀN', 'CHUYỂN KHOẢN', 'GỬI TIỀN'],
-        'amount_range': (50000, 5000000),
+    'Hóa đơn & Tiện ích': {
+        'merchants': ['EVN', 'DIEN LUC', 'TIEN DIEN', 'CONG TO DIEN',
+                     'SAWACO', 'NUOC', 'TIEN NUOC', 'CAP NUOC',
+                     'VNPT', 'VIETTEL', 'FPT TELECOM', 'MOBIFONE', 'VINAPHONE',
+                     'INTERNET', 'CAP QUANG', 'WIFI', 'CUOC INTERNET',
+                     'NAP TIEN', 'NAP THE', 'TRA TRUOC', 'TRA SAU',
+                     'GAS', 'PHI QUAN LY', 'CHUNG CU', 'NHA O', 'VE SINH',
+                     'BAO VE', 'DU', 'PHI DICH VU'],
+        'amount_range': (100000, 3000000),
+        'frequency': 0.06
+    },
+    'Nhà ở': {
+        'merchants': ['TIEN NHA', 'THUE NHA', 'THUE PHONG', 'TIEN CAT COC',
+                     'IKEA', 'UMA', 'JYSK', 'INDEX', 'NHAT TIN', 'DOSI-IN',
+                     'NOI THAT', 'DO GO', 'SOFA', 'GIUONG', 'BAN GHE',
+                     'SUA CHUA NHA', 'THO', 'SON NHA', 'SUA ONG NUOC', 'DIEN NUOC',
+                     'VAT LIEU XAY DUNG', 'XIU PHONG', 'SAT THEP'],
+        'amount_range': (1000000, 20000000),
         'frequency': 0.03
+    },
+    'Gia đình': {
+        'merchants': ['BIEU BO ME', 'BIEU ONG BA', 'GIUP DO GIA DINH',
+                     'NUOI CON', 'SUA CHO BE', 'TA GIAY', 'TA VAI', 'BOBBY',
+                     'DO CHOI TRE EM', 'TOYKINGDOM', 'KIDS PLAZA', 'CON CAU VANG',
+                     'THU CUNG', 'PET SHOP', 'PETMART', 'CHO', 'MEO',
+                     'THUC AN THU CUNG', 'KHAM THU Y', 'PET SPA',
+                     'TAM BE', 'BAP BE', 'QUẦN ÁO TRẺ EM'],
+        'amount_range': (100000, 3000000),
+        'frequency': 0.04
+    },
+    'Bảo hiểm': {
+        'merchants': ['BHXH', 'BHYT', 'BAO HIEM XA HOI', 'BAO HIEM Y TE',
+                     'PRUDENTIAL', 'MANULIFE', 'AIA', 'SUNLIFE', 'DAI-ICHI',
+                     'GENERALI', 'PJICO', 'BIC', 'BAO VIET', 'PTI',
+                     'BAO HIEM NHAN THO', 'BAO HIEM XE', 'BAO HIEM NHA',
+                     'BAO HIEM SAC KHOE', 'BAO HIEM DU LICH'],
+        'amount_range': (500000, 10000000),
+        'frequency': 0.02
+    },
+    'Đầu tư': {
+        'merchants': ['TCBS', 'SSI', 'VNDIRECT', 'VPS', 'HSC', 'VCBS', 'MBS',
+                     'CHUNG KHOAN', 'CO PHIEU', 'TRAI PHIEU', 'QUY DAU TU',
+                     'CRYPTO', 'BINANCE', 'REMITANO', 'BITCOIN', 'ETHEREUM',
+                     'VANG SJC', 'PNJ', 'DOJI', 'BAO TIN MINH CHAU',
+                     'TIET KIEM', 'GUI TIET KIEM', 'SO TIET KIEM', 'LAI SUAT',
+                     'DAU TU BAT DONG SAN', 'NHA DAT', 'FOREX'],
+        'amount_range': (1000000, 100000000),
+        'frequency': 0.03
+    },
+    'Quà tặng': {
+        'merchants': ['QUA SINH NHAT', 'TIEC SINH NHAT', 'PARTY',
+                     'DAM CUOI', 'TIEC CUOI', 'MUNG CUOI', 'PHU DAU',
+                     'LE TET', 'TET NGUYEN DAN', 'LI XI', 'MUNG TUOI',
+                     'QUA TANG', 'QUA LUU NIEM', 'HOA', 'BANH KEM',
+                     'THAM BENH', 'MUNG', 'CHUC MUNG', 'GIUONG HOP',
+                     'QUA VALENTINE', 'QUA 8/3', 'QUA 20/10'],
+        'amount_range': (200000, 5000000),
+        'frequency': 0.03
+    },
+    'Công việc': {
+        'merchants': ['VAN PHONG PHAM', 'THIEN LONG', 'BUT', 'SO TAY', 'GIAY IN',
+                     'MICROSOFT OFFICE', 'MICROSOFT 365', 'OFFICE 365', 'WINDOWS',
+                     'ZOOM', 'GOOGLE WORKSPACE', 'SLACK', 'TEAMS', 'SKYPE',
+                     'CANVA', 'CANVA PRO', 'ADOBE', 'PHOTOSHOP', 'ILLUSTRATOR',
+                     'NOTION', 'EVERNOTE', 'DROPBOX', 'GOOGLE DRIVE',
+                     'HOP', 'HOI NGHI', 'AN TRUA CONG TY', 'TEAM BUILDING'],
+        'amount_range': (100000, 3000000),
+        'frequency': 0.02
+    },
+    'Làm đẹp': {
+        'merchants': ['30SHINE', 'SALON TOC', 'CAT TOC', 'UON TOC', 'NHUOM TOC',
+                     'NAIL', 'NAIL SALON', 'SPA NAIL', 'TIỆM NAIL',
+                     'SPA', 'THAM MY VIEN', 'CHĂM SÓC DA', 'CHAM SAC BODY',
+                     'MY PHAM', 'HASAKI', 'WATSONS', 'SOCIOLLA', 'BEAUTYTALK',
+                     'THE FACE SHOP', 'INNISFREE', 'NATURE REPUBLIC', 'LANEIGE',
+                     'GUARDIAN', 'OLIVE YOUNG', 'MAC', 'LANCOME', 'L\'OREAL',
+                     'NHO LONG MAY', 'PHAT CHAM', 'THAM MY'],
+        'amount_range': (100000, 2000000),
+        'frequency': 0.04
+    },
+    'Khác (Chi)': {
+        'merchants': ['ATM RÚT TIỀN', 'RUT TIEN', 'WITHDRAWAL',
+                     'CHUYỂN KHOẢN', 'TRANSFER', 'CHUYEN TIEN',
+                     'GỬI TIỀN', 'NOP TIEN', 'PAYMENT',
+                     'CHI KHAC', 'PHI GIAO DICH', 'PHI ATM', 'PHI CHUYEN KHOAN',
+                     'VAY', 'TRA NO', 'NO', 'CREDIT'],
+        'amount_range': (50000, 10000000),
+        'frequency': 0.04
     }
 }
 
 INCOME_CATEGORIES = {
     'Lương': {
-        'merchants': ['LƯƠNG THÁNG', 'CÔNG TY ABC', 'CÔNG TY XYZ'],
+        'merchants': ['LƯƠNG THÁNG', 'CÔNG TY ABC', 'CÔNG TY XYZ', 'SALARY'],
         'amount_range': (8000000, 30000000),  # 8M-30M VND/tháng
         'frequency': 1.0  # 100% users có lương
     },
     'Thưởng': {
-        'merchants': ['THƯỞNG THÁNG', 'THƯỞNG DỰ ÁN', 'THƯỞNG HIỆU QUẢ'],
+        'merchants': ['THƯỞNG THÁNG', 'THƯỞNG DỰ ÁN', 'THƯỞNG HIỆU QUẢ', 'BONUS', 
+                     'KPI', 'HOA HONG'],
         'amount_range': (1000000, 10000000),
         'frequency': 0.3  # 30% chance mỗi tháng
+    },
+    'Làm thêm': {
+        'merchants': ['FREELANCE', 'PART TIME', 'LAM THEM', 'TANG CA', 'OT'],
+        'amount_range': (500000, 5000000),
+        'frequency': 0.2  # 20% chance mỗi tháng
+    },
+    'Kinh doanh': {
+        'merchants': ['BAN HANG', 'DOANH THU', 'KHACH HANG', 'KINH DOANH'],
+        'amount_range': (2000000, 20000000),
+        'frequency': 0.15  # 15% users có thu nhập kinh doanh
+    },
+    'Đầu tư': {
+        'merchants': ['CO TUC', 'LAI SUAT', 'TIEN LAI', 'LAI', 'DAU TU'],
+        'amount_range': (500000, 10000000),
+        'frequency': 0.1  # 10% chance mỗi tháng
+    },
+    'Cho vay': {
+        'merchants': ['THU NO', 'TRA NO', 'HOAN TIEN', 'REFUND'],
+        'amount_range': (1000000, 10000000),
+        'frequency': 0.05  # 5% chance
+    },
+    'Được tặng': {
+        'merchants': ['DUOC TANG', 'NHAN QUA', 'LI XI', 'QUA TANG'],
+        'amount_range': (200000, 5000000),
+        'frequency': 0.08  # 8% chance
+    },
+    'Khác (Thu)': {
+        'merchants': ['THU NHAP KHAC', 'KHAC'],
+        'amount_range': (100000, 5000000),
+        'frequency': 0.05
     }
 }
 
