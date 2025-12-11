@@ -1,5 +1,5 @@
 import '../../../core/constants/app_colors.dart';
-import '../../../presentation/screens/transactions/add_transaction_screen.dart';
+import '../../../data/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/custom_button.dart';
@@ -16,14 +16,56 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
   bool _rememberMe = false;
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _authService.login(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -95,18 +137,18 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 24),
                         CustomTextField(
-                          label: 'Email hoặc Tên đăng nhập',
+                          label: 'Tên đăng nhập',
                           controller: _emailController,
-                          placeholder: 'Nhập email hoặc tên đăng nhập',
-                          keyboardType: TextInputType.emailAddress,
+                          placeholder: 'Nhập tên đăng nhập hoặc email',
+                          keyboardType: TextInputType.text,
                           prefixIcon: const Icon(
-                            Icons.email_outlined,
+                            Icons.person_outline,
                             color: AppColors.textPlaceholder,
                             size: 25,
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Vui lòng nhập email hoặc tên đăng nhập';
+                              return 'Vui lòng nhập tên đăng nhập hoặc email';
                             }
                             return null;
                           },
@@ -205,16 +247,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         // Login Button
                         CustomButton(
-                          text: 'Đăng nhập',
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const AddTransactionScreen(),
-                              ),
-                            );
-                          },
+                          text: _isLoading ? 'Đang đăng nhập...' : 'Đăng nhập',
+                          onPressed: _isLoading ? null : () => _handleLogin(),
                         ),
                         const SizedBox(height: 24),
 
