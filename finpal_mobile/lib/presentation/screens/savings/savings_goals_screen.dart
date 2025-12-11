@@ -3,6 +3,10 @@ import '../../../core/widgets/custom_bottom_nav_bar.dart';
 import '../../../core/utils/bottom_nav_helper.dart';
 import '../../../core/utils/app_bar_with_drawer.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'widgets/add_goal_dialog.dart';
+import 'widgets/edit_goal_dialog.dart';
+import 'widgets/contribute_goal.dart';
+import '../../../core/widgets/success_notification_dialog.dart';
 
 class SavingsGoalsScreen extends StatefulWidget {
   const SavingsGoalsScreen({super.key});
@@ -19,8 +23,13 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
       userName: 'Nguyễn Văn A',
       notificationCount: 3,
       backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      appBar: const CustomAppBar(
+        userName: 'Nguyễn Văn A',
+        notificationCount: 3,
+      ),
+      endDrawer: const CustomDrawer(),
+      // backgroundColor: Colors.white,
+      body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -51,19 +60,19 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
 
             const SizedBox(height: 16),
 
-            _buildGoalCard(
-              iconAsset: 'assets/icons/maybay.svg',
-              iconColor: Colors.white,
-              iconBgColor: const Color(0xFF4CAF50),
-              title: 'Du lịch Đà Lạt',
-              daysLeft: 55,
-              deadline: '15/1/2026',
-              currentAmount: 2500000,
-              targetAmount: 5000000,
-              remainingAmount: 2500000,
-              monthlyContribution: 0,
-              progress: 0.5,
-            ),
+                    _buildGoalCard(
+                      iconAsset: 'assets/icons/maybay.svg',
+                      iconColor: Colors.white,
+                      iconBgColor: const Color(0xFF4CAF50),
+                      title: 'Du lịch Đà Lạt',
+                      daysLeft: 55,
+                      deadline: '15/1/2026',
+                      currentAmount: 2500000,
+                      targetAmount: 5000000,
+                      remainingAmount: 2500000,
+                      monthlyContribution: 200000,
+                      progress: 0.5,
+                    ),
 
             const SizedBox(height: 16),
 
@@ -294,7 +303,7 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: iconColor,
+                  color: iconBgColor,
                 ),
               ),
             ],
@@ -305,7 +314,7 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
             child: LinearProgressIndicator(
               value: progress,
               backgroundColor: const Color(0xFFE5E7EB),
-              valueColor: AlwaysStoppedAnimation<Color>(iconColor),
+              valueColor: AlwaysStoppedAnimation<Color>(iconBgColor),
               minHeight: 6,
             ),
           ),
@@ -385,7 +394,28 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    final result = await showDialog(
+                      context: context,
+                      builder: (context) => EditGoalDialog(
+                        goalName: title,
+                        targetAmount: targetAmount,
+                        savedAmount: currentAmount,
+                        deadline: DateTime.now().add(Duration(days: daysLeft)),
+                        monthlyContribution: monthlyContribution,
+                      ),
+                    );
+
+                    if (result != null && mounted) {
+                      // TODO: Handle the updated goal data
+                      await showDialog(
+                        context: context,
+                        builder: (context) => const SuccessNotificationDialog(
+                          message: 'Cập nhật thành công!',
+                        ),
+                      );
+                    }
+                  },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFFE5E7EB)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -406,7 +436,27 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    final result = await showDialog(
+                      context: context,
+                      builder: (context) => ContributeGoalDialog(
+                        goalName: title,
+                        currentAmount: currentAmount,
+                        targetAmount: targetAmount,
+                        monthlyContribution: monthlyContribution,
+                      ),
+                    );
+
+                    if (result != null && mounted) {
+                      // TODO: Handle the contribution data
+                      await showDialog(
+                        context: context,
+                        builder: (context) => const SuccessNotificationDialog(
+                          message: 'Cập nhật thành công!',
+                        ),
+                      );
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF10B981),
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -434,8 +484,21 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
 
   Widget _buildAddGoalButton() {
     return InkWell(
-      onTap: () {
-        // TODO: Show add goal dialog
+      onTap: () async {
+        final result = await showDialog(
+          context: context,
+          builder: (context) => const AddGoalDialog(),
+        );
+
+        if (result != null && mounted) {
+          // TODO: Handle the saved goal data
+          await showDialog(
+            context: context,
+            builder: (context) => const SuccessNotificationDialog(
+              message: 'Thêm mục tiêu thành công!',
+            ),
+          );
+        }
       },
       borderRadius: BorderRadius.circular(12),
       child: Container(
@@ -568,12 +631,13 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
   String _formatCurrencyShort(double amount) {
     if (amount >= 1000000) {
       final millions = amount / 1000000;
-      if (millions % 1 == 0) {
+      final remaining = (amount % 1000000) ~/ 1000;
+      if (remaining == 0) {
         return '${millions.toInt()}.000.000 đ';
       }
-      return '${millions.toStringAsFixed(3).replaceAll('.', '.')} đ';
+      return '${millions.toInt()}.${remaining.toString().padLeft(3, '0')}.000 đ';
     } else if (amount >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(0)}.000 đ';
+      return '${(amount / 1000).toInt()}.000 đ';
     }
     return '${amount.toStringAsFixed(0)} đ';
   }
