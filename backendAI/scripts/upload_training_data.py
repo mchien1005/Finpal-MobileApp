@@ -23,6 +23,7 @@ def upload_training_data(server_url: str, file_path: str, model_name: str = "cat
         file_path: Đường dẫn đến file CSV cần upload
         model_name: Tên model (categorization, anomaly, prediction)
     """
+    import pandas as pd
     
     file_path = Path(file_path)
     
@@ -30,10 +31,27 @@ def upload_training_data(server_url: str, file_path: str, model_name: str = "cat
         print(f"❌ File không tồn tại: {file_path}")
         return False
     
+    # Validate CSV trước khi upload
+    print(f"🔍 Validating CSV...")
+    try:
+        df = pd.read_csv(file_path, nrows=5)
+        required_cols = ['user_id', 'transaction_type', 'category', 'merchant', 'amount', 'timestamp']
+        missing = [col for col in required_cols if col not in df.columns]
+        
+        if missing:
+            print(f"❌ CSV thiếu columns: {missing}")
+            print(f"   Required columns: {required_cols}")
+            return False
+        
+        print(f"✅ CSV valid - columns: {df.columns.tolist()}")
+    except Exception as e:
+        print(f"❌ Lỗi khi đọc CSV: {e}")
+        return False
+    
     print(f"📤 Uploading {file_path.name} ({file_path.stat().st_size / 1024:.2f} KB)...")
     
     # Endpoint upload
-    url = f"{server_url}/api/admin/upload-training-data"
+    url = f"{server_url}/api/admin/ai/upload-training-data"
     
     try:
         with open(file_path, 'rb') as f:
@@ -78,7 +96,7 @@ def trigger_retrain(server_url: str, model_names: list = None):
     
     print(f"\n🔄 Triggering retrain...")
     
-    url = f"{server_url}/api/admin/retrain"
+    url = f"{server_url}/api/admin/ai/retrain"
     
     payload = {}
     if model_names:

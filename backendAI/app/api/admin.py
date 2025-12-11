@@ -838,7 +838,8 @@ MODEL_DATA_PATHS = {
 @router.post("/upload-training-data")
 async def upload_training_data(
     file: UploadFile = File(...),
-    model_name: Optional[str] = Form(None)
+    model_name: Optional[str] = Form(None),
+    append: bool = Form(False)
 ):
     """
     Upload training data file (CSV or JSON) for AI model training
@@ -846,6 +847,7 @@ async def upload_training_data(
     Args:
         file: CSV or JSON file containing training data
         model_name: Optional model name to associate data with
+        append: If True, append to existing file. If False, overwrite (default: False)
         
     Returns:
         dict: Upload result with records count and file info
@@ -905,11 +907,12 @@ async def upload_training_data(
         # Ensure directory exists
         Path(target_path).parent.mkdir(parents=True, exist_ok=True)
         
-        # Check if file exists and append or create new
+        # Check if file exists and handle append vs overwrite
         file_exists = os.path.exists(target_path)
         existing_count = 0
         
-        if file_exists and target_path.endswith('.csv'):
+        if file_exists and append and target_path.endswith('.csv'):
+            # APPEND MODE: Add new records to existing file
             # Count existing records
             with open(target_path, 'r', encoding='utf-8') as f:
                 existing_count = sum(1 for _ in f) - 1  # Subtract header
@@ -921,6 +924,13 @@ async def upload_training_data(
                     for record in records:
                         writer.writerow(record)
         else:
+            # OVERWRITE MODE: Replace existing file completely
+            if file_exists:
+                # Backup old file before overwrite
+                backup_path = target_path + f".backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                shutil.copy(target_path, backup_path)
+                print(f"📦 Backed up old file to: {backup_path}")
+            
             # Create new file with header
             with open(target_path, 'w', newline='', encoding='utf-8') as f:
                 if records:
