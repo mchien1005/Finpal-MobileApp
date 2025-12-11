@@ -99,7 +99,7 @@ def load_user_transactions(user_id: int) -> pd.DataFrame:
     return user_df
 
 
-@router.post("/savings-suggestions/{user_id}", response_model=SavingsSuggestionsResponse)
+@router.get("/savings-suggestions/{user_id}", response_model=SavingsSuggestionsResponse)
 async def get_savings_suggestions(user_id: int):
     """
     Phân tích chi tiêu và gợi ý cách tiết kiệm - Analyze spending and suggest savings
@@ -148,6 +148,13 @@ async def get_savings_suggestions(user_id: int):
     try:
         # Load user transactions
         df = load_user_transactions(user_id)
+        
+        # Kiểm tra có dữ liệu expense không
+        if len(df) == 0:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No expense transactions found for user {user_id}"
+            )
         
         # Tính số tháng dữ liệu có
         date_range = (df['timestamp'].max() - df['timestamp'].min()).days

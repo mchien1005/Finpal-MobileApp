@@ -564,6 +564,18 @@ async def retrain_models(request: RetrainRequest):
     data_path = Path("data/raw/transactions.csv")
     has_training_data = data_path.exists()
     
+    # VALIDATION: Kiểm tra phải có training data mới cho phép retrain
+    if not has_training_data:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "No training data available",
+                "message": "Please upload training data first using POST /api/admin/upload-training-data",
+                "data_path": str(data_path),
+                "suggestion": "Upload file transactions.csv chứa ít nhất 100 transactions để train model"
+            }
+        )
+    
     for model_name in models_to_retrain:
         if model_name not in MODELS_INFO:
             results.append(RetrainStatus(
