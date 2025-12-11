@@ -863,7 +863,12 @@ async def upload_training_data(
         
         # Read file content
         content = await file.read()
-        content_str = content.decode('utf-8')
+        
+        # Decode with UTF-8, removing BOM if present
+        try:
+            content_str = content.decode('utf-8-sig')  # utf-8-sig removes BOM automatically
+        except UnicodeDecodeError:
+            content_str = content.decode('utf-8', errors='ignore')
         
         # Parse file based on extension
         records = []

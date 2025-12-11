@@ -14,14 +14,17 @@ import requests
 from pathlib import Path
 
 
-def upload_training_data(server_url: str, file_path: str, model_name: str = "categorization"):
+def upload_training_data(server_url: str, file_path: str, model_name: str = "Category Classification"):
     """
     Upload training data file lên server
     
     Args:
         server_url: URL của AI backend server (ví dụ: http://175.41.150.228:8000)
         file_path: Đường dẫn đến file CSV cần upload
-        model_name: Tên model (categorization, anomaly, prediction)
+        model_name: Tên model CHÍNH XÁC theo MODELS_INFO (default: "Category Classification")
+                    - "Category Classification" → data/raw/transactions.csv
+                    - "Anomaly Detection" → data/raw/transactions.csv
+                    - "Spending Prediction" → data/raw/transactions.csv
     """
     import pandas as pd
     
@@ -34,7 +37,8 @@ def upload_training_data(server_url: str, file_path: str, model_name: str = "cat
     # Validate CSV trước khi upload
     print(f"🔍 Validating CSV...")
     try:
-        df = pd.read_csv(file_path, nrows=5)
+        # Read with utf-8-sig to remove BOM
+        df = pd.read_csv(file_path, nrows=5, encoding='utf-8-sig')
         required_cols = ['user_id', 'transaction_type', 'category', 'merchant', 'amount', 'timestamp']
         missing = [col for col in required_cols if col not in df.columns]
         
@@ -59,7 +63,7 @@ def upload_training_data(server_url: str, file_path: str, model_name: str = "cat
                 'file': (file_path.name, f, 'text/csv')
             }
             data = {
-                'model_name': model_name,
+                'model_name': model_name,  # Use exact model name from MODELS_INFO
                 'append': 'false'  # Overwrite existing file
             }
             
@@ -131,8 +135,8 @@ def main():
     parser = argparse.ArgumentParser(description='Upload training data và retrain models')
     parser.add_argument('--server', required=True, help='Server URL (ví dụ: http://175.41.150.228:8000)')
     parser.add_argument('--file', default='data/raw/transactions.csv', help='Đường dẫn file CSV')
-    parser.add_argument('--model', default='categorization', choices=['categorization', 'anomaly', 'prediction'], 
-                       help='Model name')
+    parser.add_argument('--model', default='Category Classification', 
+                       help='Model name (default: "Category Classification")')
     parser.add_argument('--retrain', action='store_true', help='Auto retrain sau khi upload')
     parser.add_argument('--models', nargs='+', help='List models cần retrain (nếu --retrain được bật)')
     
