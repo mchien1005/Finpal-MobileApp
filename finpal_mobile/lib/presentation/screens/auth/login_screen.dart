@@ -1,3 +1,5 @@
+import 'package:finpal_mobile/presentation/screens/home/dashboard_screen.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../data/services/auth_service.dart';
 import 'package:flutter/material.dart';
