@@ -1,3 +1,4 @@
+import 'package:finpal_mobile/data/services/auth_service.dart';
 import 'package:finpal_mobile/presentation/screens/onboarding/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
@@ -20,6 +21,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _agreeToTerms = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isLoading = false;
+
+  final AuthService _authService = AuthService();
 
   @override
   void dispose() {
@@ -29,6 +33,57 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _register() async {
+    if (_formKey.currentState!.validate()) {
+      if (!_agreeToTerms) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Vui lòng đồng ý với điều khoản sử dụng',
+            ),
+          ),
+        );
+        return;
+      }
+
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        await _authService.register(
+          _usernameController.text,
+          _emailController.text,
+          _nameController.text,
+          _passwordController.text,
+        );
+
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const OnboardingScreen(),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString()),
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    }
   }
 
   @override
@@ -296,28 +351,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         // Register Button
                         CustomButton(
                           text: 'Đăng ký',
-                          onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              if (!_agreeToTerms) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Vui lòng đồng ý với điều khoản sử dụng',
-                                    ),
-                                  ),
-                                );
-                                return;
-                              }
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const OnboardingScreen(),
-                                ),
-                              );
-                              // TODO: Implement register functionality
-                            }
-                          },
+                          onPressed: _isLoading ? null : _register,
+                          isLoading: _isLoading,
                         ),
                         const SizedBox(height: 24),
 
@@ -481,25 +516,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 fontSize: 16,
                 color: AppColors.textPlaceholder,
               ),
-              prefixIcon: const Padding(
-                padding: EdgeInsets.all(10),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Icon(
-                    Icons.lock_outline,
-                    color: AppColors.textPlaceholder,
-                    size: 24,
-                  ),
-                ),
+              prefixIcon: const Icon(
+                Icons.lock_outline,
+                color: AppColors.textPlaceholder,
+                size: 24,
               ),
               suffixIcon: IconButton(
                 icon: Icon(
-                  obscureText
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
+                  obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                   color: AppColors.textPlaceholder,
-                  size: 24,
                 ),
                 onPressed: onToggleVisibility,
               ),
