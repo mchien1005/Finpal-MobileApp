@@ -184,16 +184,18 @@ public class AuthService {
     /**
      * Cập nhật thông tin profile của user
      * - Validate email không trùng với user khác
-     * - Cập nhật fullName, email, phone, avatarUrl
+     * - Cập nhật fullName, email, phone, dateOfBirth, gender, avatarUrl
      * 
-     * @param userId    ID của user
-     * @param fullName  Họ tên mới (có thể null nếu không thay đổi)
-     * @param email     Email mới (có thể null nếu không thay đổi)
-     * @param phone     Số điện thoại mới (có thể null nếu không thay đổi)
-     * @param avatarUrl URL ảnh đại diện mới (có thể null nếu không thay đổi)
+     * @param userId      ID của user
+     * @param fullName    Họ tên mới (có thể null nếu không thay đổi)
+     * @param email       Email mới (có thể null nếu không thay đổi)
+     * @param phone       Số điện thoại mới (có thể null nếu không thay đổi)
+     * @param dateOfBirth Ngày sinh mới (có thể null nếu không thay đổi)
+     * @param gender      Giới tính mới (có thể null nếu không thay đổi)
+     * @param avatarUrl   URL ảnh đại diện mới (có thể null nếu không thay đổi)
      * @return User đã được cập nhật
      */
-    public User updateProfile(Long userId, String fullName, String email, String phone, java.time.LocalDate dateOfBirth, String avatarUrl) {
+    public User updateProfile(Long userId, String fullName, String email, String phone, java.time.LocalDate dateOfBirth, com.example.backend.model.Gender gender, String avatarUrl) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User không tồn tại"));
 
@@ -214,6 +216,9 @@ public class AuthService {
         }
         if (dateOfBirth != null) {
             user.setDateOfBirth(dateOfBirth);
+        }
+        if (gender != null) {
+            user.setGender(gender);
         }
         if (avatarUrl != null) {
             user.setAvatarUrl(avatarUrl);

@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS nguoi_dung (
     ho_ten VARCHAR(100),
     so_dien_thoai VARCHAR(20),
     ngay_sinh DATE NULL COMMENT 'Ngày sinh của người dùng',
+    gioi_tinh ENUM('NAM', 'NU', 'KHAC') NULL COMMENT 'Giới tính của người dùng',
     anh_dai_dien VARCHAR(500),
     vai_tro VARCHAR(20) NOT NULL DEFAULT 'USER' COMMENT 'USER hoặc ADMIN',
     dang_hoat_dong BOOLEAN DEFAULT TRUE,

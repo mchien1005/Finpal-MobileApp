@@ -27,6 +27,7 @@ INSERT INTO nguoi_dung (
         mat_khau,
         email,
         ho_ten,
+        gioi_tinh,
         vai_tro,
         dang_hoat_dong
     )
@@ -35,6 +36,7 @@ VALUES (
         '$2a$10$PtD9U/K40h7.STHT9pV8ouDWPswAdb6eMgpgQn2vZtLNONsIA9OH.',
         'demo@finpal.vn',
         'Nguyễn Văn Demo',
+        'NAM',
         'USER',
         TRUE
     ),
@@ -43,6 +45,7 @@ VALUES (
         '$2a$10$PtD9U/K40h7.STHT9pV8ouDWPswAdb6eMgpgQn2vZtLNONsIA9OH.',
         'admin@finpal.vn',
         'Quản Trị Viên',
+        NULL,
         'ADMIN',
         TRUE
     );

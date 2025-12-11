@@ -1,5 +1,6 @@
 package com.example.backend.dto;
 
+import com.example.backend.model.Gender;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -24,6 +25,8 @@ public class UpdateProfileRequest {
     private String phone;
 
     private LocalDate dateOfBirth;
+
+    private Gender gender;
 
     @Size(max = 500, message = "URL ảnh đại diện không được vượt quá 500 ký tự")
     private String avatarUrl;

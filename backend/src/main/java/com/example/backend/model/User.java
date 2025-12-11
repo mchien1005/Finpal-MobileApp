@@ -41,6 +41,10 @@ public class User implements UserDetails {
     @Column(name = "ngay_sinh")
     private java.time.LocalDate dateOfBirth;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gioi_tinh")
+    private Gender gender;
+
     @Column(name = "anh_dai_dien", length = 500)
     private String avatarUrl;
 

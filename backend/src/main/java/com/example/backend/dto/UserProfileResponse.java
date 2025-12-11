@@ -1,5 +1,6 @@
 package com.example.backend.dto;
 
+import com.example.backend.model.Gender;
 import com.example.backend.model.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,6 +20,7 @@ public class UserProfileResponse {
     private String fullName;
     private String phone;
     private LocalDate dateOfBirth;
+    private Gender gender;
     private String avatarUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -33,6 +35,7 @@ public class UserProfileResponse {
                 user.getFullName(),
                 user.getPhone(),
                 user.getDateOfBirth(),
+                user.getGender(),
                 user.getAvatarUrl(),
                 user.getCreatedAt(),
                 user.getUpdatedAt(),

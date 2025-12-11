@@ -50,7 +50,7 @@ public class UserController {
      * Cập nhật thông tin profile của user hiện tại
      */
     @PutMapping("/profile")
-    @Operation(summary = "Cập nhật thông tin profile", description = "Cập nhật họ tên, email, số điện thoại, ngày sinh, ảnh đại diện")
+    @Operation(summary = "Cập nhật thông tin profile", description = "Cập nhật họ tên, email, số điện thoại, ngày sinh, giới tính, ảnh đại diện")
     public ResponseEntity<?> updateProfile(
             @AuthenticationPrincipal User currentUser,
             @Valid @RequestBody UpdateProfileRequest request) {
@@ -61,6 +61,7 @@ public class UserController {
                     request.getEmail(),
                     request.getPhone(),
                     request.getDateOfBirth(),
+                    request.getGender(),
                     request.getAvatarUrl());
             return ResponseEntity.ok(Map.of(
                     "success", true,
@@ -96,6 +97,7 @@ public class UserController {
                     null, // don't change email
                     null, // don't change phone
                     null, // don't change dateOfBirth
+                    null, // don't change gender
                     avatarUrl);
 
             // Delete old avatar if exists
