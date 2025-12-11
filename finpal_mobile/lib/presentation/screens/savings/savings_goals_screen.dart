@@ -1,8 +1,7 @@
-// TODO: Savings goals screen
 import 'package:flutter/material.dart';
 import '../../../core/widgets/custom_bottom_nav_bar.dart';
-import '../../../core/widgets/custom_app_bar.dart';
-import '../../../core/widgets/custom_drawer.dart';
+import '../../../core/utils/bottom_nav_helper.dart';
+import '../../../core/utils/app_bar_with_drawer.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'widgets/add_goal_dialog.dart';
 import 'widgets/edit_goal_dialog.dart';
@@ -17,18 +16,12 @@ class SavingsGoalsScreen extends StatefulWidget {
 }
 
 class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
-  int _currentIndex = 4; // Mục tiêu is index 4
-
-  void _onNavItemTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-    // TODO: Navigate to different screens based on index
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AppBarWithDrawer.scrollable(
+      context,
+      userName: 'Nguyễn Văn A',
+      notificationCount: 3,
       backgroundColor: Colors.white,
       appBar: const CustomAppBar(
         userName: 'Nguyễn Văn A',
@@ -38,43 +31,34 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
       // backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            // _buildHeader(),
+            // Summary Card
+            _buildSummaryCard(),
 
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Summary Card
-                    _buildSummaryCard(),
+            const SizedBox(height: 16),
 
-                    const SizedBox(height: 16),
+            // Add Goal Button
+            _buildAddGoalButton(),
 
-                    // Add Goal Button
-                    _buildAddGoalButton(),
+            const SizedBox(height: 20),
 
-                    const SizedBox(height: 20),
+            // Goals List
+            _buildGoalCard(
+              iconAsset: 'assets/icons/tainghe.svg',
+              iconColor: Colors.white,
+              iconBgColor: const Color(0xFF2196F3),
+              title: 'Tai nghe Sony WH-1000XM5',
+              daysLeft: 40,
+              deadline: '31/12/2025',
+              currentAmount: 850000,
+              targetAmount: 3000000,
+              remainingAmount: 2150000,
+              monthlyContribution: 350000,
+              progress: 0.283,
+            ),
 
-                    // Goals List
-                    _buildGoalCard(
-                      iconAsset: 'assets/icons/tainghe.svg',
-                      iconColor: Colors.white,
-                      iconBgColor: const Color(0xFF2196F3),
-                      title: 'Tai nghe Sony WH-1000XM5',
-                      daysLeft: 40,
-                      deadline: '31/12/2025',
-                      currentAmount: 850000,
-                      targetAmount: 3000000,
-                      remainingAmount: 2150000,
-                      monthlyContribution: 350000,
-                      progress: 0.283,
-                    ),
-
-                    const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
                     _buildGoalCard(
                       iconAsset: 'assets/icons/maybay.svg',
@@ -90,38 +74,36 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
                       progress: 0.5,
                     ),
 
-                    const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-                    _buildGoalCard(
-                      iconAsset: 'assets/icons/laptop.svg',
-                      iconColor: Colors.white,
-                      iconBgColor: const Color(0xFF9810FA),
-                      title: 'Laptop MacBook Air',
-                      daysLeft: 221,
-                      deadline: '30/6/2026',
-                      currentAmount: 8000000,
-                      targetAmount: 25000000,
-                      remainingAmount: 17000000,
-                      monthlyContribution: 2000000,
-                      progress: 0.32,
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // AI Suggestion Card
-                    _buildAISuggestionCard(),
-
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              ),
+            _buildGoalCard(
+              iconAsset: 'assets/icons/laptop.svg',
+              iconColor: Colors.white,
+              iconBgColor: const Color(0xFF9810FA),
+              title: 'Laptop MacBook Air',
+              daysLeft: 221,
+              deadline: '30/6/2026',
+              currentAmount: 8000000,
+              targetAmount: 25000000,
+              remainingAmount: 17000000,
+              monthlyContribution: 2000000,
+              progress: 0.32,
             ),
+
+            const SizedBox(height: 16),
+
+            // AI Suggestion Card
+            _buildAISuggestionCard(),
+
+            const SizedBox(height: 24),
           ],
         ),
       ),
       bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onNavItemTapped,
+        currentIndex: 4,
+        onTap: (index) {
+          BottomNavHelper.navigateToIndex(context, index, 4);
+        },
       ),
     );
   }
