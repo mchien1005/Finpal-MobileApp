@@ -1,5 +1,4 @@
 import 'package:finpal_mobile/presentation/screens/home/dashboard_screen.dart';
-
 import '../../../core/constants/app_colors.dart';
 import '../../../data/services/auth_service.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +9,7 @@ import 'register_screen.dart';
 import 'dart:async';
 import '../../../core/widgets/connection_lost_dialog.dart';
 import '../../../data/services/api_service.dart' show ApiException;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,10 +28,29 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    _loadUserCredentials();
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadUserCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString('email');
+    final password = prefs.getString('password');
+    if (email != null && password != null) {
+      setState(() {
+        _emailController.text = email;
+        _passwordController.text = password;
+        _rememberMe = true;
+      });
+    }
   }
 
   Future<void> _handleLogin() async {
@@ -54,6 +73,15 @@ class _LoginScreenState extends State<LoginScreen> {
               );
             },
           );
+
+      final prefs = await SharedPreferences.getInstance();
+      if (_rememberMe) {
+        await prefs.setString('email', _emailController.text.trim());
+        await prefs.setString('password', _passwordController.text.trim());
+      } else {
+        await prefs.remove('email');
+        await prefs.remove('password');
+      }
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -257,11 +285,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                         width: 1.5,
                                       ),
                                       fillColor:
-                                          WidgetStateProperty.resolveWith((
+                                          MaterialStateProperty.resolveWith((
                                             states,
                                           ) {
                                             if (states.contains(
-                                              WidgetState.selected,
+                                              MaterialState.selected,
                                             )) {
                                               return AppColors.primary;
                                             }
