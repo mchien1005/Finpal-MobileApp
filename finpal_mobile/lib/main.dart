@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-// import 'package:finpal_mobile/presentation/screens/home/dashboard_screen.dart';
 import 'presentation/screens/auth/login_screen.dart';
+
 void main() {
   runApp(const MyApp());
 }

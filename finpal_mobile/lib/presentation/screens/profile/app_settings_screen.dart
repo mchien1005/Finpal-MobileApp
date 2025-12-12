@@ -1,5 +1,10 @@
+import 'package:finpal_mobile/presentation/screens/profile/Introduce_screen.dart';
+import 'package:finpal_mobile/presentation/screens/profile/help_center_screen.dart';
+import 'package:finpal_mobile/presentation/screens/profile/profile_screen.dart';
+import 'package:finpal_mobile/presentation/screens/profile/change_password_screen.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../notifications/notifications_screen.dart';
 
 class AppSettingsScreen extends StatelessWidget {
   const AppSettingsScreen({super.key});
@@ -97,10 +102,10 @@ class AppSettingsScreen extends StatelessWidget {
                         title: 'Hồ sơ',
                         subtitle: 'Quản lý thông tin cá nhân',
                         onTap: () {
-                          // TODO: Navigate to profile screen
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Chức năng đang phát triển'),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ProfileScreen(),
                             ),
                           );
                         },
@@ -112,10 +117,10 @@ class AppSettingsScreen extends StatelessWidget {
                         title: 'Cài đặt thông báo',
                         subtitle: 'Tùy chỉnh thông báo của bạn',
                         onTap: () {
-                          // TODO: Navigate to notification settings
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Chức năng đang phát triển'),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NotificationsScreen(),
                             ),
                           );
                         },
@@ -127,10 +132,10 @@ class AppSettingsScreen extends StatelessWidget {
                         title: 'Thiết lập mật khẩu',
                         subtitle: 'Thay đổi mật khẩu bảo mật',
                         onTap: () {
-                          // TODO: Navigate to change password screen
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Chức năng đang phát triển'),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ChangePasswordScreen(),
                             ),
                           );
                         },
@@ -142,10 +147,10 @@ class AppSettingsScreen extends StatelessWidget {
                         title: 'Trung tâm trợ giúp',
                         subtitle: 'Câu hỏi thường gặp & hỗ trợ',
                         onTap: () {
-                          // TODO: Navigate to help center
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Chức năng đang phát triển'),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HelpCenterScreen(),
                             ),
                           );
                         },
@@ -157,7 +162,12 @@ class AppSettingsScreen extends StatelessWidget {
                         title: 'Giới thiệu',
                         subtitle: 'Về FinPal v1.0.0',
                         onTap: () {
-                          _showAboutDialog(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const IntroduceScreen(),
+                            ),
+                          );
                         },
                       ),
                       const SizedBox(height: 24),
@@ -288,74 +298,6 @@ class AppSettingsScreen extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showAboutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Về FinPal',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Arimo',
-          ),
-        ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'FinPal - Ví Thông Minh',
-              style: TextStyle(fontSize: 16, fontFamily: 'Arimo'),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Version 1.0.0',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6A7282),
-                fontFamily: 'Arimo',
-              ),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Ứng dụng quản lý tài chính cá nhân thông minh, giúp bạn theo dõi chi tiêu, lập ngân sách và đạt được mục tiêu tài chính.',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF4A5565),
-                fontFamily: 'Arimo',
-                height: 1.5,
-              ),
-            ),
-            SizedBox(height: 16),
-            Text(
-              '© 2025 FinPal. All rights reserved.',
-              style: TextStyle(
-                fontSize: 12,
-                color: Color(0xFF6A7282),
-                fontFamily: 'Arimo',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Đóng',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 14,
-                fontFamily: 'Arimo',
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
