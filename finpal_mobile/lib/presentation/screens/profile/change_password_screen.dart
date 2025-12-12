@@ -20,7 +20,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _obscureConfirmPassword = true;
   
   bool _isValid = false;
-  AutovalidateMode _autovalidateMode = AutovalidateMode.onUserInteraction;
+  bool _isLoading = false;
+  AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
   @override
   void initState() {
@@ -56,20 +57,54 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     return true;
   }
 
-  void _handleChangePassword() {
+  Future<void> _handleChangePassword() async {
     setState(() {
       _autovalidateMode = AutovalidateMode.onUserInteraction;
     });
     
     if (_formKey.currentState!.validate() && _isValid) {
-      // TODO: Implement actual password change logic
-      SuccessNotificationDialog.show(
-        context,
-        message: 'Đổi mật khẩu thành công',
-        onConfirm: () {
-          Navigator.pop(context);
-        },
-      );
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        // TODO: Replace with actual API call
+        // Simulate API call
+        await Future.delayed(const Duration(seconds: 2));
+        
+        // Example API call:
+        // await _authRepository.changePassword(
+        //   currentPassword: _currentPasswordController.text,
+        //   newPassword: _newPasswordController.text,
+        // );
+
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+
+          SuccessNotificationDialog.show(
+            context,
+            message: 'Đổi mật khẩu thành công',
+            onConfirm: () {
+              Navigator.pop(context);
+            },
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Đổi mật khẩu thất bại: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -274,7 +309,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         width: double.infinity,
                         height: 36,
                         child: ElevatedButton(
-                          onPressed: _isValid ? _handleChangePassword : null,
+                          onPressed: _isLoading ? null : _handleChangePassword,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFD7006E),
                             disabledBackgroundColor: const Color(0xFFD7006E).withOpacity(0.5),
@@ -285,26 +320,35 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             ),
                             padding: EdgeInsets.zero,
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.lock_outline,
-                                size: 16,
-                                color: Colors.white.withOpacity(_isValid ? 1.0 : 0.7),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Đổi mật khẩu',
-                                style: TextStyle(
-                                  fontFamily: 'Arimo',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.normal,
-                                  color: Colors.white.withOpacity(_isValid ? 1.0 : 0.7),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 16,
+                                  width: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.lock_outline,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'Đổi mật khẩu',
+                                      style: TextStyle(
+                                        fontFamily: 'Arimo',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.normal,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                     ],
