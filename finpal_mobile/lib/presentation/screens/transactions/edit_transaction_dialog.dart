@@ -204,51 +204,58 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Container(
-        padding: const EdgeInsets.all(24),
         constraints: const BoxConstraints(maxWidth: 400),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Center(
-                  child: Text(
-                    'Chỉnh sửa giao dịch',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                // Header with title and close button
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Chỉnh sửa giao dịch',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
                     ),
+                    InkWell(
+                      onTap: widget.onCancel,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        child: const Icon(
+                          Icons.close,
+                          size: 24,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Cập nhật thông tin giao dịch. Phần hồi của bạn giúp \nAI học và cải thiện độ chính xác.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
                   ),
                 ),
-                Positioned(
-                  right: 0,
-                  child: IconButton(
-                    onPressed: widget.onCancel,
-                    icon: const Icon(Icons.close, size: 24),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Text(
-  'Cập nhật thông tin giao dịch. Phần hồi của bạn giúp \nAI học và cải thiện độ chính xác.',
-  textAlign: TextAlign.center,
-  style: TextStyle(
-    fontSize: 14,
-    color: AppColors.textSecondary,
-  ),
-),
-
-            const SizedBox(height: 24),
+                const SizedBox(height: 24),
             
             // Số tiền field
             const Text(
@@ -614,7 +621,9 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
                 ),
               ],
             ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );
