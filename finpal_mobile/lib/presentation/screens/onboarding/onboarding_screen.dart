@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../screens/home/dashboard_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -713,7 +712,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             'Gợi ý tiết kiệm',
             '"Giảm trà sữa từ 200k xuống 100k/tuần, tiết kiệm 400k/tháng"',
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 20),
 
           // Start button
           SizedBox(

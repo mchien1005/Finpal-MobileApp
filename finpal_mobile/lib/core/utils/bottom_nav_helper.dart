@@ -3,6 +3,7 @@ import '../../presentation/screens/home/dashboard_screen.dart';
 import '../../presentation/screens/transactions/add_transaction_screen.dart';
 import '../../presentation/screens/insights/ai_insights_screen.dart';
 import '../../presentation/screens/savings/savings_goals_screen.dart';
+import '../../presentation/screens/transactions/transactions_screen.dart';
 
 /// Helper class for bottom navigation bar navigation
 class BottomNavHelper {
@@ -23,11 +24,8 @@ class BottomNavHelper {
         targetScreen = const DashboardScreen();
         break;
       case 1:
-        // TODO: Implement TransactionsScreen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Màn hình lịch sử đang phát triển')),
-        );
-        return;
+        targetScreen = const TransactionsScreen();
+        break;
       case 2:
         targetScreen = const AddTransactionScreen();
         break;
@@ -42,7 +40,7 @@ class BottomNavHelper {
     }
 
     if (targetScreen != null) {
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>
@@ -52,6 +50,7 @@ class BottomNavHelper {
           },
           transitionDuration: const Duration(milliseconds: 200),
         ),
+        (route) => false,
       );
     }
   }
