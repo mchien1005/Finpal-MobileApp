@@ -451,12 +451,5 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   void _handleSaveSettings() {
     // TODO: Save settings to backend
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đã lưu cài đặt thành công'),
-        backgroundColor: Color(0xFF10B981),
-        duration: Duration(seconds: 2),
-      ),
-    );
   }
 }
