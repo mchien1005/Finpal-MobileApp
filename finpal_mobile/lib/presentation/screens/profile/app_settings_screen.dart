@@ -1,3 +1,4 @@
+import 'package:finpal_mobile/presentation/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 
@@ -97,6 +98,12 @@ class AppSettingsScreen extends StatelessWidget {
                         title: 'Hồ sơ',
                         subtitle: 'Quản lý thông tin cá nhân',
                         onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ProfileScreen(),
+                            ),
+                          );
                           // TODO: Navigate to profile screen
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(

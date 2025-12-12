@@ -18,7 +18,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     with SingleTickerProviderStateMixin {
   int _selectedNavIndex = 1;
   late TabController _tabController;
-  
+
   // Transaction data
   List<Map<String, dynamic>> _transactions = [];
 
@@ -31,7 +31,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         setState(() {});
       }
     });
-    
+
     // Initialize transactions data
     _transactions = [
       {
@@ -142,9 +142,12 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         _transactions[index]['title'] = description;
         _transactions[index]['category'] = category;
         _transactions[index]['account'] = source;
-        _transactions[index]['amount'] = amount.contains('-') || amount.contains('+') 
-            ? amount 
-            : (_transactions[index]['isIncome'] ? '+$amount\u0111' : '-$amount\u0111');
+        _transactions[index]['amount'] =
+            amount.contains('-') || amount.contains('+')
+            ? amount
+            : (_transactions[index]['isIncome']
+                  ? '+$amount\u0111'
+                  : '-$amount\u0111');
         _transactions[index]['date'] = DateFormat('MM-dd HH:mm').format(date);
       }
     });
@@ -178,10 +181,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: AppColors.borderColor,
-                    width: 1.12,
-                  ),
+                  border: Border.all(color: AppColors.borderColor, width: 1.12),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +218,9 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                             ),
                           ),
                           indicatorSize: TabBarIndicatorSize.tab,
-                          indicatorPadding: const EdgeInsets.symmetric(horizontal: 2),
+                          indicatorPadding: const EdgeInsets.symmetric(
+                            horizontal: 2,
+                          ),
                           dividerColor: Colors.transparent,
                           labelColor: AppColors.textPrimary,
                           unselectedLabelColor: AppColors.textPrimary,
@@ -247,9 +249,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: _selectedNavIndex,
         onTap: (index) {
-          setState(() {
-            _selectedNavIndex = index;
-          });
+          BottomNavHelper.navigateToIndex(context, index, _selectedNavIndex);
         },
       ),
     );
@@ -272,9 +272,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        children: transactions,
-      ),
+      child: Column(children: transactions),
     );
   }
 
@@ -518,31 +516,32 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                         account: account,
                         date: date,
                         isIncome: isIncome,
-                        onSave: ({
-                          required String amount,
-                          required String source,
-                          required String category,
-                          required String description,
-                          required DateTime date,
-                        }) {
-                          Navigator.of(context).pop();
-                          
-                          // Update transaction in state
-                          _updateTransaction(
-                            id: id,
-                            amount: amount,
-                            source: source,
-                            category: category,
-                            description: description,
-                            date: date,
-                          );
-                          
-                          // Show success popup
-                          SuccessNotificationDialog.show(
-                            context,
-                            message: 'Cập nhật giao dịch thành công',
-                          );
-                        },
+                        onSave:
+                            ({
+                              required String amount,
+                              required String source,
+                              required String category,
+                              required String description,
+                              required DateTime date,
+                            }) {
+                              Navigator.of(context).pop();
+
+                              // Update transaction in state
+                              _updateTransaction(
+                                id: id,
+                                amount: amount,
+                                source: source,
+                                category: category,
+                                description: description,
+                                date: date,
+                              );
+
+                              // Show success popup
+                              SuccessNotificationDialog.show(
+                                context,
+                                message: 'Cập nhật giao dịch thành công',
+                              );
+                            },
                         onCancel: () {
                           Navigator.of(context).pop();
                         },

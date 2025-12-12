@@ -23,12 +23,6 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
       userName: 'Nguyễn Văn A',
       notificationCount: 3,
       backgroundColor: Colors.white,
-      appBar: const CustomAppBar(
-        userName: 'Nguyễn Văn A',
-        notificationCount: 3,
-      ),
-      endDrawer: const CustomDrawer(),
-      // backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,19 +54,19 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
 
             const SizedBox(height: 16),
 
-                    _buildGoalCard(
-                      iconAsset: 'assets/icons/maybay.svg',
-                      iconColor: Colors.white,
-                      iconBgColor: const Color(0xFF4CAF50),
-                      title: 'Du lịch Đà Lạt',
-                      daysLeft: 55,
-                      deadline: '15/1/2026',
-                      currentAmount: 2500000,
-                      targetAmount: 5000000,
-                      remainingAmount: 2500000,
-                      monthlyContribution: 200000,
-                      progress: 0.5,
-                    ),
+            _buildGoalCard(
+              iconAsset: 'assets/icons/maybay.svg',
+              iconColor: Colors.white,
+              iconBgColor: const Color(0xFF4CAF50),
+              title: 'Du lịch Đà Lạt',
+              daysLeft: 55,
+              deadline: '15/1/2026',
+              currentAmount: 2500000,
+              targetAmount: 5000000,
+              remainingAmount: 2500000,
+              monthlyContribution: 200000,
+              progress: 0.5,
+            ),
 
             const SizedBox(height: 16),
 
