@@ -1,7 +1,7 @@
 
 import 'package:flutter/material.dart';
 import '../../../core/widgets/success_notification_dialog.dart';
-
+import '../../../core/constants/app_colors.dart';
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
 
@@ -111,7 +111,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEFF6FF),
+      backgroundColor: AppColors.primary,
       body: SafeArea(
         child: Container(
           decoration: const BoxDecoration(
@@ -126,7 +126,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               // App Bar
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD7006E),
+                  color:AppColors.primary,
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(24),
                     bottomRight: Radius.circular(24),

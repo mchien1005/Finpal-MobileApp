@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/widgets/success_notification_dialog.dart';
-
+import 'package:finpal_mobile/core/constants/app_colors.dart';
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -27,6 +27,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.primary,
       body: SafeArea(
         child: Container(
           decoration: const BoxDecoration(
@@ -41,7 +42,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               // App Bar
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD7006E),
+                  color: AppColors.primary,
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(24),
                     bottomRight: Radius.circular(24),
