@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/success_notification_dialog.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -451,5 +452,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   void _handleSaveSettings() {
     // TODO: Save settings to backend
+    SuccessNotificationDialog.show(
+      context,
+      message: 'Đã lưu cài đặt thành công',
+    );
   }
 }
