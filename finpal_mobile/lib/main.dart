@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-// import 'package:finpal_mobile/presentation/screens/home/dashboard_screen.dart';
 import 'presentation/screens/auth/login_screen.dart';
-import 'package:finpal_mobile/presentation/screens/transactions/transactions_screen.dart';
-import 'presentation/screens/profile/change_password_screen.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -18,7 +15,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyApp(),
+      home: const LoginScreen(),
     );
   }
 }
