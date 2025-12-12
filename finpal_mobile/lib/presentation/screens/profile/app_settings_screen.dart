@@ -1,4 +1,5 @@
 import 'package:finpal_mobile/presentation/screens/profile/profile_screen.dart';
+import 'package:finpal_mobile/presentation/screens/profile/change_password_screen.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 
@@ -134,10 +135,10 @@ class AppSettingsScreen extends StatelessWidget {
                         title: 'Thiết lập mật khẩu',
                         subtitle: 'Thay đổi mật khẩu bảo mật',
                         onTap: () {
-                          // TODO: Navigate to change password screen
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Chức năng đang phát triển'),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ChangePasswordScreen(),
                             ),
                           );
                         },
