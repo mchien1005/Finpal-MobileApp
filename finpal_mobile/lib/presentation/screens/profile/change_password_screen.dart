@@ -20,6 +20,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _obscureConfirmPassword = true;
   
   bool _isValid = false;
+  AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
   @override
   void initState() {
@@ -56,6 +57,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   }
 
   void _handleChangePassword() {
+    setState(() {
+      _autovalidateMode = AutovalidateMode.onUserInteraction;
+    });
+    
     if (_formKey.currentState!.validate() && _isValid) {
       // TODO: Implement actual password change logic
       SuccessNotificationDialog.show(
@@ -160,6 +165,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Form(
                   key: _formKey,
+                  autovalidateMode: _autovalidateMode,
                   child: Column(
                     children: [
                       // White Card Container
@@ -195,6 +201,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                   _obscureCurrentPassword = !_obscureCurrentPassword;
                                 });
                               },
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Vui lòng nhập mật khẩu hiện tại';
+                                }
+                                return null;
+                              },
                             ),
                             const SizedBox(height: 16),
 
@@ -211,10 +223,19 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                               },
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return null;
+                                  return 'Vui lòng nhập mật khẩu mới';
                                 }
-                                if (!_isPasswordValid(value)) {
-                                  return 'Mật khẩu phải có ít nhất 8 ký tự, 1 chữ hoa, 1 số và 1 ký tự đặc biệt';
+                                if (value.length < 8) {
+                                  return 'Mật khẩu phải có ít nhất 8 ký tự';
+                                }
+                                if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                                  return 'Mật khẩu phải có ít nhất 1 chữ hoa';
+                                }
+                                if (!RegExp(r'[0-9]').hasMatch(value)) {
+                                  return 'Mật khẩu phải có ít nhất 1 chữ số';
+                                }
+                                if (!RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                                  return 'Mật khẩu phải có ít nhất 1 ký tự đặc biệt';
                                 }
                                 return null;
                               },
@@ -234,7 +255,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                               },
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return null;
+                                  return 'Vui lòng xác nhận mật khẩu mới';
                                 }
                                 if (value != _newPasswordController.text) {
                                   return 'Mật khẩu xác nhận không khớp';
