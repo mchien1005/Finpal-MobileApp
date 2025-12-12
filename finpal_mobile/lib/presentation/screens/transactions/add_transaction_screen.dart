@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/custom_bottom_nav_bar.dart';
 import '../../../core/utils/app_bar_with_drawer.dart';
+import '../../../core/utils/bottom_nav_helper.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -392,15 +393,95 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 24),
+
+          // Recent SMS Card
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(
+                color: Colors.black.withOpacity(0.1),
+                width: 1.275,
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with title and badge
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'SMS gần đây',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.black,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9.275,
+                        vertical: 3.275,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECEEF2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.transparent,
+                          width: 1.275,
+                        ),
+                      ),
+                      child: const Text(
+                        '3 tin mới',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xFF030213),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 28),
+
+                // SMS List
+                _buildSmsItem(
+                  bankName: 'VCB',
+                  amount: '+15,000,000đ',
+                  description: 'ND: Chuyen tien luong',
+                  dateTime: '01/11/2025 08:00',
+                  isIncome: true,
+                ),
+                const SizedBox(height: 8),
+                _buildSmsItem(
+                  bankName: 'Techcombank',
+                  amount: '-125,000đ',
+                  description: 'ND: THE COFFEE HOUSE',
+                  dateTime: '13/11/2025 10:30',
+                  isIncome: false,
+                ),
+                const SizedBox(height: 8),
+                _buildSmsItem(
+                  bankName: 'ACB',
+                  amount: '-450,000đ',
+                  description: 'ND: SHOPEE',
+                  dateTime: '12/11/2025 20:15',
+                  isIncome: false,
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 100),
         ],
       ),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 2,
         onTap: (index) {
-          // TODO: Navigate to different screens based on index
-          if (index == 2) return; // Already on add transaction screen
-          // Handle navigation to other screens
+          BottomNavHelper.navigateToIndex(context, index, 2);
         },
       ),
     );
@@ -437,6 +518,82 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             color: isSelected ? Colors.white : AppColors.textPrimary,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSmsItem({
+    required String bankName,
+    required String amount,
+    required String description,
+    required String dateTime,
+    required bool isIncome,
+  }) {
+    return Container(
+      padding: const EdgeInsets.only(
+        left: 13.264,
+        right: 13.265,
+        top: 13.265,
+        bottom: 1.275,
+      ),
+      decoration: BoxDecoration(
+        color: isIncome ? const Color(0xFFF0FDF4) : const Color(0xFFEFF6FF),
+        border: Border.all(
+          color: isIncome ? const Color(0xFFB9F8CF) : const Color(0xFFBEDBFF),
+          width: 1.275,
+        ),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Bank name and amount
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                bankName,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: isIncome
+                      ? const Color(0xFF016630)
+                      : const Color(0xFF193CB8),
+                ),
+              ),
+              Text(
+                amount,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: isIncome
+                      ? const Color(0xFF00A63E)
+                      : const Color(0xFFE7000B),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 3.983),
+          // Description
+          Text(
+            description,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: Color(0xFF4A5565),
+            ),
+          ),
+          const SizedBox(height: 3.983),
+          // Date time
+          Text(
+            dateTime,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: Color(0xFF99A1AF),
+            ),
+          ),
+        ],
       ),
     );
   }
