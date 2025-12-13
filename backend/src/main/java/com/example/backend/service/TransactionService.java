@@ -73,36 +73,39 @@ public class TransactionService {
                     .orElseThrow(() -> new RuntimeException("Category not found"));
             transaction.setCategory(category);
             transaction.setCategorizationSource("USER"); // User tự chọn category
-        } else if (request.getMerchant() != null && !request.getMerchant().trim().isEmpty()) {
-            // Bước 1: Thử dùng AI để phân loại trước
-            CategoryPrediction aiPrediction = aiCategorizationService.predictCategory(
-                    request.getMerchant(),
-                    request.getAmount().doubleValue(),
-                    request.getDescription(),
-                    user.getId()); // Truyền userId để AI Backend tracking
-
-            if (aiPrediction != null && aiCategorizationService.isConfidentPrediction(aiPrediction)) {
-                // Dùng kết quả AI nếu confidence >= threshold (mặc định 70%)
-                Category category = categoryRepository.findByName(aiPrediction.getCategory())
+        } else if (request.getDescription() != null && !request.getDescription().trim().isEmpty()) {
+            // Phân tích từ DESCRIPTION (thay vì merchant riêng biệt)
+            String textToAnalyze = request.getDescription().trim();
+            
+            // Bước 1: Thử dùng RULE-BASED trước (nhanh hơn)
+            Long suggestedCategoryId = categoryRuleService.suggestCategoryByMerchant(textToAnalyze);
+            if (suggestedCategoryId != null) {
+                Category category = categoryRepository.findById(suggestedCategoryId)
                         .orElse(null);
                 if (category != null) {
                     transaction.setCategory(category);
-                    transaction.setCategorizationSource("AI"); // Phân loại bằng AI
-                    transaction.setAiConfidence(aiPrediction.getConfidence());
-                    log.info("Transaction categorized by AI: {} -> {} (confidence: {}%)",
-                            request.getMerchant(), category.getName(), aiPrediction.getConfidence() * 100);
+                    transaction.setCategorizationSource("RULE_BASED"); // Phân loại bằng rule
+                    log.info("Transaction categorized by RULE from description: '{}' -> {}",
+                            textToAnalyze, category.getName());
                 }
             } else {
-                // Fallback to rule-based categorization
-                Long suggestedCategoryId = categoryRuleService.suggestCategoryByMerchant(request.getMerchant());
-                if (suggestedCategoryId != null) {
-                    Category category = categoryRepository.findById(suggestedCategoryId)
+                // Bước 2: Fallback sang AI nếu rule không match
+                CategoryPrediction aiPrediction = aiCategorizationService.predictCategory(
+                        textToAnalyze, // Truyền description thay vì merchant
+                        request.getAmount().doubleValue(),
+                        request.getDescription(),
+                        user.getId()); // Truyền userId để AI Backend tracking
+
+                if (aiPrediction != null && aiCategorizationService.isConfidentPrediction(aiPrediction)) {
+                    // Dùng kết quả AI nếu confidence >= threshold (mặc định 70%)
+                    Category category = categoryRepository.findByName(aiPrediction.getCategory())
                             .orElse(null);
                     if (category != null) {
                         transaction.setCategory(category);
-                        transaction.setCategorizationSource("RULE_BASED"); // Phân loại bằng rule
-                        log.info("Transaction categorized by RULE: {} -> {}",
-                                request.getMerchant(), category.getName());
+                        transaction.setCategorizationSource("AI"); // Phân loại bằng AI
+                        transaction.setAiConfidence(aiPrediction.getConfidence());
+                        log.info("Transaction categorized by AI from description: '{}' -> {} (confidence: {}%)",
+                                textToAnalyze, category.getName(), aiPrediction.getConfidence() * 100);
                     }
                 }
             }
