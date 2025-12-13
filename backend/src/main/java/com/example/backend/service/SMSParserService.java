@@ -90,6 +90,13 @@ public class SMSParserService {
             // Trích xuất và parse thời gian giao dịch
             if (fieldMappings.containsKey("time")) {
                 String timeStr = matcher.group(fieldMappings.get("time"));
+                
+                // BIDV has separate groups for time and date, need to concatenate
+                if (fieldMappings.containsKey("date")) {
+                    String dateStr = matcher.group(fieldMappings.get("date"));
+                    timeStr = timeStr + " " + dateStr;
+                }
+                
                 parsedData.setTransactionDate(parseDateTime(timeStr, parser.getBankCode()));
             }
 
@@ -114,16 +121,35 @@ public class SMSParserService {
 
             switch (bankCode.toUpperCase()) {
                 case "VCB":
-                    // Format: "18/11/2025 15:30:45"
-                    formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+                    // Format: "12/11/2025 09:00" hoặc "26-06-2021 08:10:14"
+                    if (timeStr.contains("-")) {
+                        formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+                    } else {
+                        formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+                    }
                     break;
                 case "TCB":
-                    // Format: "15:30 18/11/2025"
-                    formatter = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
+                    // Format: "13/11 10:30" (thiếu năm)
+                    if (!timeStr.contains("/20")) {
+                        timeStr = timeStr + "/2025"; // Thêm năm mặc định
+                    }
+                    formatter = DateTimeFormatter.ofPattern("dd/MM HH:mm/yyyy");
                     break;
                 case "ACB":
                     // Format: "18-11-2025 15:30"
                     formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+                    break;
+                case "BIDV":
+                    // Format: "13:11 25/11/2025" (time comes first)
+                    formatter = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
+                    break;
+                case "MBB":
+                    // Format: "25/11/25 20:35" (năm 2 chữ số)
+                    formatter = DateTimeFormatter.ofPattern("dd/MM/yy HH:mm");
+                    break;
+                case "CTG":
+                    // Format: "26/11/2025 10:05"
+                    formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
                     break;
                 default:
                     // Format mặc định

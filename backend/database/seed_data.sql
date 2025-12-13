@@ -115,56 +115,56 @@ VALUES -- Vietcombank (SMS format)
     (
         'VCB',
         'Vietcombank',
-        'TK\\s+(\\d+).*?([+-])([\\d,]+)VND.*?luc\\s+([\\d/\\s:]+).*?ND:\\s*([^.]+).*?SD:\\s*([\\d,]+)',
-        '{"type":"group2","amount":"group3","transaction_date":"group4","merchant":"group5","balance_after":"group6"}',
+        'TK\\s+(\\d+).*?([+-])([\\d,]+)VND.*?l.c\\s+([\\d/\\s:]+).*?ND:\\s*([^.]+).*?SD:\\s*([\\d,]+)',
+        '{"account":"1","type":"2","amount":"3","time":"4","merchant":"5"}',
         'TK 001234567: -55,000VND luc 12/11/2025 09:00. ND: GRAB. SD: 2,450,000VND'
     ),
     -- Vietcombank (App notification format)
     (
         'VCB',
         'Vietcombank',
-        'So du TK VCB\\s+(\\d+).*?([+-])([\\d,]+)\\s+VND\\s+luc\\s+([\\d-]+)\\s+([\\d:]+).*?So du\\s+([\\d,]+)\\s+VND.*?GD:(.+?)(?:\\s|$)',
-        '{"type":"group2","amount":"group3","transaction_date":"group4 group5","balance_after":"group6","merchant":"group7"}',
+        'S. d. TK VCB\\s+(\\d+).*?([+-])([\\d,]+)\\s+VND\\s+l.c\\s+([\\d-]+)\\s+([\\d:]+).*?S. d.\\s+([\\d,]+)\\s+VND.*?GD:(.+?)(?:\\s|$)',
+        '{"account":"1","type":"2","amount":"3","date":"4","time":"5","merchant":"7"}',
         'Số dư TK VCB 0111000155751\n-20,000 VND lúc 26-06-2021 08:10:14.\nSố dư 877,172 VND. Ref POS.79900\n008.830963.20210626.081014.9704\n3668Tc4a111000000000762010 ..\n505471.0.000000.GD:ZALOPAY'
     ),
     -- Techcombank
     (
         'TCB',
         'Techcombank',
-        'GD:\\s*([+-])([\\d,]+)VND.*?luc\\s+([\\d/\\s:]+).*?tai\\s+([^.]+).*?SD:\\s*([\\d,]+)',
-        '{"type":"group1","amount":"group2","transaction_date":"group3","merchant":"group4","balance_after":"group5"}',
+        'GD:\\s*([+-])([\\d,]+)VND.*?l.c\\s+([\\d/\\s:]+).*?t.i\\s+([^.]+).*?SD:\\s*([\\d,]+)',
+        '{"type":"1","amount":"2","time":"3","merchant":"4"}',
         'GD: -120,000VND luc 13/11 10:30 tai HIGHLANDS COFFEE. SD: 1,880,000VND'
     ),
     -- BIDV
     (
         'BIDV',
         'BIDV',
-        'Thoi gian giao dich:\\s+(\\d{2}:\\d{2})\\s+(\\d{2}/\\d{2}/\\d{4}).*?So tien GD:\\s+([+-])([\\d,]+)\\s+VND.*?So du cuoi:\\s+([\\d,]+)\\s+VND.*?Noi dung giao dich:\\s*([^M]+?)(?:Ma giao dich|$)',
-        '{"transaction_date":"group1 group2","type":"group3","amount":"group4","balance_after":"group5","merchant":"group6"}',
+        'Th.i gian giao d.ch:\\s+(\\d{2}:\\d{2})\\s+(\\d{2}/\\d{2}/\\d{4}).*?S. ti.n GD:\\s+([+-])([\\d,]+)\\s+VND.*?N.i dung giao d.ch:\\s*(.+?)(?=M. giao d.ch|$)',
+        '{"time":"1","date":"2","type":"3","amount":"4","merchant":"5"}',
         'BIDV xin thông báo tới Quý khách\nThời gian giao dịch: 13:11 25/11/2025\nTài khoản thanh toán: 4260848570\nSố tiền GD: +10,000 VND\nSố dư cuối: 971,979 VND\nNội dung giao dịch: TKThe :1027779485, tai Vietcombank. MBVCB.11876304648.447013.VU XUAN HUY chuyen tien.CT tu 1027779445 VU XUAN HUY toi 4260848540 NGUYEN MINH CHIEN tai BIDV -CTLNHIDI000013514283774-1/1-CRE-002\nMã giao dịch: 0832ODV4-84v6kpcqo'
     ),
     -- MBBank
     (
         'MBB',
         'MBBank',
-        'TK\\s+(\\d+x+\\d+)\\|GD:\\s+([+-])([\\d,]+)VND\\s+(\\d{2}/\\d{2}/\\d{2})\\s+(\\d{2}:\\d{2})\\s+\\|SD:\\s+([\\d,]+)VND\\|ND:\\s*([^-]+)',
-        '{"type":"group2","amount":"group3","transaction_date":"group4 group5","balance_after":"group6","merchant":"group7"}',
+        'TK\\s+(\\d+x+\\d+)\\|GD:\\s+([+-])([\\d,]+)VND\\s+(\\d{2}/\\d{2}/\\d{2})\\s+(\\d{2}:\\d{2})\\s+\\|SD:\\s+([\\d,]+)VND\\|ND:\\s*(.+?)(?:-|$)',
+        '{"account":"1","type":"2","amount":"3","date":"4","time":"5","merchant":"7"}',
         'Thông báo biến động số dư\nTK 10xxx969|GD: +25,000VND 25/11/25 20:35 |SD: 140,002VND|ND: 108609376869-HA VAN THANG chuyen tien qua MoMo-CHUYEN TIEN-OQCH00044xSs-MOMO108609376867MOMO'
     ),
     -- PVcomBank
     (
         'PVB',
         'PVcomBank',
-        '([+-])([\\d,]+)\\s*₫.*?Tai khoan:\\s+(\\d+).*?So du:\\s+([\\d,]+)\\s*₫.*?Loi nhan:\\s*([^.]+)',
-        '{"type":"group1","amount":"group2","balance_after":"group4","merchant":"group5"}',
+        '([+-])([\\d,]+)\\s*₫.*?T.i kho.n:\\s+(\\d+).*?S. d.:\\s+([\\d,]+)\\s*₫.*?L.i nh.n:\\s*(.+?)(?=\\n\\n|$)',
+        '{"type":"1","amount":"2","account":"3","merchant":"5"}',
         '+9000 ₫\n\nTài khoản: 107001384884\n\nSố dư: 50,570 ₫\n\nLời nhắn: Lai nhap goc .\n\nLai suat gui tiet kiem online cao hon tai quay toi 0.5%/nam. Liên hệ: 19006692/1900555592.\n\n23:23'
     ),
     -- VietinBank
     (
         'CTG',
         'VietinBank',
-        'Thoi gian:\\s+(\\d{2}/\\d{2}/\\d{4})\\s+(\\d{2}:\\d{2}).*?Tai khoan:\\s+(\\d+).*?Giao dich:\\s+([+-])([\\d,]+)\\s+VND.*?So du hien tai:\\s+([\\d,]+)\\s+VND.*?Noi dung:\\s*(.+?)(?:;\\s*tai|$)',
-        '{"transaction_date":"group1 group2","type":"group4","amount":"group5","balance_after":"group6","merchant":"group7"}',
+        'Th.i gian:\\s+(\\d{2}/\\d{2}/\\d{4})\\s+(\\d{2}:\\d{2}).*?T.i kho.n:\\s+(\\d+).*?Giao d.ch:\\s+([+-])([\\d,]+)\\s+VND.*?S. d. hi.n t.i:\\s+([\\d,]+)\\s+VND.*?N.i dung:\\s*(.+?)(?:;\\s*t.i|$)',
+        '{"date":"1","time":"2","account":"3","type":"4","amount":"5","merchant":"7"}',
         'Thời gian: 26/11/2025 10:05\nTài khoản: 103600583557\nGiao dich: -30,000 VND\nSố dư hiện tại: 696,634 VND\nNội dung: CT DI:533010651537 NGUYEN XUAN ANH chuye n tien; tai iPay'
     );
 -- =====================================================
