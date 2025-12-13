@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../widgets/custom_drawer.dart';
 import '../../presentation/screens/notification_screen.dart';
+import '../../presentation/screens/transactions/search_transaction_screen.dart';
 
 /// A scaffold with a scrollable app bar that hides when scrolling down
 class ScrollableAppBarScaffold extends StatelessWidget {
@@ -15,6 +16,7 @@ class ScrollableAppBarScaffold extends StatelessWidget {
   final VoidCallback? onSettingsPressed;
   final Function(String)? onLanguageChanged;
   final Function(bool)? onThemeChanged;
+  final bool showSearchAction;
 
   const ScrollableAppBarScaffold({
     super.key,
@@ -28,6 +30,7 @@ class ScrollableAppBarScaffold extends StatelessWidget {
     this.onSettingsPressed,
     this.onLanguageChanged,
     this.onThemeChanged,
+    this.showSearchAction = false,
   });
 
   @override
@@ -71,6 +74,21 @@ class ScrollableAppBarScaffold extends StatelessWidget {
               ],
             ),
             actions: [
+              if (showSearchAction)
+                IconButton(
+                  icon: const Icon(
+                    Icons.search,
+                    color: Colors.white,
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SearchTransactionScreen(),
+                      ),
+                    );
+                  },
+                ),
               Stack(
                 children: [
                   IconButton(
