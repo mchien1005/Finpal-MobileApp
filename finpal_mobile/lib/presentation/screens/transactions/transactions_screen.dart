@@ -166,6 +166,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       context,
       userName: 'Nguyễn Văn A',
       notificationCount: 3,
+      showSearchAction: true,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
