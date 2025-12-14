@@ -78,13 +78,13 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
                         @Param("startDate") LocalDateTime startDate,
                         @Param("endDate") LocalDateTime endDate);
 
-        @Query("SELECT t.category.id, t.category.name, SUM(t.amount), COUNT(t) " +
+        @Query("SELECT t.category.id, t.category.name, t.category.icon, t.category.color, SUM(t.amount), COUNT(t) " +
                         "FROM Transaction t " +
                         "WHERE t.user.id = :userId " +
                         "AND t.transactionDate BETWEEN :startDate AND :endDate " +
                         "AND (:type IS NULL OR t.type = :type) " +
                         "AND t.category IS NOT NULL " +
-                        "GROUP BY t.category.id, t.category.name " +
+                        "GROUP BY t.category.id, t.category.name, t.category.icon, t.category.color " +
                         "ORDER BY SUM(t.amount) DESC")
         List<Object[]> getSpendingByCategory(
                         @Param("userId") Long userId,
