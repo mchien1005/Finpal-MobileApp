@@ -63,8 +63,8 @@ public class SecurityConfig {
                                 // Uploaded files (avatars, etc.)
                                 "/uploads/**")
                         .permitAll()
-                        // Admin endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // Admin endpoints - includes SMS parser management
+                        .requestMatchers("/api/admin/**", "/api/sms/parsers/**").hasRole("ADMIN")
                         // All other endpoints require authentication
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
