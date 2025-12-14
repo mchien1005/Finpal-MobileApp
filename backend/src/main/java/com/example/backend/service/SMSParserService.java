@@ -41,8 +41,8 @@ public class SMSParserService {
                 .orElseThrow(() -> new RuntimeException("No parser found for sender: " + senderPhone));
 
         try {
-            // Biên dịch regex pattern từ database
-            Pattern pattern = Pattern.compile(parser.getRegexPattern());
+            // Biên dịch regex pattern từ database với DOTALL flag để . khớp cả \n
+            Pattern pattern = Pattern.compile(parser.getRegexPattern(), Pattern.DOTALL);
             Matcher matcher = pattern.matcher(smsContent);
 
             if (!matcher.find()) {
