@@ -88,10 +88,14 @@ public class SMSParserService {
             }
 
             // Trích xuất và parse thời gian giao dịch
-            if (fieldMappings.containsKey("time")) {
+            if (fieldMappings.containsKey("datetime")) {
+                // Banks with datetime in single field (VCB, CTG)
+                String datetimeStr = matcher.group(fieldMappings.get("datetime"));
+                parsedData.setTransactionDate(parseDateTime(datetimeStr, parser.getBankCode()));
+            } else if (fieldMappings.containsKey("time")) {
                 String timeStr = matcher.group(fieldMappings.get("time"));
                 
-                // BIDV has separate groups for time and date, need to concatenate
+                // BIDV, MBB have separate groups for time and date, need to concatenate
                 if (fieldMappings.containsKey("date")) {
                     String dateStr = matcher.group(fieldMappings.get("date"));
                     timeStr = timeStr + " " + dateStr;
@@ -121,34 +125,26 @@ public class SMSParserService {
 
             switch (bankCode.toUpperCase()) {
                 case "VCB":
-                    // Format: "12/11/2025 09:00" hoặc "26-06-2021 08:10:14"
-                    if (timeStr.contains("-")) {
-                        formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
-                    } else {
-                        formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-                    }
+                    // Format: "07-04-2023 10:40:40" or "26-06-2021 08:10:14"
+                    formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
                     break;
                 case "TCB":
-                    // Format: "13/11 10:30" (thiếu năm)
-                    if (!timeStr.contains("/20")) {
-                        timeStr = timeStr + "/2025"; // Thêm năm mặc định
-                    }
-                    formatter = DateTimeFormatter.ofPattern("dd/MM HH:mm/yyyy");
-                    break;
+                    // Format: No datetime, use current time
+                    return LocalDateTime.now();
                 case "ACB":
                     // Format: "18-11-2025 15:30"
                     formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
                     break;
                 case "BIDV":
-                    // Format: "13:11 25/11/2025" (time comes first)
+                    // Format: "22:39 22/03/2023" (time first, then date)
                     formatter = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
                     break;
                 case "MBB":
-                    // Format: "25/11/25 20:35" (năm 2 chữ số)
-                    formatter = DateTimeFormatter.ofPattern("dd/MM/yy HH:mm");
+                    // Format: "03:32 08/04/22" (yy format)
+                    formatter = DateTimeFormatter.ofPattern("HH:mm dd/MM/yy");
                     break;
                 case "CTG":
-                    // Format: "26/11/2025 10:05"
+                    // Format: "15/12/2017 11:40" (VietinBank pipe format)
                     formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
                     break;
                 default:
