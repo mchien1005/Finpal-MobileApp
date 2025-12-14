@@ -34,6 +34,12 @@ public class Category {
     @Column(name = "thu_tu_hien_thi")
     private Integer displayOrder = 0;
 
+    @Column(name = "bieu_tuong", length = 50)
+    private String icon;
+
+    @Column(name = "mau_sac", length = 20)
+    private String color;
+
     @Column(name = "ngay_tao", updatable = false)
     private LocalDateTime createdAt;
 
