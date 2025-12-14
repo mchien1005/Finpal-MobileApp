@@ -52,55 +52,39 @@ VALUES (
 -- =====================================================
 -- 2. DANH_MUC - Danh mục hệ thống
 -- =====================================================
-INSERT INTO danh_muc (id_cha, ten_danh_muc, loai)
-VALUES -- EXPENSE Categories (Chi tiêu - 15 danh mục)
-    (NULL, 'Ăn uống', 'EXPENSE'),
-    -- 1: Nhà hàng, quán ăn, cafe, trà sữa
-    (NULL, 'Di chuyển', 'EXPENSE'),
-    -- 2: Grab, taxi, xăng, gửi xe
-    (NULL, 'Mua sắm', 'EXPENSE'),
-    -- 3: Quần áo, giày dép, phụ kiện
-    (NULL, 'Giải trí', 'EXPENSE'),
-    -- 4: Phim, game, du lịch, sở thích
-    (NULL, 'Sức khỏe', 'EXPENSE'),
-    -- 5: Khám bệnh, thuốc, gym, spa
-    (NULL, 'Giáo dục', 'EXPENSE'),
-    -- 6: Học phí, sách, khóa học
-    (NULL, 'Hóa đơn & Tiện ích', 'EXPENSE'),
-    -- 7: Điện, nước, internet, điện thoại
-    (NULL, 'Nhà ở', 'EXPENSE'),
-    -- 8: Thuê nhà, sửa chữa, nội thất
-    (NULL, 'Gia đình', 'EXPENSE'),
-    -- 9: Biếu bố mẹ, nuôi con, thú cưng
-    (NULL, 'Bảo hiểm', 'EXPENSE'),
-    -- 10: BHYT, BHXH, bảo hiểm nhân thọ
-    (NULL, 'Đầu tư', 'EXPENSE'),
-    -- 11: Chứng khoán, crypto, vàng
-    (NULL, 'Quà tặng', 'EXPENSE'),
-    -- 12: Sinh nhật, cưới hỏi, lễ tết
-    (NULL, 'Công việc', 'EXPENSE'),
-    -- 13: Dụng cụ, phần mềm, họp hành
-    (NULL, 'Làm đẹp', 'EXPENSE'),
-    -- 14: Tóc, nail, mỹ phẩm
-    (NULL, 'Khác (Chi)', 'EXPENSE'),
-    -- 15: Chi tiêu khác
-    -- INCOME Categories (Thu nhập - 8 danh mục)
-    (NULL, 'Lương', 'INCOME'),
-    -- 16: Lương chính
-    (NULL, 'Thưởng', 'INCOME'),
-    -- 17: Thưởng, KPI, lễ tết
-    (NULL, 'Làm thêm', 'INCOME'),
-    -- 18: Freelance, part-time, OT
-    (NULL, 'Kinh doanh', 'INCOME'),
-    -- 19: Bán hàng, dịch vụ
-    (NULL, 'Đầu tư', 'INCOME'),
-    -- 20: Cổ tức, lãi, crypto
-    (NULL, 'Cho vay', 'INCOME'),
-    -- 21: Thu nợ, cho vay lại
-    (NULL, 'Được tặng', 'INCOME'),
-    -- 22: Quà, lì xì, biếu
-    (NULL, 'Khác (Thu)', 'INCOME');
--- 23: Thu nhập khác
+INSERT INTO danh_muc (id_cha, ten_danh_muc, loai, mau_sac, icon)
+VALUES
+-- ======================
+-- EXPENSE (CHI TIÊU)
+-- ======================
+(NULL, 'Ăn uống', 'EXPENSE', '#FF7043', 'mdi:food'),
+(NULL, 'Di chuyển', 'EXPENSE', '#29B6F6', 'mdi:car'),
+(NULL, 'Mua sắm', 'EXPENSE', '#AB47BC', 'mdi:shopping'),
+(NULL, 'Giải trí', 'EXPENSE', '#FFCA28', 'mdi:movie'),
+(NULL, 'Sức khỏe', 'EXPENSE', '#EF5350', 'mdi:heart-pulse'),
+(NULL, 'Giáo dục', 'EXPENSE', '#42A5F5', 'mdi:school'),
+(NULL, 'Hóa đơn & Tiện ích', 'EXPENSE', '#26A69A', 'mdi:flash'),
+(NULL, 'Nhà ở', 'EXPENSE', '#8D6E63', 'mdi:home'),
+(NULL, 'Gia đình', 'EXPENSE', '#EC407A', 'mdi:account-group'),
+(NULL, 'Bảo hiểm', 'EXPENSE', '#78909C', 'mdi:shield-check'),
+(NULL, 'Đầu tư', 'EXPENSE', '#66BB6A', 'mdi:chart-line'),
+(NULL, 'Quà tặng', 'EXPENSE', '#FFA726', 'mdi:gift'),
+(NULL, 'Công việc', 'EXPENSE', '#5C6BC0', 'mdi:briefcase'),
+(NULL, 'Làm đẹp', 'EXPENSE', '#F06292', 'mdi:face-woman'),
+(NULL, 'Khác (Chi)', 'EXPENSE', '#BDBDBD', 'mdi:dots-horizontal'),
+
+-- ======================
+-- INCOME (THU NHẬP)
+-- ======================
+(NULL, 'Lương', 'INCOME', '#4CAF50', 'mdi:cash'),
+(NULL, 'Thưởng', 'INCOME', '#FFD54F', 'mdi:trophy'),
+(NULL, 'Làm thêm', 'INCOME', '#81C784', 'mdi:clock-outline'),
+(NULL, 'Kinh doanh', 'INCOME', '#26C6DA', 'mdi:store'),
+(NULL, 'Đầu tư', 'INCOME', '#66BB6A', 'mdi:trending-up'),
+(NULL, 'Cho vay', 'INCOME', '#90A4AE', 'mdi:handshake'),
+(NULL, 'Được tặng', 'INCOME', '#FF8A65', 'mdi:gift-open'),
+(NULL, 'Khác (Thu)', 'INCOME', '#BDBDBD', 'mdi:dots-horizontal');
+
 -- =====================================================
 -- 3. BO_PHAN_TICH_SMS - Cấu hình parse SMS ngân hàng
 -- =====================================================
