@@ -349,3 +349,26 @@ CREATE TABLE IF NOT EXISTS cau_hoi_thuong_gap (
     FOREIGN KEY (nguoi_tao) REFERENCES nguoi_dung(id) ON DELETE
     SET NULL
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+-- Bảng yêu cầu của người dùng (xuất dữ liệu và xóa tài khoản)
+CREATE TABLE IF NOT EXISTS yeu_cau_nguoi_dung (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id_nguoi_dung BIGINT NOT NULL,
+    loai_yeu_cau ENUM('EXPORT_DATA', 'DELETE_ACCOUNT') NOT NULL COMMENT 'Loại yêu cầu: EXPORT_DATA (Xuất dữ liệu), DELETE_ACCOUNT (Xóa tài khoản)',
+    trang_thai ENUM('PENDING', 'APPROVED', 'REJECTED', 'COMPLETED') NOT NULL DEFAULT 'PENDING' COMMENT 'Trạng thái: PENDING (Chờ duyệt), APPROVED (Đã duyệt), REJECTED (Từ chối), COMPLETED (Hoàn thành)',
+    ly_do_yeu_cau TEXT COMMENT 'Lý do yêu cầu từ người dùng',
+    ghi_chu_admin TEXT COMMENT 'Ghi chú từ admin khi duyệt/từ chối',
+    ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo yêu cầu',
+    ngay_duyet TIMESTAMP NULL COMMENT 'Ngày admin duyệt/từ chối',
+    id_admin_duyet BIGINT NULL COMMENT 'ID admin duyệt yêu cầu',
+    duong_dan_file VARCHAR(500) NULL COMMENT 'Đường dẫn file PDF đã xuất (nếu là export data)',
+    ngay_gui_email TIMESTAMP NULL COMMENT 'Ngày gửi email (nếu là export data)',
+    
+    FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_admin_duyet) REFERENCES nguoi_dung(id) ON DELETE SET NULL,
+    
+    INDEX idx_nguoi_dung (id_nguoi_dung),
+    INDEX idx_loai_yeu_cau (loai_yeu_cau),
+    INDEX idx_trang_thai (trang_thai),
+    INDEX idx_ngay_tao (ngay_tao)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Bảng lưu yêu cầu xuất dữ liệu và xóa tài khoản';

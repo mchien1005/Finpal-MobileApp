@@ -1,9 +1,15 @@
 package com.example.backend.controller;
 
+import com.example.backend.dto.CategoryRequest;
 import com.example.backend.dto.CategoryResponse;
 import com.example.backend.service.CategoryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,6 +21,7 @@ import java.util.List;
  * - Lấy danh sách categories (theo type hoặc parent categories)
  * - Lấy chi tiết 1 category
  * - Lấy danh sách subcategories của 1 category
+ * - Tạo, cập nhật, xóa category
  *
  * Notes:
  * - Categories là các loại chi tiêu/thu nhập (Ăn uống, Di chuyển, Thu nhập...)
@@ -23,6 +30,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
+@Tag(name = "Categories", description = "API quản lý danh mục thu chi (Categories)")
 public class CategoryController {
 
     private final CategoryService categoryService;
@@ -33,6 +41,10 @@ public class CategoryController {
      * Ngược lại trả về parent categories (cấp cha)
      */
     @GetMapping
+    @Operation(
+            summary = "Lấy danh sách danh mục",
+            description = "Lấy tất cả danh mục hoặc lọc theo loại (INCOME/EXPENSE). Nếu không truyền type sẽ trả về parent categories"
+    )
     public ResponseEntity<List<CategoryResponse>> getAllCategories(
             @RequestParam(required = false) String type) {
         List<CategoryResponse> categories;
@@ -49,6 +61,10 @@ public class CategoryController {
      * Lấy chi tiết một category theo id
      */
     @GetMapping("/{id}")
+    @Operation(
+            summary = "Lấy chi tiết danh mục",
+            description = "Lấy thông tin chi tiết của một danh mục theo ID (bao gồm cả subcategories nếu có)"
+    )
     public ResponseEntity<CategoryResponse> getCategoryById(@PathVariable Long id) {
         CategoryResponse category = categoryService.getCategoryById(id);
         return ResponseEntity.ok(category);
@@ -59,8 +75,64 @@ public class CategoryController {
      * Lấy danh sách subcategories thuộc category {id}
      */
     @GetMapping("/{id}/subcategories")
+    @Operation(
+            summary = "Lấy danh sách danh mục con",
+            description = "Lấy tất cả subcategories thuộc một parent category"
+    )
     public ResponseEntity<List<CategoryResponse>> getSubCategories(@PathVariable Long id) {
         List<CategoryResponse> subCategories = categoryService.getSubCategories(id);
         return ResponseEntity.ok(subCategories);
     }
+
+    /**
+     * POST /api/categories
+     * Tạo category mới
+     */
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Tạo danh mục mới",
+            description = "Tạo một danh mục thu chi mới. Chỉ ADMIN mới có quyền tạo. " +
+                    "Có thể tạo parent category (parentId = null) hoặc subcategory (có parentId)"
+    )
+    public ResponseEntity<CategoryResponse> createCategory(
+            @Valid @RequestBody CategoryRequest request) {
+        CategoryResponse category = categoryService.createCategory(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(category);
+    }
+
+    /**
+     * PUT /api/categories/{id}
+     * Cập nhật category
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Cập nhật danh mục",
+            description = "Cập nhật thông tin danh mục. Chỉ ADMIN mới có quyền cập nhật. " +
+                    "Không thể cập nhật category hệ thống (isSystem = true)"
+    )
+    public ResponseEntity<CategoryResponse> updateCategory(
+            @PathVariable Long id,
+            @Valid @RequestBody CategoryRequest request) {
+        CategoryResponse category = categoryService.updateCategory(id, request);
+        return ResponseEntity.ok(category);
+    }
+
+    /**
+     * DELETE /api/categories/{id}
+     * Xóa category
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Xóa danh mục",
+            description = "Xóa một danh mục. Chỉ ADMIN mới có quyền xóa. " +
+                    "Không thể xóa category hệ thống hoặc category có subcategories"
+    )
+    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
+        categoryService.deleteCategory(id);
+        return ResponseEntity.noContent().build();
+    }
 }
+
