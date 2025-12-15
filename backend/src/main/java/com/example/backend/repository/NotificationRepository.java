@@ -25,4 +25,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     boolean existsByUserIdAndTypeAndActionUrl(Long userId, String type, String actionUrl);
 
     int deleteByIsReadAndCreatedAtBefore(Boolean isRead, LocalDateTime createdAt);
+
+    // Tìm notifications theo user, type và thời gian tạo (để tránh gửi trùng lặp)
+    List<Notification> findByUserIdAndTypeAndCreatedAtAfter(Long userId, String type, LocalDateTime createdAt);
 }

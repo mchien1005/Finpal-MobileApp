@@ -1,3 +1,4 @@
+
 package com.example.backend.model;
 
 import jakarta.persistence.*;
@@ -66,6 +67,14 @@ public class User implements UserDetails {
 
     @Column(name = "lan_hoat_dong_cuoi")
     private LocalDateTime lastActiveAt;
+
+    // FCM Push Notification token - để gửi thông báo đến thiết bị di động
+    @Column(name = "fcm_token", length = 500)
+    private String fcmToken;
+
+    // Cho phép nhận thông báo push hay không
+    @Column(name = "nhan_thong_bao")
+    private Boolean notificationEnabled = true;
 
     @PrePersist
     protected void onCreate() {
