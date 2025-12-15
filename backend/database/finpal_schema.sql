@@ -372,3 +372,27 @@ CREATE TABLE IF NOT EXISTS yeu_cau_nguoi_dung (
     INDEX idx_trang_thai (trang_thai),
     INDEX idx_ngay_tao (ngay_tao)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Bảng lưu yêu cầu xuất dữ liệu và xóa tài khoản';
+
+CREATE TABLE IF NOT EXISTS `lich_su_sao_luu` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `ten_file` VARCHAR(255) NOT NULL COMMENT 'Tên file backup',
+    `duong_dan_file` VARCHAR(500) NOT NULL COMMENT 'Đường dẫn file backup',
+    `kich_thuoc_file` BIGINT COMMENT 'Kích thước file (bytes)',
+    `loai_sao_luu` ENUM('FULL', 'MANUAL', 'SCHEDULED') NOT NULL DEFAULT 'MANUAL' COMMENT 'Loại backup',
+    `trang_thai` ENUM('IN_PROGRESS', 'COMPLETED', 'FAILED') NOT NULL DEFAULT 'IN_PROGRESS' COMMENT 'Trạng thái',
+    `thong_bao_loi` TEXT COMMENT 'Thông báo lỗi nếu có',
+    `ngay_tao` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo backup',
+    `hoan_thanh_luc` DATETIME COMMENT 'Thời gian hoàn thành',
+    `id_nguoi_tao` BIGINT COMMENT 'ID admin tạo backup',
+    `ghi_chu` VARCHAR(500) COMMENT 'Ghi chú',
+    
+    INDEX `idx_trang_thai` (`trang_thai`),
+    INDEX `idx_loai_sao_luu` (`loai_sao_luu`),
+    INDEX `idx_ngay_tao` (`ngay_tao`),
+    INDEX `idx_nguoi_tao` (`id_nguoi_tao`),
+    
+    FOREIGN KEY (`id_nguoi_tao`) REFERENCES `nguoi_dung`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Lịch sử sao lưu database';
+
+-- Thêm comment cho bảng
+ALTER TABLE `lich_su_sao_luu` COMMENT = 'Lưu trữ lịch sử các lần backup database, hỗ trợ backup thủ công và tự động';

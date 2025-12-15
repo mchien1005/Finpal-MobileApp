@@ -446,9 +446,9 @@ public class NotificationService {
             try {
                 Notification notification = new Notification();
                 notification.setUserId(admin.getId());
-                notification.setType(Notification.NotificationType.SYSTEM);
+                notification.setType("SYSTEM");
                 notification.setTitle(title);
-                notification.setMessage(message);
+                notification.setContent(message);
                 notification.setCreatedAt(LocalDateTime.now());
                 notification.setIsRead(false);
                 notification.setPriority(Notification.NotificationPriority.HIGH);
@@ -471,14 +471,14 @@ public class NotificationService {
      */
     @Transactional
     public void sendNotificationToUser(Long userId, String title, String message, 
-                                      Notification.NotificationType type,
+                                      String type,
                                       Notification.NotificationPriority priority) {
         try {
             Notification notification = new Notification();
             notification.setUserId(userId);
             notification.setType(type);
             notification.setTitle(title);
-            notification.setMessage(message);
+            notification.setContent(message);
             notification.setCreatedAt(LocalDateTime.now());
             notification.setIsRead(false);
             notification.setPriority(priority);
