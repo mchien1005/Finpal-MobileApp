@@ -136,28 +136,28 @@ const AdminDashboardPage = () => {
       description: 'VCB format not recognized',
       time: '10:45 AM',
       severity: 'high',
-      icon: <WarningOutlined />,
+       icon: <img src="/images/warning.svg" alt="user icon" style={{ width: 24, height: 24 }} />,
     },
     {
       title: 'AI Low Confidence',
       description: 'Category: Shopping (62%)',
       time: '10:32 AM',
       severity: 'medium',
-      icon: <CloseCircleOutlined />,
+       icon: <img src="/images/warningvang.svg" alt="user icon" style={{ width: 24, height: 24 }} />,
     },
     {
       title: 'API Error',
       description: 'Timeout on transaction sync',
       time: '10:18 AM',
       severity: 'high',
-      icon: <WarningOutlined />,
+       icon: <img src="/images/warning.svg" alt="user icon" style={{ width: 24, height: 24 }} />,
     },
     {
       title: 'SMS Parse Failed',
       description: 'Unknown bank format',
       time: '09:54 AM',
       severity: 'medium',
-      icon: <CloseCircleOutlined />,
+      icon: <img src="/images/warningvang.svg" alt="user icon" style={{ width: 24, height: 24 }} />,
     },
   ];
 
