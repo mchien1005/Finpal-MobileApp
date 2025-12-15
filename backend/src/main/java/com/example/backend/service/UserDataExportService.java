@@ -142,19 +142,19 @@ public class UserDataExportService {
                 .setMarginTop(15));
 
         // Tính toán thống kê
-        List<Transaction> allTransactions = transactionRepository.findByUserId(userId);
+        List<Transaction> allTransactions = transactionRepository.findByUserIdOrderByTransactionDateDesc(userId);
         BigDecimal totalIncome = allTransactions.stream()
-                .filter(t -> t.getType() == Transaction.TransactionType.INCOME)
-                .map(Transaction::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
+            .filter(t -> t.getType() == Transaction.TransactionType.INCOME)
+            .map(Transaction::getAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         BigDecimal totalExpense = allTransactions.stream()
-                .filter(t -> t.getType() == Transaction.TransactionType.EXPENSE)
-                .map(Transaction::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .filter(t -> t.getType() == Transaction.TransactionType.EXPENSE)
+            .map(Transaction::getAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         Table table = new Table(UnitValue.createPercentArray(new float[]{40, 60}))
-                .setWidth(UnitValue.createPercentValue(100));
+            .setWidth(UnitValue.createPercentValue(100));
 
         addTableRow(table, "Tong so giao dich:", String.valueOf(allTransactions.size()), font, boldFont);
         addTableRow(table, "Tong thu nhap:", formatMoney(totalIncome) + " VND", font, boldFont);
@@ -214,7 +214,14 @@ public class UserDataExportService {
                 .setFontSize(14)
                 .setMarginTop(15));
 
-        List<Category> categories = categoryRepository.findByUserIdOrIsSystem(userId, false);
+        // Combine system and user categories
+        List<Category> userCategories = categoryRepository.findAll().stream()
+                .filter(cat -> Boolean.FALSE.equals(cat.getIsSystem()) && userId.equals(cat.getParentId()) || userId.equals(cat.getId()))
+                .toList();
+        List<Category> systemCategories = categoryRepository.findByIsSystemTrue();
+        List<Category> categories = new java.util.ArrayList<>();
+        categories.addAll(userCategories);
+        categories.addAll(systemCategories);
 
         if (categories.isEmpty()) {
             document.add(new Paragraph("Khong co danh muc ca nhan.").setFont(font));
@@ -259,7 +266,18 @@ public class UserDataExportService {
         table.addHeaderCell(new Cell().add(new Paragraph("Trang thai").setFont(boldFont).setFontSize(10)));
 
         for (Budget budget : budgets) {
-            table.addCell(new Cell().add(new Paragraph(budget.getCategory() != null ? budget.getCategory().getName() : "Tong").setFont(font).setFontSize(9)));
+            // Only categoryId is available, not category object
+            String categoryName = "Tong";
+            if (budget.getCategoryId() != null) {
+                Category cat = null;
+                try {
+                    cat = categoryRepository.findById(budget.getCategoryId()).orElse(null);
+                } catch (Exception ignored) {}
+                if (cat != null) {
+                    categoryName = cat.getName();
+                }
+            }
+            table.addCell(new Cell().add(new Paragraph(categoryName).setFont(font).setFontSize(9)));
             table.addCell(new Cell().add(new Paragraph(formatMoney(budget.getAmount())).setFont(font).setFontSize(9)));
             table.addCell(new Cell().add(new Paragraph(budget.getPeriod().name()).setFont(font).setFontSize(9)));
             table.addCell(new Cell().add(new Paragraph(budget.getIsActive() ? "Active" : "Inactive").setFont(font).setFontSize(9)));
@@ -294,13 +312,14 @@ public class UserDataExportService {
             table.addCell(new Cell().add(new Paragraph(goal.getName()).setFont(font).setFontSize(9)));
             table.addCell(new Cell().add(new Paragraph(formatMoney(goal.getTargetAmount())).setFont(font).setFontSize(9)));
             table.addCell(new Cell().add(new Paragraph(formatMoney(goal.getCurrentAmount())).setFont(font).setFontSize(9)));
-            
+
             double progress = goal.getTargetAmount().compareTo(BigDecimal.ZERO) > 0
-                    ? goal.getCurrentAmount().divide(goal.getTargetAmount(), 4, java.math.RoundingMode.HALF_UP)
-                            .multiply(BigDecimal.valueOf(100)).doubleValue()
-                    : 0;
+                ? goal.getCurrentAmount().divide(goal.getTargetAmount(), 4, java.math.RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100)).doubleValue()
+                : 0;
             table.addCell(new Cell().add(new Paragraph(String.format("%.1f%%", progress)).setFont(font).setFontSize(9)));
-            table.addCell(new Cell().add(new Paragraph(goal.getTargetDate() != null ? goal.getTargetDate().format(DATE_FORMATTER) : "N/A").setFont(font).setFontSize(9)));
+            // Use deadline instead of getTargetDate
+            table.addCell(new Cell().add(new Paragraph(goal.getDeadline() != null ? goal.getDeadline().format(DATE_FORMATTER) : "N/A").setFont(font).setFontSize(9)));
         }
 
         document.add(table);
