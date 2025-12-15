@@ -5,9 +5,9 @@ import viVN from 'antd/locale/vi_VN';
 import LoginPage from './pages/LoginPage';
 // Admin Pages
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
-import ContentManagementPage from './pages/admin/ContentManagementPage';
-import AIModelManagementPage from './pages/admin/AIModelManagementPage';
-import SecurityAndAuditPage from './pages/admin/SecurityAndAuditPage';
+// import ContentManagementPage from './pages/admin/ContentManagementPage';
+// import AIModelManagementPage from './pages/admin/AIModelManagementPage';
+// import SecurityAndAuditPage from './pages/admin/SecurityAndAuditPage';
 import SystemAndConfigPage from './pages/admin/SystemAndConfigPage';
 import authService from './services/authService';
 import { SidebarProvider } from './contexts/SidebarContext';
@@ -52,30 +52,30 @@ function App() {
               </AdminRoute>
             }
           />
-          <Route
+          {/* <Route
             path="/admin/content"
             element={
               <AdminRoute>
                 <ContentManagementPage />
               </AdminRoute>
             }
-          />
-          <Route
+          /> */}
+          {/* <Route
             path="/admin/ai-models"
             element={
               <AdminRoute>
                 <AIModelManagementPage />
               </AdminRoute>
             }
-            />
-            <Route
+            /> */}
+            {/* <Route
             path="/admin/security"
             element={
               <AdminRoute>
                 <SecurityAndAuditPage />
               </AdminRoute>
             }
-            />
+            /> */}
             <Route
             path="/admin/settings"
             element={
