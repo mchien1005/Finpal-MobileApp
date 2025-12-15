@@ -432,4 +432,64 @@ public class NotificationService {
 
         log.info("Deleted {} old read notifications", deletedCount);
     }
+
+    /**
+     * Gửi notification cho tất cả admin users
+     */
+    @Transactional
+    public void sendNotificationToAllAdmins(String title, String message) {
+        log.info("Sending notification to all admins: {}", title);
+
+        List<User> admins = userRepository.findByRole(com.example.backend.model.Role.ADMIN);
+
+        for (User admin : admins) {
+            try {
+                Notification notification = new Notification();
+                notification.setUserId(admin.getId());
+                notification.setType(Notification.NotificationType.SYSTEM);
+                notification.setTitle(title);
+                notification.setMessage(message);
+                notification.setCreatedAt(LocalDateTime.now());
+                notification.setIsRead(false);
+                notification.setPriority(Notification.NotificationPriority.HIGH);
+                notification.setActionUrl("/admin/user-requests");
+
+                notificationRepository.save(notification);
+                
+                log.debug("Notification sent to admin: {}", admin.getUsername());
+
+            } catch (Exception e) {
+                log.error("Error sending notification to admin {}", admin.getUsername(), e);
+            }
+        }
+
+        log.info("Notification sent to {} admin(s)", admins.size());
+    }
+
+    /**
+     * Gửi notification cho một user cụ thể
+     */
+    @Transactional
+    public void sendNotificationToUser(Long userId, String title, String message, 
+                                      Notification.NotificationType type,
+                                      Notification.NotificationPriority priority) {
+        try {
+            Notification notification = new Notification();
+            notification.setUserId(userId);
+            notification.setType(type);
+            notification.setTitle(title);
+            notification.setMessage(message);
+            notification.setCreatedAt(LocalDateTime.now());
+            notification.setIsRead(false);
+            notification.setPriority(priority);
+
+            notificationRepository.save(notification);
+            
+            log.info("Notification sent to user ID {}: {}", userId, title);
+
+        } catch (Exception e) {
+            log.error("Error sending notification to user {}", userId, e);
+        }
+    }
 }
+
