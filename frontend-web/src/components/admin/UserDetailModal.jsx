@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { Modal, Row, Col, Tag, Button } from 'antd';
 import { CloseOutlined, SyncOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import DeleteUserConfirmModal from './DeleteUserConfirmModal';
+import DisableUserConfirmModal from './DisableUserConfirmModal';
 import SuccessModal from '../common/SuccessModal';
 
-const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess }) => {
+const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuccess }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+  const [showDisableConfirm, setShowDisableConfirm] = useState(false);
+  const [showDisableSuccess, setShowDisableSuccess] = useState(false);
 
   if (!user) return null;
 
@@ -33,6 +36,34 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess }) => {
     setTimeout(() => {
       if (onDeleteSuccess) {
         onDeleteSuccess(user.userId); // Notify parent to remove user from list
+      }
+      onClose(); // Close the user detail modal
+    }, 100);
+  };
+
+  const handleDisableClick = () => {
+    setShowDisableConfirm(true);
+  };
+
+  const handleConfirmDisable = () => {
+    setShowDisableConfirm(false);
+    // Simulate disable API call
+    setTimeout(() => {
+      setShowDisableSuccess(true);
+    }, 300);
+  };
+
+  const handleCancelDisable = () => {
+    setShowDisableConfirm(false);
+  };
+
+  const handleDisableSuccessClose = () => {
+    setShowDisableSuccess(false);
+    
+    // Delay closing parent modal to ensure smooth transition
+    setTimeout(() => {
+      if (onDisableSuccess) {
+        onDisableSuccess(user.userId); // Notify parent to update user status
       }
       onClose(); // Close the user detail modal
     }, 100);
@@ -289,6 +320,7 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess }) => {
           <Col span={8}>
             <Button
               icon={<EditOutlined />}
+              onClick={handleDisableClick}
               style={{
                 width: '100%',
                 height: 40,
@@ -327,11 +359,28 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess }) => {
         userEmail={user.contact?.email}
       />
 
-      {/* Success Modal */}
+      {/* Disable Confirmation Modal */}
+      <DisableUserConfirmModal
+        open={showDisableConfirm}
+        onConfirm={handleConfirmDisable}
+        onCancel={handleCancelDisable}
+        userName={user.user?.name}
+        userEmail={user.contact?.email}
+      />
+
+      {/* Delete Success Modal */}
       <SuccessModal
         open={showDeleteSuccess}
         onClose={handleSuccessClose}
         message="Xóa người dùng thành công!"
+        buttonText="Đồng ý"
+      />
+
+      {/* Disable Success Modal */}
+      <SuccessModal
+        open={showDisableSuccess}
+        onClose={handleDisableSuccessClose}
+        message="Vô hiệu hóa tài khoản thành công!"
         buttonText="Đồng ý"
       />
     </Modal>

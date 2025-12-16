@@ -282,6 +282,13 @@ const UserManagementPage = () => {
     setDataSource(prev => prev.filter(user => user.userId !== userId));
   };
 
+  const handleDisableUser = (userId) => {
+    // Update user status to Inactive
+    setDataSource(prev => prev.map(user => 
+      user.userId === userId ? { ...user, status: 'Inactive' } : user
+    ));
+  };
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#F9FAFB' }}>
       <AdminSidebar />
@@ -563,6 +570,7 @@ const UserManagementPage = () => {
           onClose={() => setUserDetailVisible(false)}
           user={selectedUser}
           onDeleteSuccess={handleDeleteUser}
+          onDisableSuccess={handleDisableUser}
         />
       </div>
     </div>
