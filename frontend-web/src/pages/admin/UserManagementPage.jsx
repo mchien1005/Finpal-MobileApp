@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Typography, Row, Col, Card, Table, Input, Button, Tag, Avatar, Dropdown, Space } from 'antd';
+import { Typography, Row, Col, Card, Table, Input, Button, Tag, Avatar, Dropdown, Space, DatePicker } from 'antd';
 import {
   SearchOutlined,
   FilterOutlined,
@@ -16,6 +16,7 @@ const { Title, Text } = Typography;
 
 const UserManagementPage = () => {
   const { collapsed } = useSidebar();
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
 
   // Stats cards data
   const statsCards = [
@@ -255,9 +256,19 @@ const UserManagementPage = () => {
     setSearchText,
     selectedStatus,
     setSelectedStatus,
+    advancedFilters,
+    setAdvancedFilters,
     filteredUsers,
     totalFiltered,
   } = useUserSearch(dataSource);
+
+  const handleApplyFilters = (filters) => {
+    setAdvancedFilters(filters);
+  };
+
+  const handleToggleAdvancedFilter = () => {
+    setShowAdvancedFilter(!showAdvancedFilter);
+  };
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#F9FAFB' }}>
@@ -368,10 +379,13 @@ const UserManagementPage = () => {
             <Col>
               <Button
                 icon={<FilterOutlined />}
+                onClick={handleToggleAdvancedFilter}
                 style={{
                   borderRadius: 8,
                   height: 40,
                   padding: '0 20px',
+                  background: showAdvancedFilter ? '#155dfc' : 'transparent',
+                  color: showAdvancedFilter ? '#fff' : '#000',
                 }}
               >
                 Lọc nâng cao
@@ -392,6 +406,118 @@ const UserManagementPage = () => {
               </Button>
             </Col>
           </Row>
+
+          {/* Advanced Filter Panel - show below when toggled */}
+          {showAdvancedFilter && (
+            <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid #e5e7eb' }}>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12}>
+                  <div style={{ marginBottom: 8 }}>
+                    <label style={{ fontSize: 14, fontWeight: 500, color: '#101828' }}>
+                      Ngân hàng
+                    </label>
+                  </div>
+                  <Dropdown
+                    menu={{
+                      items: [
+                        { key: 'all', label: 'Tất cả' },
+                        { key: 'VCB', label: 'VCB' },
+                        { key: 'TCB', label: 'TCB' },
+                        { key: 'ACB', label: 'ACB' },
+                        { key: 'VTB', label: 'VTB' },
+                        { key: 'MBB', label: 'MBB' },
+                      ],
+                      onClick: ({ key }) => {
+                        setAdvancedFilters({
+                          ...advancedFilters,
+                          bank: key === 'all' ? null : key
+                        });
+                      },
+                    }}
+                    trigger={['click']}
+                  >
+                    <Button
+                      style={{
+                        width: '100%',
+                        height: 40,
+                        background: '#f3f3f5',
+                        border: 'none',
+                        borderRadius: 8,
+                        textAlign: 'left',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <span>{advancedFilters.bank || 'VCB'}</span>
+                      <DownOutlined />
+                    </Button>
+                  </Dropdown>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <div style={{ marginBottom: 8 }}>
+                    <label style={{ fontSize: 14, fontWeight: 500, color: '#101828' }}>
+                      Tổng giao dịch tối thiểu
+                    </label>
+                  </div>
+                  <Input
+                    placeholder="245"
+                    type="number"
+                    value={advancedFilters.minTransactions}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, minTransactions: e.target.value })}
+                    style={{
+                      height: 40,
+                      background: '#f3f3f5',
+                      border: 'none',
+                      borderRadius: 8,
+                    }}
+                  />
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <div style={{ marginBottom: 8 }}>
+                    <label style={{ fontSize: 14, fontWeight: 500, color: '#101828' }}>
+                      Tổng chi tiêu tối thiểu (triệu)
+                    </label>
+                  </div>
+                  <Input
+                    placeholder="45"
+                    type="number"
+                    value={advancedFilters.minSpending}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, minSpending: e.target.value })}
+                    style={{
+                      height: 40,
+                      background: '#f3f3f5',
+                      border: 'none',
+                      borderRadius: 8,
+                    }}
+                  />
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <div style={{ marginBottom: 8 }}>
+                    <label style={{ fontSize: 14, fontWeight: 500, color: '#101828' }}>
+                      Ngày đăng ký
+                    </label>
+                  </div>
+                  <DatePicker
+                    placeholder="15/03/2024"
+                    value={advancedFilters.registeredDate}
+                    onChange={(date) => setAdvancedFilters({ ...advancedFilters, registeredDate: date })}
+                    format="DD/MM/YYYY"
+                    style={{
+                      width: '100%',
+                      height: 40,
+                      background: '#f3f3f5',
+                      border: 'none',
+                      borderRadius: 8,
+                    }}
+                  />
+                </Col>
+              </Row>
+            </div>
+          )}
         </Card>
 
         {/* Users Table */}

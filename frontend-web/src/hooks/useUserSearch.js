@@ -8,8 +8,14 @@ import { useState, useMemo } from 'react';
 export const useUserSearch = (users) => {
   const [searchText, setSearchText] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('Tất cả');
+  const [advancedFilters, setAdvancedFilters] = useState({
+    bank: null,
+    minTransactions: '',
+    minSpending: '',
+    registeredDate: null,
+  });
 
-  // Filter users based on search text and status
+  // Filter users based on search text, status, and advanced filters
   const filteredUsers = useMemo(() => {
     let result = users;
 
@@ -31,14 +37,43 @@ export const useUserSearch = (users) => {
       result = result.filter(user => user.status === selectedStatus);
     }
 
+    // Apply advanced filters
+    if (advancedFilters.bank) {
+      result = result.filter(user => user.bank === advancedFilters.bank);
+    }
+
+    if (advancedFilters.minTransactions) {
+      result = result.filter(user => {
+        const transactions = parseInt(user.transactions);
+        return transactions >= parseInt(advancedFilters.minTransactions);
+      });
+    }
+
+    if (advancedFilters.minSpending) {
+      result = result.filter(user => {
+        // Extract number from spending string like "₫45.6M"
+        const spending = parseFloat(user.totalSpending.replace(/[₫M]/g, ''));
+        return spending >= parseFloat(advancedFilters.minSpending);
+      });
+    }
+
+    if (advancedFilters.registeredDate) {
+      result = result.filter(user => {
+        // Simple date comparison - in real app would need proper date parsing
+        return user.registeredDate === advancedFilters.registeredDate.format('DD/MM/YYYY');
+      });
+    }
+
     return result;
-  }, [users, searchText, selectedStatus]);
+  }, [users, searchText, selectedStatus, advancedFilters]);
 
   return {
     searchText,
     setSearchText,
     selectedStatus,
     setSelectedStatus,
+    advancedFilters,
+    setAdvancedFilters,
     filteredUsers,
     totalFiltered: filteredUsers.length,
   };
