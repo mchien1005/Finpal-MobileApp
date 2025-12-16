@@ -3,6 +3,7 @@ import { Modal, Row, Col, Tag, Button } from 'antd';
 import { CloseOutlined, SyncOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import DeleteUserConfirmModal from './DeleteUserConfirmModal';
 import DisableUserConfirmModal from './DisableUserConfirmModal';
+import ResetPasswordModal from './ResetPasswordModal';
 import SuccessModal from '../common/SuccessModal';
 
 const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuccess }) => {
@@ -10,6 +11,8 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [showDisableConfirm, setShowDisableConfirm] = useState(false);
   const [showDisableSuccess, setShowDisableSuccess] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showResetSuccess, setShowResetSuccess] = useState(false);
 
   if (!user) return null;
 
@@ -67,6 +70,27 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
       }
       onClose(); // Close the user detail modal
     }, 100);
+  };
+
+  const handleResetPasswordClick = () => {
+    setShowResetPassword(true);
+  };
+
+  const handleConfirmReset = (newPassword) => {
+    setShowResetPassword(false);
+    // Simulate reset password API call
+    console.log('New password:', newPassword);
+    setTimeout(() => {
+      setShowResetSuccess(true);
+    }, 300);
+  };
+
+  const handleCancelReset = () => {
+    setShowResetPassword(false);
+  };
+
+  const handleResetSuccessClose = () => {
+    setShowResetSuccess(false);
   };
 
   const loginHistory = [
@@ -307,6 +331,7 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
           <Col span={8}>
             <Button
               icon={<SyncOutlined />}
+              onClick={handleResetPasswordClick}
               style={{
                 width: '100%',
                 height: 40,
@@ -381,6 +406,22 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
         open={showDisableSuccess}
         onClose={handleDisableSuccessClose}
         message="Vô hiệu hóa tài khoản thành công!"
+        buttonText="Đồng ý"
+      />
+
+      {/* Reset Password Modal */}
+      <ResetPasswordModal
+        open={showResetPassword}
+        onConfirm={handleConfirmReset}
+        onCancel={handleCancelReset}
+        user={user}
+      />
+
+      {/* Reset Password Success Modal */}
+      <SuccessModal
+        open={showResetSuccess}
+        onClose={handleResetSuccessClose}
+        message="Reset mật khẩu thành công!"
         buttonText="Đồng ý"
       />
     </Modal>
