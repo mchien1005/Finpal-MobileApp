@@ -4,15 +4,6 @@ import '../models/notification_model.dart';
 import 'api_service.dart';
 import 'storage_service.dart';
 
-/// Notification Service - Xử lý API thông báo
-///
-/// API Endpoints:
-/// - GET /api/notifications - Lấy danh sách thông báo
-/// - GET /api/notifications/unread-count - Đếm thông báo chưa đọc
-/// - PUT /api/notifications/{id}/read - Đánh dấu đã đọc
-/// - PUT /api/notifications/read-all - Đánh dấu tất cả đã đọc
-/// - DELETE /api/notifications/{id} - Xóa thông báo
-/// - DELETE /api/notifications/read - Xóa tất cả đã đọc
 
 class NotificationService {
   static const String baseUrl = 'http://175.41.150.228:8080/api';
