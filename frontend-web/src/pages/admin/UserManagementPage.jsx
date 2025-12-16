@@ -8,13 +8,14 @@ import {
   EyeOutlined,
   MoreOutlined,
 } from '@ant-design/icons';
-import AdminLayout from '../../layouts/AdminLayout';
+import AdminSidebar from '../../components/admin/AdminSidebar';
+import { useSidebar } from '../../contexts/SidebarContext';
+import { useUserSearch } from '../../hooks/useUserSearch';
 
 const { Title, Text } = Typography;
 
 const UserManagementPage = () => {
-  const [searchText, setSearchText] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('Tất cả');
+  const { collapsed } = useSidebar();
 
   // Stats cards data
   const statsCards = [
@@ -50,16 +51,18 @@ const UserManagementPage = () => {
       title: 'User ID',
       dataIndex: 'userId',
       key: 'userId',
-      width: 80,
+      width: 100,
+      align: 'center',
       render: (text) => <Text style={{ color: '#155dfc' }}>{text}</Text>,
     },
     {
       title: 'Người dùng',
       dataIndex: 'user',
       key: 'user',
-      width: 180,
+      width: 200,
+      align: 'center',
       render: (user) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
           <Avatar
             style={{
               background: 'linear-gradient(135deg, #51a2ff 0%, #615fff 100%)',
@@ -76,11 +79,12 @@ const UserManagementPage = () => {
       title: 'Liên hệ',
       dataIndex: 'contact',
       key: 'contact',
-      width: 200,
+      width: 220,
+      align: 'center',
       render: (contact) => (
         <div>
-          <div><Text>{contact.email}</Text></div>
-          <div><Text type="secondary" style={{ fontSize: 14 }}>{contact.phone}</Text></div>
+          <div style={{ marginBottom: 4 }}><Text>{contact.email}</Text></div>
+          <div><Text type="secondary" style={{ fontSize: 12 }}>{contact.phone}</Text></div>
         </div>
       ),
     },
@@ -89,6 +93,7 @@ const UserManagementPage = () => {
       dataIndex: 'bank',
       key: 'bank',
       width: 100,
+      align: 'center',
       render: (bank) => (
         <Tag
           style={{
@@ -106,7 +111,8 @@ const UserManagementPage = () => {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 100,
+      width: 110,
+      align: 'center',
       render: (status) => {
         const statusConfig = {
           Active: { bg: '#dcfce7', color: '#008236' },
@@ -133,31 +139,35 @@ const UserManagementPage = () => {
       dataIndex: 'transactions',
       key: 'transactions',
       width: 100,
+      align: 'center',
     },
     {
       title: 'Tổng chi tiêu',
       dataIndex: 'totalSpending',
       key: 'totalSpending',
-      width: 120,
+      width: 130,
+      align: 'center',
     },
     {
       title: 'Ngày đăng ký',
       dataIndex: 'registeredDate',
       key: 'registeredDate',
       width: 120,
+      align: 'center',
     },
     {
       title: 'Hoạt động',
       dataIndex: 'lastActive',
       key: 'lastActive',
-      width: 120,
-      render: (text) => <Text type="secondary">{text}</Text>,
+      width: 130,
+      align: 'center',
+      render: (text) => <Text type="secondary" style={{ fontSize: 14 }}>{text}</Text>,
     },
     {
       title: 'Thao tác',
       key: 'action',
       width: 100,
-      align: 'right',
+      align: 'center',
       render: (_, record) => (
         <Button
           type="text"
@@ -239,9 +249,31 @@ const UserManagementPage = () => {
     { key: 'banned', label: 'Banned' },
   ];
 
+  // Use custom search hook
+  const {
+    searchText,
+    setSearchText,
+    selectedStatus,
+    setSelectedStatus,
+    filteredUsers,
+    totalFiltered,
+  } = useUserSearch(dataSource);
+
   return (
-    <AdminLayout>
-      {/* Header */}
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#F9FAFB' }}>
+      <AdminSidebar />
+
+      {/* Main Content */}
+      <div
+        style={{
+          marginLeft: collapsed ? 80 : 280,
+          flex: 1,
+          transition: 'margin-left 0.3s',
+          padding: 32,
+          background: 'linear-gradient(142deg, #F9FAFB 0%, rgba(239, 246, 255, 0.3) 100%)',
+        }}
+      >
+        {/* Header */}
         <div style={{ marginBottom: 24 }}>
           <Title level={2} style={{ margin: 0, marginBottom: 4, color: '#101828' }}>
             Quản lý người dùng
@@ -293,8 +325,8 @@ const UserManagementPage = () => {
           }}
           bodyStyle={{ padding: 24 }}
         >
-          <Row gutter={12} align="middle">
-            <Col style={{ width: 540 }}>
+          <Row gutter={16} align="middle">
+            <Col style={{ width: 480 }}>
               <Input
                 placeholder="Tìm kiếm theo tên, email, ID..."
                 prefix={<SearchOutlined style={{ color: '#717182' }} />}
@@ -304,7 +336,7 @@ const UserManagementPage = () => {
                   background: '#f3f3f5',
                   border: 'none',
                   borderRadius: 8,
-                  height: 36,
+                  height: 40,
                 }}
               />
             </Col>
@@ -321,7 +353,9 @@ const UserManagementPage = () => {
                     background: '#f3f3f5',
                     border: 'none',
                     borderRadius: 8,
-                    height: 36,
+                    height: 40,
+                    minWidth: 130,
+                    padding: '0 20px',
                   }}
                 >
                   <Space>
@@ -336,7 +370,8 @@ const UserManagementPage = () => {
                 icon={<FilterOutlined />}
                 style={{
                   borderRadius: 8,
-                  height: 36,
+                  height: 40,
+                  padding: '0 20px',
                 }}
               >
                 Lọc nâng cao
@@ -349,7 +384,8 @@ const UserManagementPage = () => {
                 style={{
                   background: '#155dfc',
                   borderRadius: 8,
-                  height: 36,
+                  height: 40,
+                  padding: '0 20px',
                 }}
               >
                 Export CSV
@@ -369,19 +405,21 @@ const UserManagementPage = () => {
         >
           <Table
             columns={columns}
-            dataSource={dataSource}
+            dataSource={filteredUsers}
             pagination={{
               current: 1,
               pageSize: 5,
-              total: 12543,
+              total: totalFiltered,
               showSizeChanger: false,
-              showTotal: (total) => `Hiển thị 1-5 trong tổng số ${total.toLocaleString()} người dùng`,
+              showTotal: (total) => `Hiển thị 1-${Math.min(5, total)} trong tổng số ${total.toLocaleString()} người dùng`,
               style: { padding: '24px' },
             }}
+            tableLayout="fixed"
             style={{ borderRadius: 14 }}
           />
         </Card>
-    </AdminLayout>
+      </div>
+    </div>
   );
 };
 
