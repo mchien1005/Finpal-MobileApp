@@ -40,4 +40,7 @@ public interface BudgetRepository extends JpaRepository<Budget, Long> {
                         @Param("userId") Long userId,
                         @Param("categoryId") Long categoryId,
                         @Param("date") LocalDate date);
+
+        // Đếm số budget đang active của user
+        Long countByUserIdAndIsActiveTrue(Long userId);
 }
