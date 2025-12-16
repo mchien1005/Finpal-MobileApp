@@ -42,6 +42,15 @@ dependencies:
   shared_preferences: ^2.5.4
   get: ^4.7.3
   http: ^1.2.0
+  flutter_sms_inbox: ^1.0.4
+  permission_handler: ^11.3.1
+
+  # Firebase for Push Notifications
+  firebase_core: ^3.8.1
+  firebase_messaging: ^15.1.6
+
+  # Lưu ý: flutter_local_notifications tạm thời bỏ ra do xung đột Kotlin version
+  # FCM vẫn có thể hiển thị notification mà không cần package này
 
 dev_dependencies:
   flutter_test:
@@ -53,6 +62,21 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+
+  # App icon generator
+  flutter_launcher_icons: ^0.14.2
+
+# App Icon Configuration
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo.png"
+  min_sdk_android: 21
+  # Android adaptive icon
+  adaptive_icon_foreground: "assets/images/logo.png"
+  adaptive_icon_background: "#FFFFFF"
+  # Remove alpha channel for iOS
+  remove_alpha_ios: true
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
