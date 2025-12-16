@@ -17,7 +17,7 @@ class BottomNavHelper {
     // Don't navigate if already on the same screen
     if (index == currentIndex) return;
 
-    Widget? targetScreen;
+    late Widget targetScreen;
 
     switch (index) {
       case 0:
@@ -39,19 +39,16 @@ class BottomNavHelper {
         return; // Invalid index, do nothing
     }
 
-    if (targetScreen != null) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              targetScreen!,
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 200),
-        ),
-        (route) => false,
-      );
-    }
+    Navigator.pushAndRemoveUntil(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => targetScreen,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 200),
+      ),
+      (route) => false,
+    );
   }
 }
