@@ -199,6 +199,79 @@ public class SMSParserController {
     }
 
     /**
+     * Test SMS đơn giản - chỉ cần nhập nội dung SMS
+     * Hệ thống sẽ tự động thử tất cả parsers trong database để tìm parser phù hợp
+     */
+    @PostMapping("/test-simple")
+    public ResponseEntity<TestRegexResponse> testSmsSimple(@RequestBody Map<String, String> request) {
+        String smsContent = request.get("smsContent");
+        
+        if (smsContent == null || smsContent.isBlank()) {
+            return ResponseEntity.badRequest().body(TestRegexResponse.builder()
+                    .matched(false)
+                    .message("smsContent không được để trống")
+                    .build());
+        }
+
+        // Lấy tất cả parsers đang active, sắp xếp theo priority
+        List<SMSParser> parsers = smsParserRepository.findByIsActiveTrueOrderByPriorityDesc();
+        
+        if (parsers.isEmpty()) {
+            return ResponseEntity.ok(TestRegexResponse.builder()
+                    .matched(false)
+                    .message("Không có parser nào trong database")
+                    .build());
+        }
+
+        // Thử từng parser
+        for (SMSParser parser : parsers) {
+            try {
+                Pattern pattern = Pattern.compile(parser.getRegexPattern(), Pattern.DOTALL);
+                Matcher matcher = pattern.matcher(smsContent);
+
+                if (matcher.find()) {
+                    // Parse field mappings
+                    Map<String, Integer> fieldMappings = objectMapper.readValue(
+                            parser.getFieldMappings(),
+                            new TypeReference<Map<String, Integer>>() {}
+                    );
+
+                    // Extract fields
+                    Map<String, String> extractedFields = new HashMap<>();
+                    extractedFields.put("_bankCode", parser.getBankCode());
+                    extractedFields.put("_bankName", parser.getBankName());
+                    
+                    for (Map.Entry<String, Integer> entry : fieldMappings.entrySet()) {
+                        String fieldName = entry.getKey();
+                        Integer groupIndex = entry.getValue();
+                        try {
+                            String value = matcher.group(groupIndex);
+                            extractedFields.put(fieldName, value);
+                        } catch (Exception e) {
+                            extractedFields.put(fieldName, "ERROR: Group " + groupIndex + " not found");
+                        }
+                    }
+
+                    return ResponseEntity.ok(TestRegexResponse.builder()
+                            .matched(true)
+                            .message("Khớp với parser: " + parser.getBankName() + " (" + parser.getBankCode() + ")")
+                            .extractedFields(extractedFields)
+                            .build());
+                }
+            } catch (Exception e) {
+                // Tiếp tục thử parser khác nếu parser này lỗi
+                continue;
+            }
+        }
+
+        // Không tìm thấy parser nào khớp
+        return ResponseEntity.ok(TestRegexResponse.builder()
+                .matched(false)
+                .message("Không tìm thấy parser nào khớp với SMS này. Đã thử " + parsers.size() + " parsers.")
+                .build());
+    }
+
+    /**
      * Convert entity to response DTO
      */
     private SMSParserResponse convertToResponse(SMSParser parser) {
