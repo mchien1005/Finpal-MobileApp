@@ -24,73 +24,76 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
       notificationCount: 3,
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Summary Card
-            _buildSummaryCard(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Summary Card
+              _buildSummaryCard(),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Add Goal Button
-            _buildAddGoalButton(),
+              // Add Goal Button
+              _buildAddGoalButton(),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // Goals List
-            _buildGoalCard(
-              iconAsset: 'assets/icons/tainghe.svg',
-              iconColor: Colors.white,
-              iconBgColor: const Color(0xFF2196F3),
-              title: 'Tai nghe Sony WH-1000XM5',
-              daysLeft: 40,
-              deadline: '31/12/2025',
-              currentAmount: 850000,
-              targetAmount: 3000000,
-              remainingAmount: 2150000,
-              monthlyContribution: 350000,
-              progress: 0.283,
-            ),
+              // Goals List
+              _buildGoalCard(
+                iconAsset: 'assets/icons/tainghe.svg',
+                iconColor: Colors.white,
+                iconBgColor: const Color(0xFF2196F3),
+                title: 'Tai nghe Sony WH-1000XM5',
+                daysLeft: 40,
+                deadline: '31/12/2025',
+                currentAmount: 850000,
+                targetAmount: 3000000,
+                remainingAmount: 2150000,
+                monthlyContribution: 350000,
+                progress: 0.283,
+              ),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            _buildGoalCard(
-              iconAsset: 'assets/icons/maybay.svg',
-              iconColor: Colors.white,
-              iconBgColor: const Color(0xFF4CAF50),
-              title: 'Du lịch Đà Lạt',
-              daysLeft: 55,
-              deadline: '15/1/2026',
-              currentAmount: 2500000,
-              targetAmount: 5000000,
-              remainingAmount: 2500000,
-              monthlyContribution: 200000,
-              progress: 0.5,
-            ),
+              _buildGoalCard(
+                iconAsset: 'assets/icons/maybay.svg',
+                iconColor: Colors.white,
+                iconBgColor: const Color(0xFF4CAF50),
+                title: 'Du lịch Đà Lạt',
+                daysLeft: 55,
+                deadline: '15/1/2026',
+                currentAmount: 2500000,
+                targetAmount: 5000000,
+                remainingAmount: 2500000,
+                monthlyContribution: 200000,
+                progress: 0.5,
+              ),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            _buildGoalCard(
-              iconAsset: 'assets/icons/laptop.svg',
-              iconColor: Colors.white,
-              iconBgColor: const Color(0xFF9810FA),
-              title: 'Laptop MacBook Air',
-              daysLeft: 221,
-              deadline: '30/6/2026',
-              currentAmount: 8000000,
-              targetAmount: 25000000,
-              remainingAmount: 17000000,
-              monthlyContribution: 2000000,
-              progress: 0.32,
-            ),
+              _buildGoalCard(
+                iconAsset: 'assets/icons/laptop.svg',
+                iconColor: Colors.white,
+                iconBgColor: const Color(0xFF9810FA),
+                title: 'Laptop MacBook Air',
+                daysLeft: 221,
+                deadline: '30/6/2026',
+                currentAmount: 8000000,
+                targetAmount: 25000000,
+                remainingAmount: 17000000,
+                monthlyContribution: 2000000,
+                progress: 0.32,
+              ),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // AI Suggestion Card
-            _buildAISuggestionCard(),
+              // AI Suggestion Card
+              _buildAISuggestionCard(),
 
-            const SizedBox(height: 24),
-          ],
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: CustomBottomNavBar(

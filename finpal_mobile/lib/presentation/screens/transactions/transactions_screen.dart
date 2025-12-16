@@ -5,6 +5,7 @@ import '../../../core/widgets/custom_bottom_nav_bar.dart';
 import '../../../core/utils/bottom_nav_helper.dart';
 import '../../../core/utils/app_bar_with_drawer.dart';
 import '../../../core/widgets/success_notification_dialog.dart';
+import '../../../core/widgets/confirmation_dialog.dart';
 import 'edit_transaction_dialog.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -153,12 +154,19 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     });
   }
 
+  void _deleteTransaction(String id) {
+    setState(() {
+      _transactions.removeWhere((t) => t['id'] == id);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppBarWithDrawer.scrollable(
       context,
       userName: 'Nguyễn Văn A',
       notificationCount: 3,
+      showSearchAction: true,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -566,7 +574,23 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               const SizedBox(width: 8),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+                    ConfirmationDialog.show(
+                      context,
+                      title: 'Xóa giao dịch',
+                      message: 'Bạn có chắc chắn muốn xóa  không? \nHành động này không thể hoàn tác.',
+                      confirmText: 'Xóa',
+                      cancelText: 'Hủy',
+                      confirmColor: const Color(0xFFD7006E),
+                      onConfirm: () {
+                        _deleteTransaction(id);
+                        SuccessNotificationDialog.show(
+                          context,
+                          message: 'Đã xóa giao dịch thành công',
+                        );
+                      },
+                    );
+                  },
                   icon: const Icon(Icons.delete, size: 16),
                   label: const Text('Xóa'),
                   style: OutlinedButton.styleFrom(

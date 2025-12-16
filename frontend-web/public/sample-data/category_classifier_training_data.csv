@@ -1,0 +1,50 @@
+text,category,subcategory,confidence_label
+"Mua sam tai Vinmart",shopping,grocery,high
+"An trua tai quan pho",food_drink,restaurant,high
+"Di Grab ve nha",transportation,ride_hailing,high
+"Xem phim CGV",entertainment,movies,high
+"Dong tien dien thang 12",utilities,electricity,high
+"Luong thang 12 tu cong ty",salary,monthly_salary,high
+"Chuyen tien cho ban",transfer,personal,high
+"Mua thuoc o nha thuoc",health,pharmacy,high
+"Hoc phi khoa tieng Anh",education,course,high
+"Bao hiem nhan tho",insurance,life_insurance,high
+"Ve may bay di Da Nang",travel,flight,high
+"Mua do trang diem",personal_care,cosmetics,high
+"Tien thuong cuoi nam",bonus,year_end_bonus,high
+"Tien cho thue phong tro",rental,room_rental,high
+"Ban lai do cu",other_income,resale,high
+"Mua quan ao o Zara",shopping,clothing,high
+"Uong ca phe Starbucks",food_drink,coffee,high
+"Do xang xe may",transportation,fuel,high
+"Mua sach o Fahasa",education,books,medium
+"Thanh toan Netflix",entertainment,streaming,high
+"Tien nuoc sinh hoat",utilities,water,high
+"Kham benh tai benh vien",health,medical,high
+"Ve xe khach di Vung Tau",travel,bus,high
+"Cat toc tai salon",personal_care,haircut,high
+"Mua laptop lam viec",shopping,electronics,high
+"An sang banh mi",food_drink,street_food,medium
+"Gui xe o nha",transportation,parking,medium
+"Tap gym California",health,fitness,high
+"Dong hoc phi dai hoc",education,tuition,high
+"Bao hiem xe may",insurance,vehicle_insurance,high
+"Dat phong khach san",travel,hotel,high
+"Spa massage",personal_care,spa,high
+"Loi nhuan dau tu",other_income,investment,high
+"Thuong KPI quy 4",bonus,performance_bonus,high
+"Tien thue nha nguyen can",rental,house_rental,high
+"An toi nha hang BBQ",food_drink,restaurant,high
+"Mua mi goi o sieu thi",shopping,grocery,medium
+"Cuoc dien thoai di dong",utilities,phone,high
+"Dang ky Spotify Premium",entertainment,music,high
+"Di taxi san bay",transportation,taxi,high
+"Mua vitamin bo sung",health,supplements,medium
+"Khoa hoc online Udemy",education,online_course,high
+"Chuyen khoan tra no",transfer,debt_payment,high
+"Ve xem concert",entertainment,events,high
+"Sua chua xe may",transportation,maintenance,high
+"Mua qua sinh nhat",shopping,gifts,high
+"Tien tip cho shipper",food_drink,delivery,low
+"Chuyen tien ung ho tu thien",transfer,charity,high
+"Tien loi tu tiet kiem",other_income,interest,high

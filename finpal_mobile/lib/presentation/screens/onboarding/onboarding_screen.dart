@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../screens/home/dashboard_screen.dart';
+import '../home/dashboard_screen.dart';
+
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -38,11 +39,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_completed', true);
-    // if (mounted) {
-    //   Navigator.of(context).pushReplacement(
-    //     MaterialPageRoute(builder: (context) => const DashboardScreen()),
-    //   );
-    // }
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+      );
+    }
   }
 
   @override
@@ -714,6 +715,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             '"Giảm trà sữa từ 200k xuống 100k/tuần, tiết kiệm 400k/tháng"',
           ),
           const SizedBox(height: 20),
+
           // Start button
           SizedBox(
             width: double.infinity,

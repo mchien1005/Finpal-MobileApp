@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "362402920804",
+    "project_id": "finpal-5ee31",
+    "storage_bucket": "finpal-5ee31.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:362402920804:android:52c46e83d473c0bb3e2271",
+        "android_client_info": {
+          "package_name": "com.example.finpal_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7_2jftb2SEEaXL0Wg-hXnWJ2PmmrGZhA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

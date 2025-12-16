@@ -18,6 +18,7 @@ class AppBarWithDrawer {
     Widget? bottomNavigationBar,
     Color? backgroundColor,
     VoidCallback? onNotificationPressed,
+    bool showSearchAction = false,
   }) {
     return ScrollableAppBarScaffold(
       userName: userName,
@@ -26,6 +27,7 @@ class AppBarWithDrawer {
       bottomNavigationBar: bottomNavigationBar,
       backgroundColor: backgroundColor,
       onNotificationPressed: onNotificationPressed,
+      showSearchAction: showSearchAction,
       onLogoutPressed: () {
         ConfirmationDialog.show(
           context,
