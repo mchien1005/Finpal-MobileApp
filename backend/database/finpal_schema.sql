@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS danh_muc (
     ten_danh_muc VARCHAR(100) NOT NULL,
     loai ENUM('INCOME', 'EXPENSE') NOT NULL DEFAULT 'EXPENSE',
     mau_sac VARCHAR(20) NULL COMMENT 'Màu hiển thị: #00C950 hoặc 0xFF00C950',
-    icon VARCHAR(100) NULL COMMENT 'Tên icon: mdi:food, fa:shopping-cart',
+    bieu_tuong VARCHAR(100) NULL COMMENT 'Tên icon: mdi:food, fa:shopping-cart',
     id_cha BIGINT NULL COMMENT 'Category cha (cho sub-category)',
     la_he_thong BOOLEAN DEFAULT FALSE COMMENT 'Category hệ thống không thể xóa',
     thu_tu_hien_thi INT DEFAULT 0,

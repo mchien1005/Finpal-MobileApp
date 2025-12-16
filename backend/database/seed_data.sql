@@ -52,38 +52,40 @@ VALUES (
 -- =====================================================
 -- 2. DANH_MUC - Danh mục hệ thống
 -- =====================================================
-INSERT INTO danh_muc (id_cha, ten_danh_muc, loai, mau_sac, icon)
+INSERT INTO danh_muc (id_cha, ten_danh_muc, loai, mau_sac, bieu_tuong)
 VALUES
 -- ======================
 -- EXPENSE (CHI TIÊU)
+-- Format icon: Sử dụng tên icon từ material_design_icons_flutter package
+-- Trong Flutter: MdiIcons.fromString('food') hoặc MdiIcons.food
 -- ======================
-(NULL, 'Ăn uống', 'EXPENSE', '#FF7043', 'mdi:food'),
-(NULL, 'Di chuyển', 'EXPENSE', '#29B6F6', 'mdi:car'),
-(NULL, 'Mua sắm', 'EXPENSE', '#AB47BC', 'mdi:shopping'),
-(NULL, 'Giải trí', 'EXPENSE', '#FFCA28', 'mdi:movie'),
-(NULL, 'Sức khỏe', 'EXPENSE', '#EF5350', 'mdi:heart-pulse'),
-(NULL, 'Giáo dục', 'EXPENSE', '#42A5F5', 'mdi:school'),
-(NULL, 'Hóa đơn & Tiện ích', 'EXPENSE', '#26A69A', 'mdi:flash'),
-(NULL, 'Nhà ở', 'EXPENSE', '#8D6E63', 'mdi:home'),
-(NULL, 'Gia đình', 'EXPENSE', '#EC407A', 'mdi:account-group'),
-(NULL, 'Bảo hiểm', 'EXPENSE', '#78909C', 'mdi:shield-check'),
-(NULL, 'Đầu tư', 'EXPENSE', '#66BB6A', 'mdi:chart-line'),
-(NULL, 'Quà tặng', 'EXPENSE', '#FFA726', 'mdi:gift'),
-(NULL, 'Công việc', 'EXPENSE', '#5C6BC0', 'mdi:briefcase'),
-(NULL, 'Làm đẹp', 'EXPENSE', '#F06292', 'mdi:face-woman'),
-(NULL, 'Khác (Chi)', 'EXPENSE', '#BDBDBD', 'mdi:dots-horizontal'),
+(NULL, 'Ăn uống', 'EXPENSE', '#FF7043', 'food'),
+(NULL, 'Di chuyển', 'EXPENSE', '#29B6F6', 'car'),
+(NULL, 'Mua sắm', 'EXPENSE', '#AB47BC', 'shopping'),
+(NULL, 'Giải trí', 'EXPENSE', '#FFCA28', 'movie'),
+(NULL, 'Sức khỏe', 'EXPENSE', '#EF5350', 'heart_pulse'),
+(NULL, 'Giáo dục', 'EXPENSE', '#42A5F5', 'school'),
+(NULL, 'Hóa đơn & Tiện ích', 'EXPENSE', '#26A69A', 'flash'),
+(NULL, 'Nhà ở', 'EXPENSE', '#8D6E63', 'home'),
+(NULL, 'Gia đình', 'EXPENSE', '#EC407A', 'account_group'),
+(NULL, 'Bảo hiểm', 'EXPENSE', '#78909C', 'shield_check'),
+(NULL, 'Đầu tư', 'EXPENSE', '#66BB6A', 'chart_line'),
+(NULL, 'Quà tặng', 'EXPENSE', '#FFA726', 'gift'),
+(NULL, 'Công việc', 'EXPENSE', '#5C6BC0', 'briefcase'),
+(NULL, 'Làm đẹp', 'EXPENSE', '#F06292', 'face_woman'),
+(NULL, 'Khác (Chi)', 'EXPENSE', '#BDBDBD', 'dots_horizontal'),
 
 -- ======================
 -- INCOME (THU NHẬP)
 -- ======================
-(NULL, 'Lương', 'INCOME', '#4CAF50', 'mdi:cash'),
-(NULL, 'Thưởng', 'INCOME', '#FFD54F', 'mdi:trophy'),
-(NULL, 'Làm thêm', 'INCOME', '#81C784', 'mdi:clock-outline'),
-(NULL, 'Kinh doanh', 'INCOME', '#26C6DA', 'mdi:store'),
-(NULL, 'Đầu tư', 'INCOME', '#66BB6A', 'mdi:trending-up'),
-(NULL, 'Cho vay', 'INCOME', '#90A4AE', 'mdi:handshake'),
-(NULL, 'Được tặng', 'INCOME', '#FF8A65', 'mdi:gift-open'),
-(NULL, 'Khác (Thu)', 'INCOME', '#BDBDBD', 'mdi:dots-horizontal');
+(NULL, 'Lương', 'INCOME', '#4CAF50', 'cash'),
+(NULL, 'Thưởng', 'INCOME', '#FFD54F', 'trophy'),
+(NULL, 'Làm thêm', 'INCOME', '#81C784', 'clock_outline'),
+(NULL, 'Kinh doanh', 'INCOME', '#26C6DA', 'store'),
+(NULL, 'Đầu tư', 'INCOME', '#66BB6A', 'trending_up'),
+(NULL, 'Cho vay', 'INCOME', '#90A4AE', 'handshake'),
+(NULL, 'Được tặng', 'INCOME', '#FF8A65', 'gift_open'),
+(NULL, 'Khác (Thu)', 'INCOME', '#BDBDBD', 'dots_horizontal');
 
 -- =====================================================
 -- 3. BO_PHAN_TICH_SMS - Cấu hình parse SMS ngân hàng
