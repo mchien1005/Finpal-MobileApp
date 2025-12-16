@@ -56,26 +56,26 @@ const UserManagementPage = () => {
       dataIndex: 'userId',
       key: 'userId',
       width: 100,
-      align: 'center',
-      render: (text) => <Text style={{ color: '#155dfc' }}>{text}</Text>,
+      align: 'left',
+      render: (text) => <Text style={{ color: '#2563eb', fontSize: 14, fontWeight: 500 }}>{text}</Text>,
     },
     {
       title: 'Người dùng',
       dataIndex: 'user',
       key: 'user',
       width: 200,
-      align: 'center',
+      align: 'left',
       render: (user) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Avatar
             style={{
-              background: 'linear-gradient(135deg, #51a2ff 0%, #615fff 100%)',
+              background: 'linear-gradient(135deg, #60a5fa 0%, #8b5cf6 100%)',
             }}
             size={32}
           >
             {user.name.charAt(0)}
           </Avatar>
-          <Text>{user.name}</Text>
+          <Text style={{ fontSize: 14, color: '#111827' }}>{user.name}</Text>
         </div>
       ),
     },
@@ -84,11 +84,11 @@ const UserManagementPage = () => {
       dataIndex: 'contact',
       key: 'contact',
       width: 220,
-      align: 'center',
+      align: 'left',
       render: (contact) => (
         <div>
-          <div style={{ marginBottom: 4 }}><Text>{contact.email}</Text></div>
-          <div><Text type="secondary" style={{ fontSize: 12 }}>{contact.phone}</Text></div>
+          <div style={{ marginBottom: 2 }}><Text style={{ fontSize: 14, color: '#111827' }}>{contact.email}</Text></div>
+          <div><Text type="secondary" style={{ fontSize: 12, color: '#6b7280' }}>{contact.phone}</Text></div>
         </div>
       ),
     },
@@ -97,14 +97,17 @@ const UserManagementPage = () => {
       dataIndex: 'bank',
       key: 'bank',
       width: 100,
-      align: 'center',
+      align: 'left',
       render: (bank) => (
         <Tag
           style={{
             background: '#dbeafe',
-            color: '#1447e6',
+            color: '#2563eb',
             border: 'none',
-            borderRadius: 8,
+            borderRadius: 6,
+            fontSize: 12,
+            fontWeight: 500,
+            padding: '2px 10px',
           }}
         >
           {bank}
@@ -116,12 +119,12 @@ const UserManagementPage = () => {
       dataIndex: 'status',
       key: 'status',
       width: 110,
-      align: 'center',
+      align: 'left',
       render: (status) => {
         const statusConfig = {
-          Active: { bg: '#dcfce7', color: '#008236' },
-          Inactive: { bg: '#f3f4f6', color: '#364153' },
-          Banned: { bg: '#ffe2e2', color: '#c10007' },
+          Active: { bg: '#dcfce7', color: '#16a34a' },
+          Inactive: { bg: '#f3f4f6', color: '#4b5563' },
+          Banned: { bg: '#fee2e2', color: '#dc2626' },
         };
         const config = statusConfig[status] || statusConfig.Active;
         return (
@@ -130,7 +133,10 @@ const UserManagementPage = () => {
               background: config.bg,
               color: config.color,
               border: 'none',
-              borderRadius: 8,
+              borderRadius: 6,
+              fontSize: 12,
+              fontWeight: 500,
+              padding: '2px 10px',
             }}
           >
             {status}
@@ -143,29 +149,32 @@ const UserManagementPage = () => {
       dataIndex: 'transactions',
       key: 'transactions',
       width: 100,
-      align: 'center',
+      align: 'left',
+      render: (text) => <Text style={{ fontSize: 14, color: '#111827' }}>{text}</Text>,
     },
     {
       title: 'Tổng chi tiêu',
       dataIndex: 'totalSpending',
       key: 'totalSpending',
       width: 130,
-      align: 'center',
+      align: 'left',
+      render: (text) => <Text style={{ fontSize: 14, color: '#111827' }}>{text}</Text>,
     },
     {
       title: 'Ngày đăng ký',
       dataIndex: 'registeredDate',
       key: 'registeredDate',
       width: 120,
-      align: 'center',
+      align: 'left',
+      render: (text) => <Text style={{ fontSize: 14, color: '#111827' }}>{text}</Text>,
     },
     {
       title: 'Hoạt động',
       dataIndex: 'lastActive',
       key: 'lastActive',
       width: 130,
-      align: 'center',
-      render: (text) => <Text type="secondary" style={{ fontSize: 14 }}>{text}</Text>,
+      align: 'left',
+      render: (text) => <Text type="secondary" style={{ fontSize: 14, color: '#6b7280' }}>{text}</Text>,
     },
     {
       title: 'Thao tác',
@@ -179,8 +188,8 @@ const UserManagementPage = () => {
             setUserDetailVisible(true);
           }}
           type="text"
-          icon={<EyeOutlined />}
-          style={{ color: '#0a0a0a' }}
+          icon={<EyeOutlined style={{ fontSize: 16 }} />}
+          style={{ color: '#111827' }}
         />
       ),
     },
@@ -319,24 +328,25 @@ const UserManagementPage = () => {
             <Col xs={24} sm={12} lg={6} key={index}>
               <Card
                 style={{
-                  borderRadius: 14,
-                  border: '1px solid rgba(0, 0, 0, 0.1)',
+                  borderRadius: 12,
+                  border: '1px solid #e5e7eb',
                   boxShadow: 'none',
+                  background: '#fff',
                 }}
-                bodyStyle={{ padding: 24 }}
+                bodyStyle={{ padding: '20px 24px' }}
               >
-                <div style={{ marginBottom: 32 }}>
-                  <Text style={{ color: '#4a5565', fontSize: 14, display: 'block' }}>
+                <div style={{ marginBottom: 20 }}>
+                  <Text style={{ color: '#6b7280', fontSize: 14, display: 'block', fontWeight: 400 }}>
                     {card.title}
                   </Text>
                 </div>
-                <div style={{ marginBottom: 32 }}>
-                  <Text style={{ fontSize: 16, color: '#101828', display: 'block' }}>
+                <div style={{ marginBottom: 16 }}>
+                  <Text style={{ fontSize: 24, color: '#0a0a0a', display: 'block', fontWeight: 600 }}>
                     {card.value}
                   </Text>
                 </div>
                 <div>
-                  <Text style={{ color: card.changeColor, fontSize: 14 }}>
+                  <Text style={{ color: card.changeColor, fontSize: 12, fontWeight: 400 }}>
                     {card.change}
                   </Text>
                 </div>
@@ -348,25 +358,27 @@ const UserManagementPage = () => {
         {/* Search and Filters */}
         <Card
           style={{
-            borderRadius: 14,
-            border: '1px solid rgba(0, 0, 0, 0.1)',
+            borderRadius: 12,
+            border: '1px solid #e5e7eb',
             boxShadow: 'none',
             marginBottom: 24,
+            background: '#fff',
           }}
-          bodyStyle={{ padding: 24 }}
+          bodyStyle={{ padding: '20px 24px' }}
         >
-          <Row gutter={16} align="middle">
-            <Col style={{ width: 480 }}>
+          <Row gutter={12} align="middle" wrap={false}>
+            <Col flex="auto">
               <Input
                 placeholder="Tìm kiếm theo tên, email, ID..."
-                prefix={<SearchOutlined style={{ color: '#717182' }} />}
+                prefix={<SearchOutlined style={{ color: '#9ca3af' }} />}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 style={{
-                  background: '#f3f3f5',
-                  border: 'none',
+                  background: '#f9fafb',
+                  border: '1px solid #e5e7eb',
                   borderRadius: 8,
                   height: 40,
+                  fontSize: 14,
                 }}
               />
             </Col>
@@ -380,17 +392,19 @@ const UserManagementPage = () => {
               >
                 <Button
                   style={{
-                    background: '#f3f3f5',
-                    border: 'none',
+                    background: '#fff',
+                    border: '1px solid #e5e7eb',
                     borderRadius: 8,
                     height: 40,
-                    minWidth: 130,
-                    padding: '0 20px',
+                    minWidth: 100,
+                    padding: '0 16px',
+                    fontSize: 14,
+                    color: '#374151',
                   }}
                 >
                   <Space>
                     {selectedStatus}
-                    <DownOutlined />
+                    <DownOutlined style={{ fontSize: 12 }} />
                   </Space>
                 </Button>
               </Dropdown>
@@ -402,9 +416,11 @@ const UserManagementPage = () => {
                 style={{
                   borderRadius: 8,
                   height: 40,
-                  padding: '0 20px',
-                  background: showAdvancedFilter ? '#155dfc' : 'transparent',
-                  color: showAdvancedFilter ? '#fff' : '#000',
+                  padding: '0 16px',
+                  background: showAdvancedFilter ? '#fff' : '#fff',
+                  color: '#374151',
+                  border: '1px solid #e5e7eb',
+                  fontSize: 14,
                 }}
               >
                 Lọc nâng cao
@@ -415,10 +431,13 @@ const UserManagementPage = () => {
                 type="primary"
                 icon={<DownloadOutlined />}
                 style={{
-                  background: '#155dfc',
+                  background: '#2563eb',
                   borderRadius: 8,
                   height: 40,
-                  padding: '0 20px',
+                  padding: '0 16px',
+                  border: 'none',
+                  fontSize: 14,
+                  fontWeight: 500,
                 }}
               >
                 Export CSV
@@ -428,8 +447,8 @@ const UserManagementPage = () => {
 
           {/* Advanced Filter Panel - show below when toggled */}
           {showAdvancedFilter && (
-            <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid #e5e7eb' }}>
-              <Row gutter={[16, 16]}>
+            <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid #e5e7eb' }}>
+              <Row gutter={[12, 12]}>
                 <Col xs={24} sm={12}>
                   <div style={{ marginBottom: 8 }}>
                     <label style={{ fontSize: 14, fontWeight: 500, color: '#101828' }}>
@@ -542,9 +561,10 @@ const UserManagementPage = () => {
         {/* Users Table */}
         <Card
           style={{
-            borderRadius: 14,
-            border: '1px solid rgba(0, 0, 0, 0.1)',
+            borderRadius: 12,
+            border: '1px solid #e5e7eb',
             boxShadow: 'none',
+            background: '#fff',
           }}
           bodyStyle={{ padding: 0 }}
         >
@@ -556,11 +576,11 @@ const UserManagementPage = () => {
               pageSize: 5,
               total: totalFiltered,
               showSizeChanger: false,
-              showTotal: (total) => `Hiển thị 1-${Math.min(5, total)} trong tổng số ${total.toLocaleString()} người dùng`,
-              style: { padding: '24px' },
+              showTotal: (total) => `Hiển thị 1-5 trong tổng số ${total.toLocaleString()} người dùng`,
+              style: { padding: '16px 24px', marginBottom: 0 },
             }}
             tableLayout="fixed"
-            style={{ borderRadius: 14 }}
+            style={{ borderRadius: 12 }}
           />
         </Card>
 
