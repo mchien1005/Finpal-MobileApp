@@ -1,7 +1,7 @@
 import React from 'react';
 import { CloseOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 
-const DeleteUserConfirmModal = ({ open, onConfirm, onCancel, userName, userEmail }) => {
+const DisableUserConfirmModal = ({ open, onConfirm, onCancel, userName, userEmail }) => {
   if (!open) return null;
 
   return (
@@ -83,7 +83,7 @@ const DeleteUserConfirmModal = ({ open, onConfirm, onCancel, userName, userEmail
                 lineHeight: '28px',
               }}
             >
-              Xóa User
+              Vô hiệu hóa tài khoản
             </h3>
 
             {/* Description */}
@@ -96,7 +96,7 @@ const DeleteUserConfirmModal = ({ open, onConfirm, onCancel, userName, userEmail
                 lineHeight: '20px',
               }}
             >
-              Bạn có chắc chắn muốn xóa người dùng này?
+              Bạn có chắc chắn muốn vô hiệu hóa tài khoản này?
             </p>
           </div>
         </div>
@@ -132,7 +132,7 @@ const DeleteUserConfirmModal = ({ open, onConfirm, onCancel, userName, userEmail
             marginBottom: 24,
           }}
         >
-          Hành động này không thể hoàn tác. Admin sẽ bị xóa vĩnh viễn khỏi hệ thống và mất tất cả quyền truy cập.
+          Người dùng sẽ không thể đăng nhập và truy cập hệ thống cho đến khi tài khoản được kích hoạt lại.
         </p>
 
         {/* Action Buttons */}
@@ -188,4 +188,4 @@ const DeleteUserConfirmModal = ({ open, onConfirm, onCancel, userName, userEmail
   );
 };
 
-export default DeleteUserConfirmModal;
+export default DisableUserConfirmModal;
