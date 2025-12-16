@@ -11,12 +11,15 @@ import {
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { useUserSearch } from '../../hooks/useUserSearch';
+import UserDetailModal from '../../components/admin/UserDetailModal';
 
 const { Title, Text } = Typography;
 
 const UserManagementPage = () => {
   const { collapsed } = useSidebar();
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userDetailVisible, setUserDetailVisible] = useState(false);
 
   // Stats cards data
   const statsCards = [
@@ -171,6 +174,10 @@ const UserManagementPage = () => {
       align: 'center',
       render: (_, record) => (
         <Button
+          onClick={() => {
+            setSelectedUser(record);
+            setUserDetailVisible(true);
+          }}
           type="text"
           icon={<EyeOutlined />}
           style={{ color: '#0a0a0a' }}
@@ -544,6 +551,13 @@ const UserManagementPage = () => {
             style={{ borderRadius: 14 }}
           />
         </Card>
+
+        {/* User Detail Modal */}
+        <UserDetailModal
+          visible={userDetailVisible}
+          onClose={() => setUserDetailVisible(false)}
+          user={selectedUser}
+        />
       </div>
     </div>
   );
