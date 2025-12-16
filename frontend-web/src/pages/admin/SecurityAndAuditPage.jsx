@@ -2,9 +2,7 @@
 import React, { useState } from 'react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import { useSidebar } from '../../contexts/SidebarContext';
-import NotificationTemplatesTab from './content-management/NotificationTemplatesTab';
-import TipsTab from './content-management/TipsTab';
-import FAQsTab from './content-management/FAQsTab';
+import PermissionTab from './security-audit/PermissionTab';
 
 const tabs = ['Nhật ký Audit', 'Phân quyền', 'Quyền riêng tư Dữ liệu'];
 
@@ -85,13 +83,9 @@ const SecurityAndAuditPage = () => {
         </div>
 
         {/* Tab Panel Content */}
-        {activeTab === 0 && <import tab vô đây />}
-        {activeTab === 1 && <import tab vô đây />}
-        {activeTab === 2 && <import tab vô đây />}
-        {/* //ví dụ: */}
-        {/* {activeTab === 0 && <NotificationTemplatesTab />}
-        {activeTab === 1 && <TipsTab />}
-        {activeTab === 2 && <FAQsTab />} */}
+        {activeTab === 0 && <div>Nhật ký Audit - Coming soon</div>}
+        {activeTab === 1 && <div>Phân quyền - Coming soon</div>}
+        {activeTab === 2 && <PermissionTab />}
       </div>
     </div>
   );
