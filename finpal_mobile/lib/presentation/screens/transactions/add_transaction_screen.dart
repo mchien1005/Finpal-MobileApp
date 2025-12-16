@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/custom_bottom_nav_bar.dart';
 import '../../../core/utils/app_bar_with_drawer.dart';
+import '../../../core/utils/bottom_nav_helper.dart';
+import '../../../data/services/transaction_service.dart';
+import '../../../data/services/sms_service.dart';
+import '../../../data/models/category.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -15,16 +21,376 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _transactionService = TransactionService();
+  final _smsService = SmsService();
+  final SmsQuery _smsQuery = SmsQuery();
   String _transactionType = 'expense'; // 'expense' or 'income'
   String? _selectedSource;
-  String? _selectedCategory;
+  Category? _selectedCategory;
   DateTime? _selectedDate;
+  bool _isLoading = false;
+  bool _isSmsScanning = false;
+  List<Category> _categories = [];
+  bool _isCategoriesLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    setState(() {
+      _isCategoriesLoading = true;
+    });
+
+    try {
+      final type = _transactionType == 'expense' ? 'EXPENSE' : 'INCOME';
+      final categories = await _transactionService.getCategories(type: type);
+      setState(() {
+        _categories = categories;
+        _isCategoriesLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isCategoriesLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể tải danh mục: ${e.toString()}'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Request SMS permission
+  Future<bool> _requestSmsPermission() async {
+    var status = await Permission.sms.status;
+    if (status.isDenied) {
+      status = await Permission.sms.request();
+    }
+    return status.isGranted;
+  }
+
+  /// Handle SMS scanning
+  Future<void> _handleScanSms() async {
+    // Check permission
+    final hasPermission = await _requestSmsPermission();
+    if (!hasPermission) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cần quyền đọc SMS để quét tin nhắn ngân hàng'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _isSmsScanning = true;
+    });
+
+    try {
+      // Get SMS messages from the last 30 days
+      final messages = await _smsQuery.querySms(
+        kinds: [SmsQueryKind.inbox],
+        count: 100, // Limit to last 100 messages
+      );
+
+      print('📱 Total SMS found: ${messages.length}');
+
+      // Filter bank SMS messages (check both sender and message body for bank keywords)
+      // Use a Set to deduplicate by amount + date pattern
+      final Set<String> seenTransactions = {};
+      final bankMessages = messages.where((sms) {
+        final sender = sms.sender ?? sms.address ?? '';
+        final body = sms.body ?? '';
+
+        // Check if this is a bank SMS
+        if (!_smsService.isBankSms(sender, messageBody: body)) {
+          return false;
+        }
+
+        // Extract amount from message using regex (e.g., "+10,000,000 VND" or "-500,000 VND")
+        final amountRegex = RegExp(
+          r'[+-]?[\d,\.]+\s*(?:VND|đ|dong)',
+          caseSensitive: false,
+        );
+        final amountMatch = amountRegex.firstMatch(body);
+        final amount = amountMatch?.group(0) ?? '';
+
+        // Extract date pattern (e.g., "13:11 25/11/2025" or "25/11/2025")
+        final dateRegex = RegExp(
+          r'\d{1,2}[:/]\d{1,2}(?:[:/]\d{2,4})?(?:\s+\d{1,2}/\d{1,2}/\d{2,4})?',
+        );
+        final dateMatch = dateRegex.firstMatch(body);
+        final dateStr = dateMatch?.group(0) ?? '';
+
+        // Create unique key from amount + date (to catch same transaction with different ref numbers)
+        final transactionKey = '${amount}_${dateStr}';
+
+        if (seenTransactions.contains(transactionKey)) {
+          print('⏭️ Skipping duplicate transaction: $amount at $dateStr');
+          return false;
+        }
+        seenTransactions.add(transactionKey);
+        print('✅ Accepting SMS: $amount at $dateStr');
+        return true;
+      }).toList();
+
+      print('🏦 Bank SMS found (after dedup): ${bankMessages.length}');
+
+      if (bankMessages.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Không tìm thấy tin nhắn ngân hàng nào'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Show confirmation dialog
+      if (mounted) {
+        final shouldProceed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Xác nhận quét SMS'),
+            content: Text(
+              'Tìm thấy ${bankMessages.length} tin nhắn từ ngân hàng.\n\nBạn có muốn quét và thêm giao dịch tự động?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Hủy'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD7006E),
+                ),
+                child: const Text(
+                  'Quét ngay',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldProceed != true) {
+          return;
+        }
+      }
+
+      // Convert to list of maps for processing
+      // Use bank name from message body if sender is a phone number
+      final smsData = bankMessages.map((sms) {
+        final rawSender = sms.sender ?? sms.address ?? '';
+        final messageBody = sms.body ?? '';
+        // Extract bank name from message if sender is just a phone number
+        final sender = _smsService.getBankNameFromMessage(
+          rawSender,
+          messageBody,
+        );
+        return {
+          'sender': sender,
+          'message': messageBody,
+          'date': sms.date ?? DateTime.now(),
+        };
+      }).toList();
+
+      // Process SMS messages
+      final result = await _smsService.scanAndProcessSms(smsData);
+
+      // Show result
+      if (mounted) {
+        _showScanResultDialog(result);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi quét SMS: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSmsScanning = false;
+        });
+      }
+    }
+  }
+
+  /// Show scan result dialog
+  void _showScanResultDialog(SmsScanResult result) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green),
+            SizedBox(width: 8),
+            Text('Kết quả quét SMS'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildResultRow('Tổng SMS đã quét:', '${result.totalSmsScanned}'),
+            _buildResultRow('Giao dịch hợp lệ:', '${result.validTransactions}'),
+            _buildResultRow(
+              'Đã thêm thành công:',
+              '${result.addedTransactions}',
+              valueColor: Colors.green,
+            ),
+            if (result.failedTransactions > 0)
+              _buildResultRow(
+                'Thất bại:',
+                '${result.failedTransactions}',
+                valueColor: Colors.red,
+              ),
+            if (result.errors.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Text(
+                'Chi tiết lỗi:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              ...result.errors
+                  .take(3)
+                  .map(
+                    (error) => Text(
+                      '• $error',
+                      style: const TextStyle(fontSize: 12, color: Colors.red),
+                    ),
+                  ),
+            ],
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD7006E),
+            ),
+            child: const Text('Đóng', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultRow(String label, String value, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label),
+          Text(
+            value,
+            style: TextStyle(fontWeight: FontWeight.bold, color: valueColor),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void dispose() {
     _amountController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleAddTransaction() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_selectedSource == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn nguồn giao dịch'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn ngày giao dịch'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final amount = double.parse(_amountController.text);
+      final type = _transactionType == 'expense' ? 'EXPENSE' : 'INCOME';
+
+      await _transactionService.addTransaction(
+        type: type,
+        amount: amount,
+        transactionSource: _selectedSource!,
+        categoryId: _selectedCategory?.id,
+        description: _descriptionController.text,
+        transactionDate: _selectedDate!,
+        isAuto: false,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Thêm giao dịch thành công!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Clear form
+        _amountController.clear();
+        _descriptionController.clear();
+        setState(() {
+          _selectedSource = null;
+          _selectedCategory = null;
+          _selectedDate = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -71,31 +437,49 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD7006E),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      SvgPicture.asset(
-                        'assets/icons/scanner.svg',
-                        width: 16,
-                        height: 16,
+                _isSmsScanning
+                    ? const SizedBox(
+                        width: 80,
+                        height: 36,
+                        child: Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFFD7006E),
+                            ),
+                          ),
+                        ),
+                      )
+                    : ElevatedButton(
+                        onPressed: _handleScanSms,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD7006E),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/scanner.svg',
+                              width: 16,
+                              height: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Quét ngay',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
                       ),
-                      SizedBox(width: 4),
-                      Text('Quét ngay', style: TextStyle(fontSize: 12)),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
@@ -235,36 +619,59 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: _selectedCategory,
-                    hint: const Text('Chọn danh mục'),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: AppColors.inputBackground,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                    items:
-                        ['Ăn uống', 'Di chuyển', 'Mua sắm', 'Giải trí', 'Khác']
-                            .map(
-                              (item) => DropdownMenuItem(
-                                value: item,
-                                child: Text(item),
+                  _isCategoriesLoading
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.inputBackground,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            children: [
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
-                            )
-                            .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedCategory = value;
-                      });
-                    },
-                  ),
+                              SizedBox(width: 12),
+                              Text('Đang tải danh mục...'),
+                            ],
+                          ),
+                        )
+                      : DropdownButtonFormField<Category>(
+                          value: _selectedCategory,
+                          hint: const Text('Chọn danh mục'),
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: AppColors.inputBackground,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                          ),
+                          items: _categories
+                              .map(
+                                (category) => DropdownMenuItem<Category>(
+                                  value: category,
+                                  child: Text(category.name),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedCategory = value;
+                            });
+                          },
+                        ),
                   const SizedBox(height: 20),
 
                   // Description Field
@@ -357,36 +764,34 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   // Add Transaction Button
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Thêm giao dịch thành công!'),
+                    child: _isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFFD7006E),
                             ),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD7006E),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add, size: 16),
-                          SizedBox(width: 8),
-                          Text(
-                            'Thêm giao dịch',
-                            style: TextStyle(fontSize: 14),
+                          )
+                        : ElevatedButton(
+                            onPressed: _handleAddTransaction,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD7006E),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add, size: 16),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Thêm giao dịch',
+                                  style: TextStyle(fontSize: 14),
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -494,7 +899,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       onTap: () {
         setState(() {
           _transactionType = type;
+          _selectedCategory = null; // Reset selected category
         });
+        _loadCategories(); // Reload categories for new type
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
