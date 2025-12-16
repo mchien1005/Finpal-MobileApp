@@ -186,8 +186,8 @@ const UserManagementPage = () => {
     },
   ];
 
-  // Table data
-  const dataSource = [
+  // Table data - convert to state so we can delete users
+  const [dataSource, setDataSource] = useState([
     {
       key: '1',
       userId: 'USR001',
@@ -248,7 +248,7 @@ const UserManagementPage = () => {
       registeredDate: '05/01/2024',
       lastActive: '1 tuần trước',
     },
-  ];
+  ]);
 
   const statusMenuItems = [
     { key: 'all', label: 'Tất cả' },
@@ -275,6 +275,11 @@ const UserManagementPage = () => {
 
   const handleToggleAdvancedFilter = () => {
     setShowAdvancedFilter(!showAdvancedFilter);
+  };
+
+  const handleDeleteUser = (userId) => {
+    // Remove user from dataSource
+    setDataSource(prev => prev.filter(user => user.userId !== userId));
   };
 
   return (
@@ -557,6 +562,7 @@ const UserManagementPage = () => {
           visible={userDetailVisible}
           onClose={() => setUserDetailVisible(false)}
           user={selectedUser}
+          onDeleteSuccess={handleDeleteUser}
         />
       </div>
     </div>

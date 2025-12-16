@@ -1,9 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Modal, Row, Col, Tag, Button } from 'antd';
 import { CloseOutlined, SyncOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import DeleteUserConfirmModal from './DeleteUserConfirmModal';
+import SuccessModal from '../common/SuccessModal';
 
-const UserDetailModal = ({ visible, onClose, user }) => {
+const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess }) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+
   if (!user) return null;
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    setShowDeleteConfirm(false);
+    // Simulate delete API call
+    setTimeout(() => {
+      setShowDeleteSuccess(true);
+    }, 300);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+  };
+
+  const handleSuccessClose = () => {
+    setShowDeleteSuccess(false);
+    
+    // Delay closing parent modal to ensure smooth transition
+    setTimeout(() => {
+      if (onDeleteSuccess) {
+        onDeleteSuccess(user.userId); // Notify parent to remove user from list
+      }
+      onClose(); // Close the user detail modal
+    }, 100);
+  };
 
   const loginHistory = [
     {
@@ -270,6 +303,7 @@ const UserDetailModal = ({ visible, onClose, user }) => {
           <Col span={8}>
             <Button
               icon={<DeleteOutlined />}
+              onClick={handleDeleteClick}
               style={{
                 width: '100%',
                 height: 40,
@@ -283,6 +317,23 @@ const UserDetailModal = ({ visible, onClose, user }) => {
           </Col>
         </Row>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteUserConfirmModal
+        open={showDeleteConfirm}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        userName={user.user?.name}
+        userEmail={user.contact?.email}
+      />
+
+      {/* Success Modal */}
+      <SuccessModal
+        open={showDeleteSuccess}
+        onClose={handleSuccessClose}
+        message="Xóa người dùng thành công!"
+        buttonText="Đồng ý"
+      />
     </Modal>
   );
 };
