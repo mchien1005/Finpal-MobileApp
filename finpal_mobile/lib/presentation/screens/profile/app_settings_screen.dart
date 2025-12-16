@@ -3,8 +3,10 @@ import 'package:finpal_mobile/presentation/screens/profile/help_center_screen.da
 import 'package:finpal_mobile/presentation/screens/profile/profile_screen.dart';
 import 'package:finpal_mobile/presentation/screens/profile/change_password_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../notifications/notifications_screen.dart';
+import 'data_privacy_screen.dart';
 
 class AppSettingsScreen extends StatelessWidget {
   const AppSettingsScreen({super.key});
@@ -135,7 +137,8 @@ class AppSettingsScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const ChangePasswordScreen(),
+                              builder: (context) =>
+                                  const ChangePasswordScreen(),
                             ),
                           );
                         },
@@ -151,6 +154,21 @@ class AppSettingsScreen extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (context) => const HelpCenterScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _buildSettingCard(
+                        context: context,
+                        icon: MdiIcons.databaseOutline,
+                        title: 'Dữ liệu cá nhân',
+                        subtitle: 'Quản lý dữ liệu cá nhân',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const DataPrivacyScreen(),
                             ),
                           );
                         },
