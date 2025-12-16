@@ -203,8 +203,8 @@ public class SMSParserController {
      * Hệ thống sẽ tự động thử tất cả parsers trong database để tìm parser phù hợp
      */
     @PostMapping("/test-simple")
-    public ResponseEntity<TestRegexResponse> testSmsSimple(@RequestBody Map<String, String> request) {
-        String smsContent = request.get("smsContent");
+    public ResponseEntity<TestRegexResponse> testSmsSimple(@RequestBody TestSmsSimpleRequest request) {
+        String smsContent = request.getSmsContent();
         
         if (smsContent == null || smsContent.isBlank()) {
             return ResponseEntity.badRequest().body(TestRegexResponse.builder()
