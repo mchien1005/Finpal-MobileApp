@@ -3,6 +3,9 @@ import React, { useState } from 'react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import { useSidebar } from '../../contexts/SidebarContext';
 import PermissionTab from './security-audit/PermissionTab';
+// import NotificationTemplatesTab from './content-management/NotificationTemplatesTab';
+// import TipsTab from './content-management/TipsTab';
+// import FAQsTab from './content-management/FAQsTab';
 
 const tabs = ['Nhật ký Audit', 'Phân quyền', 'Quyền riêng tư Dữ liệu'];
 
