@@ -23,13 +23,11 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import { useSidebar } from '../../contexts/SidebarContext';
+import AdminLayout from '../../layouts/AdminLayout';
 
 const { Title, Text } = Typography;
 
 const AdminDashboardPage = () => {
-  const { collapsed } = useSidebar();
 
   // Stats cards data
   const stats = [
@@ -162,20 +160,8 @@ const AdminDashboardPage = () => {
   ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#F9FAFB' }}>
-      <AdminSidebar />
-
-      {/* Main Content */}
-      <div
-        style={{
-          marginLeft: collapsed ? 80 : 280,
-          flex: 1,
-          transition: 'margin-left 0.3s',
-          padding: 32,
-          background: 'linear-gradient(142deg, #F9FAFB 0%, rgba(239, 246, 255, 0.3) 100%)',
-        }}
-      >
-        {/* Header */}
+    <AdminLayout>
+      {/* Header */}
         <div style={{ marginBottom: 32 }}>
           <Title level={2} style={{ margin: 0, marginBottom: 4, color: '#101828' }}>
             Dashboard & Analytics
@@ -574,8 +560,7 @@ const AdminDashboardPage = () => {
             )}
           />
         </Card>
-      </div>
-    </div>
+    </AdminLayout>
   );
 };
 

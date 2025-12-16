@@ -5,6 +5,7 @@ import viVN from 'antd/locale/vi_VN';
 import LoginPage from './pages/LoginPage';
 // Admin Pages
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import UserManagementPage from './pages/admin/UserManagementPage';
 // import ContentManagementPage from './pages/admin/ContentManagementPage';
 // import AIModelManagementPage from './pages/admin/AIModelManagementPage';
 // import SecurityAndAuditPage from './pages/admin/SecurityAndAuditPage';
@@ -49,6 +50,14 @@ function App() {
             element={
               <AdminRoute>
                 <AdminDashboardPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminRoute>
+                <UserManagementPage />
               </AdminRoute>
             }
           />
