@@ -885,9 +885,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 2,
         onTap: (index) {
-          // TODO: Navigate to different screens based on index
-          if (index == 2) return; // Already on add transaction screen
-          // Handle navigation to other screens
+          BottomNavHelper.navigateToIndex(context, index, 2);
         },
       ),
     );

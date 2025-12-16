@@ -1,0 +1,51 @@
+user_id,amount,category,merchant,time_hour,day_of_week,is_anomaly,anomaly_reason
+user_001,150000,food_drink,THE COFFEE HOUSE,9,1,0,
+user_001,250000,food_drink,Quan An Ngon,12,2,0,
+user_001,5500000,shopping,APPLE STORE,15,6,1,unusual_high_amount
+user_001,180000,transportation,GRAB,8,1,0,
+user_001,15000000,transfer,Unknown Account,2,0,1,unusual_time_large_transfer
+user_001,350000,food_drink,Pizza Hut,19,5,0,
+user_001,89000,shopping,CIRCLE K,22,3,0,
+user_001,8000000,shopping,LAZADA,14,4,1,unusual_high_amount
+user_001,120000,entertainment,SPOTIFY,10,1,0,
+user_001,45000,transportation,VinaSun,17,2,0,
+user_002,200000,food_drink,HIGHLAND COFFEE,10,1,0,
+user_002,12500000,shopping,Dien May Xanh,11,6,0,
+user_002,3500000,utilities,EVN,9,1,0,
+user_002,950000,food_drink,Restaurant,3,0,1,unusual_time
+user_002,75000,food_drink,7-ELEVEN,14,3,0,
+user_002,25000000,transfer,NGUYEN VAN X,1,0,1,unusual_time_large_transfer
+user_002,1200000,health,California Fitness,18,2,0,
+user_002,680000,shopping,PHARMACITY,15,4,0,
+user_002,4500000,personal_care,Luxury Spa,20,6,0,
+user_002,150000,food_drink,PHUC LONG,11,5,0,
+user_003,180000,food_drink,Gong Cha,14,1,0,
+user_003,750000,transportation,BE,7,1,0,
+user_003,50000000,transfer,Crypto Exchange,4,0,1,suspicious_merchant_unusual_time
+user_003,1500000,utilities,SAWACO,10,2,0,
+user_003,320000,entertainment,CGV,20,6,0,
+user_003,18000000,salary,Company ABC,9,5,0,
+user_003,95000,shopping,MINISTOP,23,4,0,
+user_003,2800000,utilities,VNPT,11,1,0,
+user_003,15000000,education,Hoc phi,8,1,0,
+user_003,420000,food_drink,KFC,12,3,0,
+user_004,280000,food_drink,STARBUCKS,9,1,0,
+user_004,9500000,shopping,iPhone Case,16,5,1,unusual_category_amount
+user_004,1100000,shopping,SENDO,14,2,0,
+user_004,35000,transportation,Parking,8,1,0,
+user_004,7500000,other_income,Freelance,15,4,0,
+user_004,560000,food_drink,PIZZA HUT,19,6,0,
+user_004,30000000,transfer,Unknown,3,0,1,unusual_time_large_transfer
+user_004,2500000,insurance,Prudential,10,1,0,
+user_004,650000,health,Guardian,16,3,0,
+user_004,1850000,shopping,LOTTE Mart,11,6,0,
+user_005,120000,food_drink,Banh Mi,7,1,0,
+user_005,450000,entertainment,NETFLIX,10,1,0,
+user_005,3200000,travel,VietJet,14,2,0,
+user_005,20000000,shopping,Rolex Watch,23,0,1,luxury_unusual_time
+user_005,500000,shopping,VINMART,10,6,0,
+user_005,2000000,bonus,KPI Bonus,9,5,0,
+user_005,380000,food_drink,HIGHLANDS,15,3,0,
+user_005,1900000,utilities,PETROLIMEX,11,1,0,
+user_005,12000000,salary,Monthly Salary,9,5,0,
+user_005,45000000,transfer,Foreign Account,2,0,1,suspicious_foreign_transfer

@@ -4,7 +4,6 @@ import '../constants/app_colors.dart';
 /// Reusable confirmation dialog widget
 /// Usage: ConfirmationDialog.show(context, ...)
 class ConfirmationDialog {
-  /// Standard confirmation dialog
   static Future<bool?> show(
     BuildContext context, {
     required String title,
