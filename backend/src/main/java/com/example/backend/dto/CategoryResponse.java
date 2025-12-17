@@ -19,6 +19,7 @@ public class CategoryResponse {
     private String type; // INCOME, EXPENSE
     private String icon;
     private String color;
+    private String description;
     private Long parentId;
     private String parentName;
     private Boolean isSystem;
@@ -38,6 +39,7 @@ public class CategoryResponse {
         response.setType(category.getType() != null ? category.getType().name() : null);
         response.setIcon(category.getIcon());
         response.setColor(category.getColor());
+        response.setDescription(category.getDescription());
         response.setParentId(category.getParentId());
         response.setIsSystem(category.getIsSystem());
         response.setDisplayOrder(category.getDisplayOrder());

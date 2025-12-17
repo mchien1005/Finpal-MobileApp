@@ -52,107 +52,52 @@ VALUES (
 -- =====================================================
 -- 2. DANH_MUC - Danh mục hệ thống
 -- =====================================================
-INSERT INTO danh_muc (id_cha, ten_danh_muc, loai, mau_sac, bieu_tuong)
+INSERT INTO danh_muc (id_cha, ten_danh_muc, loai, mau_sac, bieu_tuong, mo_ta)
 VALUES
 -- ======================
 -- EXPENSE (CHI TIÊU)
 -- Format icon: Sử dụng tên icon từ material_design_icons_flutter package
 -- Trong Flutter: MdiIcons.fromString('food') hoặc MdiIcons.food
 -- ======================
-(NULL, 'Ăn uống', 'EXPENSE', '#FF7043', 'food'),
-(NULL, 'Di chuyển', 'EXPENSE', '#29B6F6', 'car'),
-(NULL, 'Mua sắm', 'EXPENSE', '#AB47BC', 'shopping'),
-(NULL, 'Giải trí', 'EXPENSE', '#FFCA28', 'movie'),
-(NULL, 'Sức khỏe', 'EXPENSE', '#EF5350', 'heart_pulse'),
-(NULL, 'Giáo dục', 'EXPENSE', '#42A5F5', 'school'),
-(NULL, 'Hóa đơn & Tiện ích', 'EXPENSE', '#26A69A', 'flash'),
-(NULL, 'Nhà ở', 'EXPENSE', '#8D6E63', 'home'),
-(NULL, 'Gia đình', 'EXPENSE', '#EC407A', 'account_group'),
-(NULL, 'Bảo hiểm', 'EXPENSE', '#78909C', 'shield_check'),
-(NULL, 'Đầu tư', 'EXPENSE', '#66BB6A', 'chart_line'),
-(NULL, 'Quà tặng', 'EXPENSE', '#FFA726', 'gift'),
-(NULL, 'Công việc', 'EXPENSE', '#5C6BC0', 'briefcase'),
-(NULL, 'Làm đẹp', 'EXPENSE', '#F06292', 'face_woman'),
-(NULL, 'Khác (Chi)', 'EXPENSE', '#BDBDBD', 'dots_horizontal'),
+(NULL, 'Ăn uống', 'EXPENSE', '#FF7043', 'food', 'Chi phí ăn uống, cafe, ăn ngoài'),
+(NULL, 'Di chuyển', 'EXPENSE', '#29B6F6', 'car', 'Xăng xe, taxi, vé xe buýt'),
+(NULL, 'Mua sắm', 'EXPENSE', '#AB47BC', 'shopping', 'Quần áo, giày dép, phụ kiện'),
+(NULL, 'Giải trí', 'EXPENSE', '#FFCA28', 'movie', 'Xem phim, du lịch, vui chơi'),
+(NULL, 'Sức khỏe', 'EXPENSE', '#EF5350', 'heart_pulse', 'Thuốc men, khám bệnh, thể thao'),
+(NULL, 'Giáo dục', 'EXPENSE', '#42A5F5', 'school', 'Học phí, sách vở, khóa học'),
+(NULL, 'Hóa đơn & Tiện ích', 'EXPENSE', '#26A69A', 'flash', 'Điện, nước, internet, điện thoại'),
+(NULL, 'Nhà ở', 'EXPENSE', '#8D6E63', 'home', 'Tiền thuê nhà, sửa chữa, nội thất'),
+(NULL, 'Gia đình', 'EXPENSE', '#EC407A', 'account_group', 'Chi tiêu cho con cái, cha mẹ'),
+(NULL, 'Bảo hiểm', 'EXPENSE', '#78909C', 'shield_check', 'Bảo hiểm y tế, bảo hiểm nhân thọ'),
+(NULL, 'Đầu tư', 'EXPENSE', '#66BB6A', 'chart_line', 'Mua vàng, chứng khoán, bất động sản'),
+(NULL, 'Quà tặng', 'EXPENSE', '#FFA726', 'gift', 'Quà sinh nhật, đám cưới, lễ tết'),
+(NULL, 'Công việc', 'EXPENSE', '#5C6BC0', 'briefcase', 'Chi phí công tác, tiếp khách'),
+(NULL, 'Làm đẹp', 'EXPENSE', '#F06292', 'face_woman', 'Spa, cắt tóc, mỹ phẩm'),
+(NULL, 'Khác (Chi)', 'EXPENSE', '#BDBDBD', 'dots_horizontal', 'Các khoản chi khác'),
 
 -- ======================
 -- INCOME (THU NHẬP)
 -- ======================
-(NULL, 'Lương', 'INCOME', '#4CAF50', 'cash'),
-(NULL, 'Thưởng', 'INCOME', '#FFD54F', 'trophy'),
-(NULL, 'Làm thêm', 'INCOME', '#81C784', 'clock_outline'),
-(NULL, 'Kinh doanh', 'INCOME', '#26C6DA', 'store'),
-(NULL, 'Đầu tư', 'INCOME', '#66BB6A', 'trending_up'),
-(NULL, 'Cho vay', 'INCOME', '#90A4AE', 'handshake'),
-(NULL, 'Được tặng', 'INCOME', '#FF8A65', 'gift_open'),
-(NULL, 'Khác (Thu)', 'INCOME', '#BDBDBD', 'dots_horizontal');
+(NULL, 'Lương', 'INCOME', '#4CAF50', 'cash', 'Lương chính thức hàng tháng'),
+(NULL, 'Thưởng', 'INCOME', '#FFD54F', 'trophy', 'Thưởng dự án, thưởng tết'),
+(NULL, 'Làm thêm', 'INCOME', '#81C784', 'clock_outline', 'Thu nhập từ công việc làm thêm'),
+(NULL, 'Kinh doanh', 'INCOME', '#26C6DA', 'store', 'Lợi nhuận từ kinh doanh bán hàng'),
+(NULL, 'Đầu tư', 'INCOME', '#66BB6A', 'trending_up', 'Lời từ đầu tư, cổ tức'),
+(NULL, 'Cho vay', 'INCOME', '#90A4AE', 'handshake', 'Thu hồi nợ'),
+(NULL, 'Được tặng', 'INCOME', '#FF8A65', 'gift_open', 'Tiền lì xì, quà tặng tiền mặt'),
+(NULL, 'Khác (Thu)', 'INCOME', '#BDBDBD', 'dots_horizontal', 'Các khoản thu khác');
 
 -- =====================================================
 -- 3. BO_PHAN_TICH_SMS - Cấu hình parse SMS ngân hàng
 -- =====================================================
-INSERT INTO bo_phan_tich_sms (
-        ma_ngan_hang,
-        ten_ngan_hang,
-        mau_regex,
-        anh_xa_truong,
-        sms_mau
-    )
-VALUES -- Vietcombank (SMS format)
-    (
-        'VCB',
-        'Vietcombank',
-        'TK\\s+(\\d+).*?([+-])([\\d,]+)VND.*?l.c\\s+([\\d/\\s:]+).*?ND:\\s*([^.]+).*?SD:\\s*([\\d,]+)',
-        '{"account":"1","type":"2","amount":"3","time":"4","merchant":"5"}',
-        'TK 001234567: -55,000VND luc 12/11/2025 09:00. ND: GRAB. SD: 2,450,000VND'
-    ),
-    -- Vietcombank (App notification format)
-    (
-        'VCB',
-        'Vietcombank',
-        'S. d. TK VCB\\s+(\\d+).*?([+-])([\\d,]+)\\s+VND\\s+l.c\\s+([\\d-]+)\\s+([\\d:]+).*?S. d.\\s+([\\d,]+)\\s+VND.*?GD:(.+?)(?:\\s|$)',
-        '{"account":"1","type":"2","amount":"3","date":"4","time":"5","merchant":"7"}',
-        'Số dư TK VCB 0111000155751\n-20,000 VND lúc 26-06-2021 08:10:14.\nSố dư 877,172 VND. Ref POS.79900\n008.830963.20210626.081014.9704\n3668Tc4a111000000000762010 ..\n505471.0.000000.GD:ZALOPAY'
-    ),
-    -- Techcombank
-    (
-        'TCB',
-        'Techcombank',
-        'GD:\\s*([+-])([\\d,]+)VND.*?l.c\\s+([\\d/\\s:]+).*?t.i\\s+([^.]+).*?SD:\\s*([\\d,]+)',
-        '{"type":"1","amount":"2","time":"3","merchant":"4"}',
-        'GD: -120,000VND luc 13/11 10:30 tai HIGHLANDS COFFEE. SD: 1,880,000VND'
-    ),
-    -- BIDV
-    (
-        'BIDV',
-        'BIDV',
-        'Th.i gian giao d.ch:\\s+(\\d{2}:\\d{2})\\s+(\\d{2}/\\d{2}/\\d{4}).*?S. ti.n GD:\\s+([+-])([\\d,]+)\\s+VND.*?N.i dung giao d.ch:\\s*(.+?)(?=M. giao d.ch|$)',
-        '{"time":"1","date":"2","type":"3","amount":"4","merchant":"5"}',
-        'BIDV xin thông báo tới Quý khách\nThời gian giao dịch: 13:11 25/11/2025\nTài khoản thanh toán: 4260848570\nSố tiền GD: +10,000 VND\nSố dư cuối: 971,979 VND\nNội dung giao dịch: TKThe :1027779485, tai Vietcombank. MBVCB.11876304648.447013.VU XUAN HUY chuyen tien.CT tu 1027779445 VU XUAN HUY toi 4260848540 NGUYEN MINH CHIEN tai BIDV -CTLNHIDI000013514283774-1/1-CRE-002\nMã giao dịch: 0832ODV4-84v6kpcqo'
-    ),
-    -- MBBank
-    (
-        'MBB',
-        'MBBank',
-        'TK\\s+(\\d+x+\\d+)\\|GD:\\s+([+-])([\\d,]+)VND\\s+(\\d{2}/\\d{2}/\\d{2})\\s+(\\d{2}:\\d{2})\\s+\\|SD:\\s+([\\d,]+)VND\\|ND:\\s*(.+?)(?:-|$)',
-        '{"account":"1","type":"2","amount":"3","date":"4","time":"5","merchant":"7"}',
-        'Thông báo biến động số dư\nTK 10xxx969|GD: +25,000VND 25/11/25 20:35 |SD: 140,002VND|ND: 108609376869-HA VAN THANG chuyen tien qua MoMo-CHUYEN TIEN-OQCH00044xSs-MOMO108609376867MOMO'
-    ),
-    -- PVcomBank
-    (
-        'PVB',
-        'PVcomBank',
-        '([+-])([\\d,]+)\\s*₫.*?T.i kho.n:\\s+(\\d+).*?S. d.:\\s+([\\d,]+)\\s*₫.*?L.i nh.n:\\s*(.+?)(?=\\n\\n|$)',
-        '{"type":"1","amount":"2","account":"3","merchant":"5"}',
-        '+9000 ₫\n\nTài khoản: 107001384884\n\nSố dư: 50,570 ₫\n\nLời nhắn: Lai nhap goc .\n\nLai suat gui tiet kiem online cao hon tai quay toi 0.5%/nam. Liên hệ: 19006692/1900555592.\n\n23:23'
-    ),
-    -- VietinBank
-    (
-        'CTG',
-        'VietinBank',
-        'Th.i gian:\\s+(\\d{2}/\\d{2}/\\d{4})\\s+(\\d{2}:\\d{2}).*?T.i kho.n:\\s+(\\d+).*?Giao d.ch:\\s+([+-])([\\d,]+)\\s+VND.*?S. d. hi.n t.i:\\s+([\\d,]+)\\s+VND.*?N.i dung:\\s*(.+?)(?:;\\s*t.i|$)',
-        '{"date":"1","time":"2","account":"3","type":"4","amount":"5","merchant":"7"}',
-        'Thời gian: 26/11/2025 10:05\nTài khoản: 103600583557\nGiao dich: -30,000 VND\nSố dư hiện tại: 696,634 VND\nNội dung: CT DI:533010651537 NGUYEN XUAN ANH chuye n tien; tai iPay'
-    );
+INSERT INTO `bo_phan_tich_sms` (`id`, `ten_ngan_hang`, `ma_ngan_hang`, `so_dien_thoai_gui`, `mau_regex`, `anh_xa_truong`, `sms_mau`, `dang_hoat_dong`, `do_uu_tien`, `ngay_tao`, `ngay_cap_nhat`) VALUES
+(1, 'Vietcombank', 'VCB', 'VCB', 'SD\\s+TK\\s+([\\dx]+)\\s+([+-])([\\d,]+)VND\\s+luc\\s+(\\d{2}-\\d{2}-\\d{4}\\s+\\d{2}:\\d{2}:\\d{2}).*?Ref\\s+([^.]+)', '{\"type\": \"2\", \"amount\": \"3\", \"account\": \"1\", \"datetime\": \"4\", \"merchant\": \"5\"}', 'SD TK 012xxxx896 -440,000VND luc 07-04-2023 10:40:40. SD 3,xxX,xXXVND. Ref MB-VCB.3337443597. 036309. TRAN xxx xxx chuyen tien.CT tu 012xxxx896 TRAN xxx ..', 1, 0, '2025-12-14 02:38:42', '2025-12-14 14:41:33'),
+(2, 'Vietcombank', 'VCB', 'Vietcombank', 'SD\\s+TK\\s+([\\dx]+)\\s+([+-])([\\d,]+)VND\\s+luc\\s+(\\d{2}-\\d{2}-\\d{4}\\s+\\d{2}:\\d{2}:\\d{2}).*?Ref\\s+([^.]+)', '{\"type\": \"2\", \"amount\": \"3\", \"account\": \"1\", \"datetime\": \"4\", \"merchant\": \"5\"}', 'SD TK 012xxxx896 -440,000VND luc 07-04-2023 10:40:40. SD 3,xxX,xXXVND. Ref MB-VCB.3337443597. 036309. TRAN xxx xxx chuyen tien.CT tu 012xxxx896 TRAN xxx ..', 1, 0, '2025-12-14 02:38:42', '2025-12-14 14:41:33'),
+(3, 'Techcombank', 'TCB', 'TCB', 'TK\\s+(\\d+).*?So\\s+tien\\s+GD:\\s*([+-])([\\d,]+).*?([\\s\\S]+?)(?:$)', '{\"type\": \"2\", \"amount\": \"3\", \"account\": \"1\", \"merchant\": \"4\"}', 'TK 19128516666886\nSo tien GD:+13,450,000\nSo du:17,619,718\nEM HOANG CK CONG TRINH THANG LONG_1', 1, 0, '2025-12-14 02:38:42', '2025-12-14 14:21:07'),
+(4, 'BIDV', 'BIDV', 'BIDV', 'TK([\\dx]+)\\s+tai\\s+BIDV\\s+([+-])([\\d,]+)VND\\s+vao\\s+(\\d{2}:\\d{2})\\s+(\\d{2}/\\d{2}/\\d{4}).*?ND:\\s*(.+?)$', '{\"date\": \"5\", \"time\": \"4\", \"type\": \"2\", \"amount\": \"3\", \"account\": \"1\", \"merchant\": \"6\"}', 'TK215xxx5259 tai BIDV +200,000VND vao 22:39 22/03/2023. So du:200,000VND. ND: TKThe :106869505742, tai Vietinbank. ngoc-CTLNHIDI000004146381974-11-CRE-002', 1, 0, '2025-12-14 02:38:42', '2025-12-14 14:41:33'),
+(5, 'MBBank', 'MBB', 'MBBank', 'TK\\s+([\\dx]+)\\s+GD:\\s*([+-])([\\d,]+)VND\\s+(\\d{2}/\\d{2}/\\d{2})\\s+(\\d{2}:\\d{2}).*?ND:\\s*(.+)$', '{\"date\": \"4\", \"time\": \"5\", \"type\": \"2\", \"amount\": \"3\", \"account\": \"1\", \"merchant\": \"6\"}', 'TK 0215xxx5259 GD: -9,544VND 08/04/22 03:32 SD:457VND ND: Thu no phi SMS Banking', 1, 0, '2025-12-14 02:38:42', '2025-12-14 14:41:33'),
+(6, 'PVcomBank', 'PVB', 'PVcomBank', '([+-])([\\d,]+)\\s*₫.*?T.i kho.n:\\s+(\\d+).*?S. d.:\\s+([\\d,]+)\\s*₫.*?L.i nh.n:\\s*(.+?)(?=\\n\\n|$)', '{\"type\": \"1\", \"amount\": \"2\", \"account\": \"3\", \"merchant\": \"5\"}', '+9000 ₫\r\nTai khoan: 107001384884\r\nSo du: 50,570 ₫\r\nLoi nhan: Lai nhap goc .\r\n23:23', 1, 0, '2025-12-14 02:38:42', '2025-12-14 14:08:24'),
+(7, 'VietinBank', 'CTG', 'VietinBank', 'VietinBank:(\\d{2}/\\d{2}/\\d{4}\\s+\\d{2}:\\d{2})\\|TK\\s+(\\d+)\\s+GD:\\s*([+-])([\\d,]+)VND.*?\\|ND:(.+?)(?:$|\\|)', '{\"type\": \"3\", \"amount\": \"4\", \"account\": \"2\", \"datetime\": \"1\", \"merchant\": \"5\"}', 'VietinBank:15/12/2017 11:40|TK 106866874889 GD: +5,966,474VND|SDC: 6,367,279VND|ND:TT LUONG T11/2017', 1, 0, '2025-12-14 02:38:42', '2025-12-14 14:21:07');
 -- =====================================================
 -- 4. QUY_TAC_DANH_MUC - Luật AI phân loại (Global)
 -- =====================================================

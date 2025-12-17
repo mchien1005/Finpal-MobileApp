@@ -122,6 +122,7 @@ public class CategoryService {
         category.setType(categoryType);
         category.setIcon(request.getIcon());
         category.setColor(request.getColor());
+        category.setDescription(request.getDescription());
         category.setParentId(request.getParentId());
         category.setIsSystem(request.getIsSystem() != null ? request.getIsSystem() : false);
         category.setDisplayOrder(request.getDisplayOrder() != null ? request.getDisplayOrder() : 0);
@@ -188,6 +189,9 @@ public class CategoryService {
         }
         if (request.getColor() != null) {
             category.setColor(request.getColor());
+        }
+        if (request.getDescription() != null) {
+            category.setDescription(request.getDescription());
         }
         if (request.getDisplayOrder() != null) {
             category.setDisplayOrder(request.getDisplayOrder());

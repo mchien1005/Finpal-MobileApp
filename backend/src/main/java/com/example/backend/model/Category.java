@@ -40,6 +40,9 @@ public class Category {
     @Column(name = "mau_sac", length = 20)
     private String color;
 
+    @Column(name = "mo_ta", columnDefinition = "TEXT")
+    private String description;
+
     @Column(name = "ngay_tao", updatable = false)
     private LocalDateTime createdAt;
 

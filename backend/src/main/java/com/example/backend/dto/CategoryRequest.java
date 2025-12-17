@@ -23,6 +23,8 @@ public class CategoryRequest {
     private String icon;
 
     private String color;
+    
+    private String description;
 
     private Long parentId; // Null nếu là parent category
 

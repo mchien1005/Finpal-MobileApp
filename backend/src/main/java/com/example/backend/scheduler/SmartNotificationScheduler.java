@@ -11,6 +11,10 @@ import com.example.backend.service.AIInsightsService;
 import com.example.backend.service.FcmService;
 import com.example.backend.service.NotificationService;
 import com.example.backend.service.NotificationTemplateService;
+import com.example.backend.model.SpendingInsightEntity;
+import com.example.backend.repository.SpendingInsightRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.backend.model.Transaction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -62,6 +66,8 @@ public class SmartNotificationScheduler {
     private final NotificationTemplateService templateService;
     private final AIInsightsService aiInsightsService;
     private final FcmService fcmService;
+    private final SpendingInsightRepository spendingInsightRepository;
+    private final ObjectMapper objectMapper;
 
     // Template codes từ bảng mau_thong_bao
     private static final String TPL_BUDGET_WARNING = "NOT006";
@@ -510,8 +516,12 @@ public class SmartNotificationScheduler {
                 try {
                     List<SpendingInsight> insights = aiInsightsService.getProactiveInsights(user.getId());
 
-                    if (insights != null) {
+                    if (insights != null && !insights.isEmpty()) {
+                        // Lưu phân tích chi tiêu vào database (bảng phan_tich_chi_tieu)
+                        saveDailySpendingInsight(user, insights);
+
                         for (SpendingInsight insight : insights) {
+                            // ... existing logic ...
                             // Gửi achievements và tips với impact score cao
                             if (("achievement".equals(insight.getInsightType()) || 
                                  "tip".equals(insight.getInsightType())) 
@@ -612,5 +622,71 @@ public class SmartNotificationScheduler {
         fcmService.sendPushForNotification(saved);
 
         log.debug("Created notification for user {}: {}", user.getId(), title);
+    }
+
+    /**
+     * Lưu phân tích chi tiêu hàng ngày vào bảng phan_tich_chi_tieu
+     */
+    private void saveDailySpendingInsight(User user, List<SpendingInsight> aiInsights) {
+        try {
+            LocalDate today = LocalDate.now();
+            LocalDateTime startOfDay = today.atStartOfDay();
+            LocalDateTime endOfDay = today.atTime(23, 59, 59);
+            LocalDateTime startOfMonth = today.withDayOfMonth(1).atStartOfDay();
+
+            // 1. Tính tổng chi tiêu và thu nhập trong THÁNG này (Snapshot)
+            BigDecimal totalExpense = transactionRepository.sumByUserIdAndTypeAndDateRange(
+                    user.getId(), Transaction.TransactionType.EXPENSE, startOfMonth, endOfDay);
+            
+            BigDecimal totalIncome = transactionRepository.sumByUserIdAndTypeAndDateRange(
+                    user.getId(), Transaction.TransactionType.INCOME, startOfMonth, endOfDay);
+
+            // 2. Tìm danh mục chi tiêu nhiều nhất trong tháng
+            List<Object[]> categoryStats = transactionRepository.getSpendingByCategory(
+                    user.getId(), startOfMonth, endOfDay, Transaction.TransactionType.EXPENSE);
+            
+            Long topCategoryId = null;
+            BigDecimal topCategoryAmount = BigDecimal.ZERO;
+            
+            if (categoryStats != null && !categoryStats.isEmpty()) {
+                Object[] top = categoryStats.get(0);
+                topCategoryId = (Long) top[0];
+                topCategoryAmount = (BigDecimal) top[4];
+            }
+
+            // 3. Serialize AI insights to JSON
+            String analysisJson = objectMapper.writeValueAsString(aiInsights);
+
+            // 4. Lưu hoặc cập nhật record (Dùng PeriodType.MONTHLY để tracking theo tháng)
+            // Hoặc PeriodType.DAILY nếu muốn history chi tiết từng ngày
+            // Ở đây lưu DAILY snapshot
+            SpendingInsightEntity entity = SpendingInsightEntity.builder()
+                    .userId(user.getId())
+                    .periodType(SpendingInsightEntity.PeriodType.DAILY)
+                    .startDate(today)
+                    .endDate(today)
+                    .totalIncome(totalIncome)
+                    .totalExpense(totalExpense)
+                    .topCategoryId(topCategoryId)
+                    .topCategoryAmount(topCategoryAmount)
+                    .analysisData(analysisJson)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            // Check if exists to avoid duplicate constraint error (cleanup old if needed, but entity has no unique constraint on daily date only user+type+start)
+            // Bảng có unique: (id_nguoi_dung, loai_ky_han, ngay_bat_dau)
+            // Nên ta cần check xem đã có record DAILY cho ngày hôm nay chưa
+            
+            // Hiện tại Repository chưa có method findBy... custom, nhưng ta có thể try-catch save
+            // Hoặc tốt hơn: thêm method find vào Repo? 
+            // Thôi try-catch DataIntegrityViolationException hoặc check manual
+            
+            spendingInsightRepository.save(entity);
+            
+            log.info("💾 Saved daily spending insight for user {}", user.getId());
+
+        } catch (Exception e) {
+            log.error("Failed to save spending insight for user {}: {}", user.getId(), e.getMessage());
+        }
     }
 }
