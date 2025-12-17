@@ -53,13 +53,26 @@ public class DeviceController {
             User user = userRepository.findByUsername(userDetails.getUsername())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
+            String newToken = request.getFcmToken();
+
+            // 1. Xóa token này khỏi các user khác (nếu có) để tránh duplicate
+            userRepository.findAll().stream()
+                    .filter(u -> newToken.equals(u.getFcmToken()))
+                    .filter(u -> !u.getId().equals(user.getId())) // Không xóa của chính mình
+                    .forEach(u -> {
+                        u.setFcmToken(null);
+                        userRepository.save(u);
+                        log.info("⚠️ Removed duplicate FCM token from user {}", u.getUsername());
+                    });
+
+            // 2. Cập nhật token cho user hiện tại
             String oldToken = user.getFcmToken();
-            user.setFcmToken(request.getFcmToken());
+            user.setFcmToken(newToken);
             userRepository.save(user);
 
             if (oldToken == null || oldToken.isEmpty()) {
                 log.info("✅ FCM token registered for user {}", user.getUsername());
-            } else if (!oldToken.equals(request.getFcmToken())) {
+            } else if (!oldToken.equals(newToken)) {
                 log.info("🔄 FCM token updated for user {}", user.getUsername());
             }
 

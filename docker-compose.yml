@@ -58,11 +58,17 @@ services:
       # Email Configuration
       MAIL_USERNAME: ${MAIL_USERNAME:-}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      # FCM Configuration
+      # FCM Configuration
+      FCM_SERVICE_ACCOUNT_FILE: /app/firebase-service-account.json
       SPRING_MAIL_HOST: smtp.gmail.com
       SPRING_MAIL_PORT: 587
       # PDF Export Configuration
       PDF_EXPORT_TEMP_DIRECTORY: /tmp/finpal-exports
       PDF_EXPORT_RETENTION_DAYS: 7
+    volumes:
+      - ./backend/src/main/resources/firebase-service-account.json:/app/firebase-service-account.json
+      - ./backend/src/main/resources/application.properties:/app/application.properties
     ports:
       - "8080:8080"
     depends_on:

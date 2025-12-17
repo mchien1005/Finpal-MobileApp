@@ -105,7 +105,7 @@ public class FcmService {
                 return;
             }
 
-            // Tạo notification payload
+            // Tạo notification payload (Giống Firebase Console)
             com.google.firebase.messaging.Notification notification = 
                 com.google.firebase.messaging.Notification.builder()
                     .setTitle(title)
@@ -115,17 +115,24 @@ public class FcmService {
             // Tạo message
             Message.Builder messageBuilder = Message.builder()
                     .setToken(token)
-                    .setNotification(notification);
+                    .setNotification(notification); // Quan trọng: Có notification payload
 
-            // Thêm data payload nếu có
-            if (data != null && !data.isEmpty()) {
-                messageBuilder.putAllData(data);
+            // Thêm data payload (để xử lý click action và logic custom)
+            Map<String, String> dataWithTitleBody = new HashMap<>();
+            if (data != null) {
+                dataWithTitleBody.putAll(data);
             }
+            // Cũng put title/body vào data để backup
+            dataWithTitleBody.put("title", title);
+            dataWithTitleBody.put("body", body);
+            dataWithTitleBody.put("click_action", "FLUTTER_NOTIFICATION_CLICK");
+            messageBuilder.putAllData(dataWithTitleBody);
 
             // Cấu hình cho Android
             messageBuilder.setAndroidConfig(AndroidConfig.builder()
                     .setPriority(AndroidConfig.Priority.HIGH)
                     .setNotification(AndroidNotification.builder()
+                            .setChannelId("high_importance_channel") // Quan trọng cho Android 8+
                             .setSound("default")
                             .setClickAction("FLUTTER_NOTIFICATION_CLICK")
                             .build())
