@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import { useSidebar } from '../../contexts/SidebarContext';
 import BackupTab from './system-config/BackupTab';
+import SettingTab from './system-config/SettingTab';
 
-const tabs = ['Cài đặt Hệ thống', 'Sao lưu & Khôi phục', 'Quản lý API'];
+const tabs = ['Cài đặt Hệ thống', 'Sao lưu & Khôi phục'];
 
 
 const SystemAndConfigPage = () => {
@@ -84,9 +85,8 @@ const SystemAndConfigPage = () => {
         </div>
 
         {/* Tab Panel Content */}
-        {activeTab === 0 && <div style={{ color: '#6A7282', fontFamily: 'Arimo, sans-serif' }}>Cài đặt hệ thống - Coming soon...</div>}
         {activeTab === 1 && <BackupTab />}
-        {activeTab === 2 && <div style={{ color: '#6A7282', fontFamily: 'Arimo, sans-serif' }}>Quản lý API - Coming soon...</div>}
+        {activeTab === 0 && <SettingTab />}
       </div>
     </div>
   );

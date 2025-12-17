@@ -1,9 +1,11 @@
 import 'api_service.dart';
 import 'storage_service.dart';
+import 'firebase_push_handler.dart';
 
 class AuthService {
   final ApiService _apiService = ApiService();
   final StorageService _storageService = StorageService();
+  final FirebasePushHandler _fcmHandler = FirebasePushHandler();
 
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
@@ -19,6 +21,9 @@ class AuthService {
       // Lưu token nếu có
       if (response['token'] != null) {
         await _storageService.saveToken(response['token']);
+
+        // Đăng ký FCM token sau khi login thành công
+        await _fcmHandler.registerToken();
       }
 
       // Lưu thông tin user nếu có
@@ -52,6 +57,8 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    // Hủy đăng ký FCM token trước khi logout
+    await _fcmHandler.unregisterToken();
     await _storageService.clearAll();
   }
 
