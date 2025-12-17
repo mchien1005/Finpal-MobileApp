@@ -243,4 +243,102 @@ public class NotificationTemplateService {
                 "inactive", templateRepository.countByStatus(TemplateStatus.INACTIVE),
                 "draft", templateRepository.countByStatus(TemplateStatus.DRAFT));
     }
+
+    // =====================================================
+    // Methods cho SmartNotificationScheduler
+    // =====================================================
+
+    /**
+     * Lấy template theo templateCode (ma_mau)
+     * 
+     * @param templateCode Mã template (NOT001, NOT008, ...)
+     * @return NotificationTemplate hoặc null
+     */
+    @Transactional(readOnly = true)
+    public NotificationTemplate getTemplateByCode(String templateCode) {
+        return templateRepository.findByTemplateCode(templateCode)
+                .filter(t -> t.getStatus() == TemplateStatus.ACTIVE)
+                .orElse(null);
+    }
+
+    /**
+     * Render template với placeholders
+     * 
+     * @param templateCode Mã template
+     * @param placeholders Map chứa key-value để thay thế ({category} -> "Ăn uống")
+     * @return RenderedTemplate chứa title và content đã render
+     */
+    @Transactional
+    public RenderedTemplate renderTemplate(String templateCode, Map<String, Object> placeholders) {
+        NotificationTemplate template = getTemplateByCode(templateCode);
+        
+        if (template == null) {
+            log.warn("Template not found or inactive: {}", templateCode);
+            return null;
+        }
+
+        String title = template.getTitle();
+        String content = template.getMessageTemplate();
+
+        // Replace placeholders
+        if (placeholders != null) {
+            for (Map.Entry<String, Object> entry : placeholders.entrySet()) {
+                String placeholder = "{" + entry.getKey() + "}";
+                String value = formatValue(entry.getKey(), entry.getValue());
+                
+                title = title.replace(placeholder, value);
+                content = content.replace(placeholder, value);
+            }
+        }
+
+        // Update sent count
+        template.setSentCount(template.getSentCount() + 1);
+        templateRepository.save(template);
+
+        return RenderedTemplate.builder()
+                .title(title)
+                .content(content)
+                .type(template.getType())
+                .priority(mapTypeToPriority(template.getType()))
+                .build();
+    }
+
+    /**
+     * Format value based on key type
+     */
+    private String formatValue(String key, Object value) {
+        if (value == null) {
+            return "";
+        }
+
+        // Format tiền VNĐ
+        if (key.contains("amount") || key.contains("savings") || 
+            key.contains("weekly") || key.contains("income") || key.contains("expense")) {
+            if (value instanceof Number) {
+                return String.format("%,.0fđ", ((Number) value).doubleValue());
+            }
+        }
+
+        // Format phần trăm
+        if (key.contains("percent") || key.contains("progress")) {
+            if (value instanceof Number) {
+                return String.format("%.0f%%", ((Number) value).doubleValue());
+            }
+        }
+
+        return String.valueOf(value);
+    }
+
+    /**
+     * DTO for rendered template
+     */
+    @lombok.Builder
+    @lombok.Getter
+    @lombok.AllArgsConstructor
+    public static class RenderedTemplate {
+        private String title;
+        private String content;
+        private NotificationTemplate.TemplateType type;
+        private Notification.NotificationPriority priority;
+    }
 }

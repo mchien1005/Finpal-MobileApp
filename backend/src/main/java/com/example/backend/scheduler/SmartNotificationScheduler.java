@@ -10,6 +10,7 @@ import com.example.backend.repository.*;
 import com.example.backend.service.AIInsightsService;
 import com.example.backend.service.FcmService;
 import com.example.backend.service.NotificationService;
+import com.example.backend.service.NotificationTemplateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -58,8 +59,21 @@ public class SmartNotificationScheduler {
     private final TransactionRepository transactionRepository;
     private final NotificationRepository notificationRepository;
     private final NotificationService notificationService;
+    private final NotificationTemplateService templateService;
     private final AIInsightsService aiInsightsService;
     private final FcmService fcmService;
+
+    // Template codes từ bảng mau_thong_bao
+    private static final String TPL_BUDGET_WARNING = "NOT006";
+    private static final String TPL_BUDGET_EXCEEDED = "NOT007";
+    private static final String TPL_SAVINGS_SUGGESTION = "NOT008";
+    private static final String TPL_ANOMALY_DETECTED = "NOT009";
+    private static final String TPL_SPENDING_ACHIEVEMENT = "NOT010";
+    private static final String TPL_SPENDING_TIP = "NOT011";
+    private static final String TPL_GOAL_REMINDER = "NOT012";
+    private static final String TPL_GOAL_DEADLINE = "NOT013";
+    private static final String TPL_GOAL_COMPLETED = "NOT014";
+    private static final String TPL_MONTHLY_SUMMARY = "NOT015";
 
     // ======================== BUDGET ALERTS ========================
     
@@ -133,29 +147,49 @@ public class SmartNotificationScheduler {
 
         // Xác định level cảnh báo và gửi notification
         if (usagePercentage >= 100) {
-            // Đã vượt ngân sách
-            String message = String.format(
-                    "🚨 Ngân sách '%s' đã vượt quá! Đã chi %.0f%% (%,.0fđ/%,.0fđ)",
-                    budget.getName(), usagePercentage, spentAmount.doubleValue(), budget.getAmount().doubleValue()
+            // Đã vượt ngân sách - dùng template NOT007
+            NotificationTemplateService.RenderedTemplate rendered = templateService.renderTemplate(
+                TPL_BUDGET_EXCEEDED,  // NOT007
+                java.util.Map.of(
+                    "budget_name", budget.getName(),
+                    "percentage", usagePercentage,
+                    "spent_amount", spentAmount.doubleValue(),
+                    "budget_amount", budget.getAmount().doubleValue()
+                )
             );
 
-            createAndPushNotification(user, "BUDGET_ALERT", "🚨 Ngân sách Vượt quá!",
+            String title = rendered != null ? rendered.getTitle() : "🚨 Ngân sách Vượt quá!";
+            String message = rendered != null ? rendered.getContent() :
+                    String.format("Ngân sách '%s' đã vượt quá! Đã chi %.0f%% (%,.0fđ/%,.0fđ)",
+                            budget.getName(), usagePercentage, spentAmount.doubleValue(), budget.getAmount().doubleValue());
+
+            createAndPushNotification(user, "BUDGET_ALERT", title,
                     message, Notification.NotificationPriority.HIGH, "/budgets/" + budget.getId());
 
-            // Gửi push notification
             fcmService.sendBudgetAlert(user.getId(), budget.getName(), usagePercentage, spentAmount.doubleValue());
             return 1;
 
         } else if (usagePercentage >= budget.getAlertThreshold()) {
-            // Sắp hết ngân sách - thêm context về số ngày còn lại
-            String message = String.format(
-                    "⚠️ Bạn đã chi %.0f%% hạn mức '%s' (%,.0fđ/%,.0fđ), còn %d ngày nữa là hết kỳ ngân sách.",
-                    usagePercentage, budget.getName(), 
-                    spentAmount.doubleValue(), budget.getAmount().doubleValue(),
-                    daysRemaining
+            // Sắp hết ngân sách - dùng template NOT006
+            NotificationTemplateService.RenderedTemplate rendered = templateService.renderTemplate(
+                TPL_BUDGET_WARNING,  // NOT006
+                java.util.Map.of(
+                    "budget_name", budget.getName(),
+                    "percentage", usagePercentage,
+                    "spent_amount", spentAmount.doubleValue(),
+                    "budget_amount", budget.getAmount().doubleValue(),
+                    "days_remaining", daysRemaining
+                )
             );
 
-            createAndPushNotification(user, "BUDGET_ALERT", "⚠️ Cảnh báo Ngân sách",
+            String title = rendered != null ? rendered.getTitle() : "⚠️ Cảnh báo Ngân sách";
+            String message = rendered != null ? rendered.getContent() :
+                    String.format("Bạn đã chi %.0f%% hạn mức '%s' (%,.0fđ/%,.0fđ), còn %d ngày nữa là hết kỳ ngân sách.",
+                            usagePercentage, budget.getName(), 
+                            spentAmount.doubleValue(), budget.getAmount().doubleValue(),
+                            daysRemaining);
+
+            createAndPushNotification(user, "BUDGET_ALERT", title,
                     message, Notification.NotificationPriority.MEDIUM, "/budgets/" + budget.getId());
 
             fcmService.sendBudgetAlert(user.getId(), budget.getName(), usagePercentage, spentAmount.doubleValue());
@@ -171,8 +205,7 @@ public class SmartNotificationScheduler {
      * Gửi gợi ý tiết kiệm thông minh từ AI
      * Chạy mỗi Chủ nhật lúc 9:00 AM
      * 
-     * Ví dụ: "FinPal nhận thấy bạn chi trung bình 200.000đ cho 'Trà sữa' mỗi tuần. 
-     *         Nếu bạn giảm còn 100.000đ, bạn sẽ tiết kiệm được 400.000đ/tháng."
+     * Sử dụng template NOT008 từ bảng mau_thong_bao
      */
     @Scheduled(cron = "${scheduler.smart-notifications.savings-suggestions.cron:0 0 9 * * SUN}")
     @Transactional
@@ -194,20 +227,31 @@ public class SmartNotificationScheduler {
                         SavingsSuggestionsResponse.SavingsSuggestion topSuggestion = 
                                 suggestions.getSuggestions().get(0);
 
-                        String message = String.format(
-                                "💡 FinPal nhận thấy bạn chi trung bình %,.0fđ cho '%s' mỗi tuần. " +
-                                "Nếu bạn giảm còn %,.0fđ, bạn sẽ tiết kiệm được %,.0fđ/tháng!\n\n" +
-                                "✨ Tổng tiềm năng tiết kiệm: %,.0fđ/tháng",
-                                topSuggestion.getCurrentWeeklyAvg(),
-                                topSuggestion.getCategory(),
-                                topSuggestion.getSuggestedWeeklyTarget(),
-                                topSuggestion.getMonthlySavings(),
-                                suggestions.getTotalPotentialSavings()
+                        // Lấy và render template từ database
+                        NotificationTemplateService.RenderedTemplate rendered = templateService.renderTemplate(
+                            TPL_SAVINGS_SUGGESTION,  // NOT008
+                            java.util.Map.of(
+                                "category", topSuggestion.getCategory(),
+                                "weekly_avg", topSuggestion.getCurrentWeeklyAvg(),
+                                "suggested_weekly", topSuggestion.getSuggestedWeeklyTarget(),
+                                "monthly_savings", topSuggestion.getMonthlySavings()
+                            )
                         );
 
+                        // Fallback nếu không có template
+                        String title = rendered != null ? rendered.getTitle() : "💡 Gợi ý Tiết kiệm Thông minh";
+                        String message = rendered != null ? rendered.getContent() : 
+                                String.format("FinPal nhận thấy bạn chi trung bình %,.0fđ cho '%s' mỗi tuần. " +
+                                        "Nếu bạn giảm còn %,.0fđ, bạn sẽ tiết kiệm được %,.0fđ/tháng!",
+                                        topSuggestion.getCurrentWeeklyAvg(),
+                                        topSuggestion.getCategory(),
+                                        topSuggestion.getSuggestedWeeklyTarget(),
+                                        topSuggestion.getMonthlySavings()
+                                );
+
                         createAndPushNotification(user, "SAVINGS_SUGGESTION", 
-                                "💡 Gợi ý Tiết kiệm Thông minh",
-                                message, Notification.NotificationPriority.MEDIUM, 
+                                title, message, 
+                                rendered != null ? rendered.getPriority() : Notification.NotificationPriority.MEDIUM, 
                                 "/dashboard/insights");
 
                         // Gửi push notification
@@ -352,12 +396,22 @@ public class SmartNotificationScheduler {
             return 0;
         }
 
-        // Đã đạt mục tiêu
+        // Đã đạt mục tiêu - dùng template NOT014
         if (progress >= 100) {
-            createAndPushNotification(user, "GOAL_REMINDER",
-                    "🎉 Chúc mừng! Đạt Mục tiêu!",
+            NotificationTemplateService.RenderedTemplate rendered = templateService.renderTemplate(
+                TPL_GOAL_COMPLETED,  // NOT014
+                java.util.Map.of(
+                    "goal_name", goal.getName(),
+                    "target_amount", goal.getTargetAmount().doubleValue()
+                )
+            );
+
+            String title = rendered != null ? rendered.getTitle() : "🎉 Chúc mừng! Đạt Mục tiêu!";
+            String message = rendered != null ? rendered.getContent() :
                     String.format("Tuyệt vời! Bạn đã hoàn thành mục tiêu '%s' (%,.0fđ)! 🎊",
-                            goal.getName(), goal.getTargetAmount().doubleValue()),
+                            goal.getName(), goal.getTargetAmount().doubleValue());
+
+            createAndPushNotification(user, "GOAL_REMINDER", title, message,
                     Notification.NotificationPriority.HIGH,
                     "/savings-goals/" + goal.getId());
 
@@ -367,19 +421,26 @@ public class SmartNotificationScheduler {
             return 1;
         }
 
-        // Reminder 7 ngày trước deadline
+        // Reminder 7 ngày trước deadline - dùng template NOT012
         if (daysUntilDeadline == 7) {
-            String message = String.format(
-                    "🎯 Mục tiêu '%s' còn 7 ngày!\n" +
-                    "📊 Tiến độ: %.0f%% (%,.0fđ/%,.0fđ)\n" +
-                    "💪 Cố gắng thêm nhé!",
-                    goal.getName(), progress, 
-                    goal.getCurrentAmount().doubleValue(), goal.getTargetAmount().doubleValue()
+            NotificationTemplateService.RenderedTemplate rendered = templateService.renderTemplate(
+                TPL_GOAL_REMINDER,  // NOT012
+                java.util.Map.of(
+                    "goal_name", goal.getName(),
+                    "progress", progress,
+                    "current_amount", goal.getCurrentAmount().doubleValue(),
+                    "target_amount", goal.getTargetAmount().doubleValue()
+                )
             );
 
-            createAndPushNotification(user, "GOAL_REMINDER",
-                    "🎯 Mục tiêu còn 7 ngày!",
-                    message, Notification.NotificationPriority.MEDIUM,
+            String title = rendered != null ? rendered.getTitle() : "🎯 Mục tiêu còn 7 ngày!";
+            String message = rendered != null ? rendered.getContent() :
+                    String.format("Mục tiêu '%s' còn 7 ngày! Tiến độ: %.0f%% (%,.0fđ/%,.0fđ). Cố gắng thêm nhé! 💪",
+                            goal.getName(), progress, 
+                            goal.getCurrentAmount().doubleValue(), goal.getTargetAmount().doubleValue());
+
+            createAndPushNotification(user, "GOAL_REMINDER", title, message,
+                    Notification.NotificationPriority.MEDIUM,
                     "/savings-goals/" + goal.getId());
 
             fcmService.sendGoalReminder(user.getId(), goal.getName(),
@@ -387,18 +448,26 @@ public class SmartNotificationScheduler {
             return 1;
         }
 
-        // Reminder vào ngày deadline
+        // Reminder vào ngày deadline - dùng template NOT013
         if (daysUntilDeadline == 0) {
-            String message = String.format(
-                    "⏰ Hôm nay là deadline của mục tiêu '%s'!\n" +
-                    "📊 Tiến độ: %.0f%% (%,.0fđ/%,.0fđ)",
-                    goal.getName(), progress,
-                    goal.getCurrentAmount().doubleValue(), goal.getTargetAmount().doubleValue()
+            NotificationTemplateService.RenderedTemplate rendered = templateService.renderTemplate(
+                TPL_GOAL_DEADLINE,  // NOT013
+                java.util.Map.of(
+                    "goal_name", goal.getName(),
+                    "progress", progress,
+                    "current_amount", goal.getCurrentAmount().doubleValue(),
+                    "target_amount", goal.getTargetAmount().doubleValue()
+                )
             );
 
-            createAndPushNotification(user, "GOAL_REMINDER",
-                    "⏰ Deadline Mục tiêu Hôm nay!",
-                    message, Notification.NotificationPriority.HIGH,
+            String title = rendered != null ? rendered.getTitle() : "⏰ Deadline Mục tiêu Hôm nay!";
+            String message = rendered != null ? rendered.getContent() :
+                    String.format("Hôm nay là deadline của mục tiêu '%s'! Tiến độ: %.0f%% (%,.0fđ/%,.0fđ)",
+                            goal.getName(), progress,
+                            goal.getCurrentAmount().doubleValue(), goal.getTargetAmount().doubleValue());
+
+            createAndPushNotification(user, "GOAL_REMINDER", title, message,
+                    Notification.NotificationPriority.HIGH,
                     "/savings-goals/" + goal.getId());
 
             fcmService.sendGoalReminder(user.getId(), goal.getName(),
@@ -418,6 +487,8 @@ public class SmartNotificationScheduler {
      * - Phân tích xu hướng chi tiêu
      * - Gợi ý cải thiện
      * - Thành tích tiết kiệm
+     * 
+     * Sử dụng templates NOT010 (achievement), NOT011 (tip)
      */
     @Scheduled(cron = "${scheduler.smart-notifications.spending-insights.cron:0 30 19 * * *}")
     @Transactional
@@ -439,12 +510,22 @@ public class SmartNotificationScheduler {
                                  "tip".equals(insight.getInsightType())) 
                                     && insight.getImpactScore() >= 0.6) {
 
-                                String title = switch (insight.getInsightType()) {
-                                    case "achievement" -> "🎉 Thành tích Tiết kiệm";
-                                    case "tip" -> "💡 Mẹo Quản lý Chi tiêu";
-                                    default -> "📊 Phân tích Chi tiêu";
+                                // Lấy title từ template tương ứng
+                                String templateCode = switch (insight.getInsightType()) {
+                                    case "achievement" -> TPL_SPENDING_ACHIEVEMENT;  // NOT010
+                                    case "tip" -> TPL_SPENDING_TIP;  // NOT011
+                                    default -> null;
                                 };
 
+                                String title;
+                                if (templateCode != null) {
+                                    var template = templateService.getTemplateByCode(templateCode);
+                                    title = template != null ? template.getTitle() : getDefaultTitle(insight.getInsightType());
+                                } else {
+                                    title = getDefaultTitle(insight.getInsightType());
+                                }
+
+                                // Message đã được render từ BackendAI
                                 createAndPushNotification(user, "SPENDING_INSIGHT",
                                         title, insight.getMessage(),
                                         Notification.NotificationPriority.LOW,
@@ -467,6 +548,15 @@ public class SmartNotificationScheduler {
         } catch (Exception e) {
             log.error("❌ Error in proactive insights scheduler: {}", e.getMessage());
         }
+    }
+
+    private String getDefaultTitle(String insightType) {
+        return switch (insightType) {
+            case "achievement" -> "🎉 Thành tích Tiết kiệm";
+            case "tip" -> "💡 Mẹo Quản lý Chi tiêu";
+            case "warning" -> "⚠️ Cảnh báo Chi tiêu";
+            default -> "📊 Phân tích Chi tiêu";
+        };
     }
 
     // ======================== HELPER METHODS ========================
