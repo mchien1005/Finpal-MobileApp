@@ -23,6 +23,12 @@ from app.schemas.insights import (
 )
 from app.models.spending_prediction import SpendingPredictor
 from app.services.database import get_database_service
+from app.constants.notification_templates import (
+    SAVINGS_SUGGESTION,
+    ANOMALY_DETECTED,
+    SPENDING_ACHIEVEMENT,
+    SPENDING_TIP,
+)
 from typing import List
 import pandas as pd
 import numpy as np
@@ -76,39 +82,50 @@ def get_message_from_template(template_code: str, **kwargs) -> str:
 def _create_fallback_message(template_code: str, **kwargs) -> str:
     """
     Tạo message mặc định khi không load được template từ database
+    
+    Sử dụng mã NOT00X làm key (đồng bộ với database)
     """
     templates = {
-        'SAVINGS_SUGGESTION': (
+        # NOT008 - Gợi ý tiết kiệm thông minh
+        SAVINGS_SUGGESTION: (
             "FinPal nhận thấy bạn chi trung bình {weekly_avg} cho '{category}' mỗi tuần. "
             "Nếu bạn giảm còn {suggested_weekly}, bạn sẽ tiết kiệm được {monthly_savings}/tháng!"
         ),
-        'BUDGET_WARNING': (
+        # NOT006 - Cảnh báo ngân sách
+        'NOT006': (
             "Bạn đã chi {percentage} hạn mức '{budget_name}' ({spent_amount}/{budget_amount}), "
             "còn {days_remaining} ngày nữa là hết kỳ ngân sách."
         ),
-        'BUDGET_EXCEEDED': (
+        # NOT007 - Ngân sách vượt quá
+        'NOT007': (
             "Ngân sách '{budget_name}' đã vượt quá! Đã chi {percentage} ({spent_amount}/{budget_amount})"
         ),
-        'ANOMALY_DETECTED': (
+        # NOT009 - Phát hiện chi tiêu bất thường
+        ANOMALY_DETECTED: (
             "Chi tiêu '{category}' tháng này ({current_amount}) cao hơn {increase_percent} "
             "so với trung bình ({average_amount})."
         ),
-        'SPENDING_ACHIEVEMENT': (
+        # NOT010 - Thành tích tiết kiệm
+        SPENDING_ACHIEVEMENT: (
             "Tuyệt vời! Bạn đã tiết kiệm được trong danh mục '{category}' tháng này. "
             "Chi tiêu thấp hơn {save_percent} so với trung bình!"
         ),
-        'SPENDING_TIP': (
+        # NOT011 - Mẹo chi tiêu
+        SPENDING_TIP: (
             "Chi tiêu '{category}' đang có xu hướng tăng. Cân nhắc xem xét lại các khoản chi này."
         ),
-        'GOAL_REMINDER_7DAYS': (
+        # NOT012 - Nhắc mục tiêu 7 ngày
+        'NOT012': (
             "Mục tiêu '{goal_name}' còn 7 ngày! Tiến độ: {progress} ({current_amount}/{target_amount}). "
             "Cố gắng thêm nhé! 💪"
         ),
-        'GOAL_DEADLINE_TODAY': (
+        # NOT013 - Deadline hôm nay
+        'NOT013': (
             "Hôm nay là deadline của mục tiêu '{goal_name}'! "
             "Tiến độ: {progress} ({current_amount}/{target_amount})"
         ),
-        'GOAL_COMPLETED': (
+        # NOT014 - Hoàn thành mục tiêu
+        'NOT014': (
             "Tuyệt vời! Bạn đã hoàn thành mục tiêu '{goal_name}' ({target_amount})! 🎊"
         ),
     }
@@ -351,7 +368,7 @@ async def get_savings_suggestions(user_id: int):
                 
                 # Lấy message từ template trong database
                 message = get_message_from_template(
-                    'SAVINGS_SUGGESTION',
+                    SAVINGS_SUGGESTION,
                     category=category,
                     weekly_avg=weekly_avg,
                     suggested_weekly=suggested_weekly,
@@ -508,7 +525,7 @@ async def get_proactive_insights(user_id: int):
                 
                 # Lấy message từ template
                 message = get_message_from_template(
-                    'ANOMALY_DETECTED',
+                    ANOMALY_DETECTED,
                     category=category,
                     current_amount=cat_current,
                     increase_percent=increase_percent,
@@ -527,7 +544,7 @@ async def get_proactive_insights(user_id: int):
                 save_percent = (1 - (cat_current / cat_avg)) * 100
                 
                 message = get_message_from_template(
-                    'SPENDING_ACHIEVEMENT',
+                    SPENDING_ACHIEVEMENT,
                     category=category,
                     save_percent=save_percent
                 )
@@ -551,7 +568,7 @@ async def get_proactive_insights(user_id: int):
                 increase_percent = ((total_current / avg_monthly) - 1) * 100
                 
                 message = get_message_from_template(
-                    'ANOMALY_DETECTED',
+                    ANOMALY_DETECTED,
                     category='Tổng chi tiêu',
                     current_amount=total_current,
                     increase_percent=increase_percent,
@@ -569,7 +586,7 @@ async def get_proactive_insights(user_id: int):
         for category, stats in user_stats.items():
             if stats['trend'] > stats['mean'] * 0.1:  # Significant upward trend
                 message = get_message_from_template(
-                    'SPENDING_TIP',
+                    SPENDING_TIP,
                     category=category
                 )
                 
