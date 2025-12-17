@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { Card, Table, Button, Tag } from 'antd';
 import { DownloadOutlined, EyeOutlined } from '@ant-design/icons';
+import LoginFailureDetailModal from '../../../components/admin/LoginFailureDetailModal';
 
 const AuditLogTab = () => {
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedLogin, setSelectedLogin] = useState(null);
+
   const [adminLogs] = useState([
     {
       key: '1',
@@ -208,11 +212,15 @@ const AuditLogTab = () => {
       key: 'action',
       width: 100,
       align: 'center',
-      render: () => (
+      render: (_, record) => (
         <Button
           type="text"
           icon={<EyeOutlined style={{ fontSize: 16 }} />}
           style={{ color: '#111827' }}
+          onClick={() => {
+            setSelectedLogin(record);
+            setDetailModalVisible(true);
+          }}
         />
       ),
     },
@@ -298,6 +306,13 @@ const AuditLogTab = () => {
           tableLayout="fixed"
         />
       </Card>
+
+      {/* Login Failure Detail Modal */}
+      <LoginFailureDetailModal
+        visible={detailModalVisible}
+        onClose={() => setDetailModalVisible(false)}
+        loginData={selectedLogin}
+      />
     </div>
   );
 };
