@@ -3,10 +3,12 @@ import { Card, Table, Button, Tag } from 'antd';
 import { PlusOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
 import AddAdminModal from '../../../components/admin/AddAdminModal';
 import AdminDetailModal from '../../../components/admin/AdminDetailModal';
+import SuccessModal from '../../../components/common/SuccessModal';
 
 const PermissionTab = () => {
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [admins, setAdmins] = useState([
     {
@@ -41,6 +43,7 @@ const PermissionTab = () => {
     };
     setAdmins([...admins, newAdmin]);
     setAddModalVisible(false);
+    setSuccessModalVisible(true);
   };
 
   const handleViewAdmin = (admin) => {
@@ -225,6 +228,13 @@ const PermissionTab = () => {
         visible={detailModalVisible}
         onClose={() => setDetailModalVisible(false)}
         admin={selectedAdmin}
+      />
+
+      <SuccessModal
+        open={successModalVisible}
+        onClose={() => setSuccessModalVisible(false)}
+        message="Thêm Admin thành công!"
+        buttonText="Đồng ý"
       />
     </Card>
   );
