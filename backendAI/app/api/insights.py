@@ -8,6 +8,10 @@ API cung cấp các gợi ý proactive giúp người dùng:
 - So sánh chi tiêu giữa các danh mục và thời gian
 
 Ví dụ: "Bạn chi 200k/tuần cho trà sữa, giảm còn 100k sẽ tiết kiệm 400k/tháng"
+
+Nguồn dữ liệu:
+- Ưu tiên: MySQL database (dữ liệu thật)
+- Fallback: CSV file (dữ liệu mẫu nếu không kết nối được MySQL)
 """
 
 from fastapi import APIRouter, HTTPException
@@ -18,16 +22,121 @@ from app.schemas.insights import (
     SpendingInsight
 )
 from app.models.spending_prediction import SpendingPredictor
+from app.services.database import get_database_service
 from typing import List
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import os
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # Khởi tạo predictor (để truy cập category stats)
 predictor = None
+
+# Flag để track nguồn dữ liệu
+USE_MYSQL = True  # Đặt False để sử dụng CSV (cho testing)
+
+
+def get_message_from_template(template_code: str, **kwargs) -> str:
+    """
+    Lấy message từ bảng mau_thong_bao và thay thế các placeholder
+    
+    Args:
+        template_code: Mã template (ví dụ: 'SAVINGS_SUGGESTION', 'BUDGET_WARNING')
+        **kwargs: Các giá trị để thay thế vào template
+        
+    Returns:
+        str: Message đã được format với dữ liệu thực
+        
+    Example:
+        get_message_from_template(
+            'SAVINGS_SUGGESTION',
+            category='Ăn uống',
+            weekly_avg='200,000đ',
+            suggested_weekly='150,000đ',
+            monthly_savings='200,000đ'
+        )
+    """
+    if USE_MYSQL:
+        try:
+            db = get_database_service()
+            result = db.render_notification_template(template_code, **kwargs)
+            if result:
+                return result['content']
+        except Exception as e:
+            logger.warning(f"Could not load template {template_code}: {e}")
+    
+    # Fallback: Tạo message mặc định nếu không có template
+    return _create_fallback_message(template_code, **kwargs)
+
+
+def _create_fallback_message(template_code: str, **kwargs) -> str:
+    """
+    Tạo message mặc định khi không load được template từ database
+    """
+    templates = {
+        'SAVINGS_SUGGESTION': (
+            "FinPal nhận thấy bạn chi trung bình {weekly_avg} cho '{category}' mỗi tuần. "
+            "Nếu bạn giảm còn {suggested_weekly}, bạn sẽ tiết kiệm được {monthly_savings}/tháng!"
+        ),
+        'BUDGET_WARNING': (
+            "Bạn đã chi {percentage} hạn mức '{budget_name}' ({spent_amount}/{budget_amount}), "
+            "còn {days_remaining} ngày nữa là hết kỳ ngân sách."
+        ),
+        'BUDGET_EXCEEDED': (
+            "Ngân sách '{budget_name}' đã vượt quá! Đã chi {percentage} ({spent_amount}/{budget_amount})"
+        ),
+        'ANOMALY_DETECTED': (
+            "Chi tiêu '{category}' tháng này ({current_amount}) cao hơn {increase_percent} "
+            "so với trung bình ({average_amount})."
+        ),
+        'SPENDING_ACHIEVEMENT': (
+            "Tuyệt vời! Bạn đã tiết kiệm được trong danh mục '{category}' tháng này. "
+            "Chi tiêu thấp hơn {save_percent} so với trung bình!"
+        ),
+        'SPENDING_TIP': (
+            "Chi tiêu '{category}' đang có xu hướng tăng. Cân nhắc xem xét lại các khoản chi này."
+        ),
+        'GOAL_REMINDER_7DAYS': (
+            "Mục tiêu '{goal_name}' còn 7 ngày! Tiến độ: {progress} ({current_amount}/{target_amount}). "
+            "Cố gắng thêm nhé! 💪"
+        ),
+        'GOAL_DEADLINE_TODAY': (
+            "Hôm nay là deadline của mục tiêu '{goal_name}'! "
+            "Tiến độ: {progress} ({current_amount}/{target_amount})"
+        ),
+        'GOAL_COMPLETED': (
+            "Tuyệt vời! Bạn đã hoàn thành mục tiêu '{goal_name}' ({target_amount})! 🎊"
+        ),
+    }
+    
+    template = templates.get(template_code, "Thông báo từ FinPal")
+    
+    # Format số tiền với dấu phẩy
+    formatted_kwargs = {}
+    for key, value in kwargs.items():
+        if key in ['weekly_avg', 'suggested_weekly', 'monthly_savings', 'spent_amount', 
+                   'budget_amount', 'current_amount', 'average_amount', 'target_amount']:
+            if isinstance(value, (int, float)):
+                formatted_kwargs[key] = f"{value:,.0f}đ"
+            else:
+                formatted_kwargs[key] = str(value)
+        elif key in ['percentage', 'increase_percent', 'save_percent', 'progress']:
+            if isinstance(value, (int, float)):
+                formatted_kwargs[key] = f"{value:.0f}%"
+            else:
+                formatted_kwargs[key] = str(value)
+        else:
+            formatted_kwargs[key] = str(value)
+    
+    try:
+        return template.format(**formatted_kwargs)
+    except KeyError as e:
+        logger.warning(f"Missing placeholder {e} in template {template_code}")
+        return template
 
 
 def get_predictor():
@@ -55,14 +164,44 @@ def get_predictor():
     return predictor
 
 
-def load_user_transactions(user_id: int) -> pd.DataFrame:
+def load_user_transactions_from_mysql(user_id: int) -> pd.DataFrame:
     """
-    Load transactions cho một user cụ thể
+    Load transactions từ MySQL database
     
-    Đọc dữ liệu từ CSV và filter theo user_id, sau đó xử lý:
-    - Convert timestamp sang datetime
-    - Chỉ lấy expense transactions
-    - Raise exception nếu không có dữ liệu
+    Args:
+        user_id: ID người dùng cần load transactions
+    
+    Returns:
+        pd.DataFrame: DataFrame chứa expense transactions của user
+        
+    Raises:
+        Exception: Nếu không kết nối được MySQL
+    """
+    db = get_database_service()
+    
+    # Lấy expense transactions 6 tháng gần nhất
+    df = db.get_user_expense_transactions(user_id, months=6)
+    
+    if len(df) == 0:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No transactions found for user {user_id}"
+        )
+    
+    # Rename columns để tương thích với code cũ
+    if 'timestamp' not in df.columns and 'transaction_date' in df.columns:
+        df = df.rename(columns={'transaction_date': 'timestamp'})
+    
+    # Đảm bảo timestamp là datetime
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    
+    logger.info(f"✅ Loaded {len(df)} transactions from MySQL for user {user_id}")
+    return df
+
+
+def load_user_transactions_from_csv(user_id: int) -> pd.DataFrame:
+    """
+    Load transactions từ CSV file (fallback)
     
     Args:
         user_id: ID người dùng cần load transactions
@@ -96,7 +235,38 @@ def load_user_transactions(user_id: int) -> pd.DataFrame:
     # Filter only expenses
     user_df = user_df[user_df['transaction_type'] == 'EXPENSE'].copy()
     
+    logger.info(f"📁 Loaded {len(user_df)} transactions from CSV for user {user_id}")
     return user_df
+
+
+def load_user_transactions(user_id: int) -> pd.DataFrame:
+    """
+    Load transactions cho một user cụ thể
+    
+    Ưu tiên lấy dữ liệu từ MySQL database.
+    Nếu không kết nối được MySQL, fallback sang CSV file.
+    
+    Args:
+        user_id: ID người dùng cần load transactions
+    
+    Returns:
+        pd.DataFrame: DataFrame chứa expense transactions của user
+    
+    Raises:
+        HTTPException: Nếu không tìm thấy dữ liệu
+    """
+    if USE_MYSQL:
+        try:
+            return load_user_transactions_from_mysql(user_id)
+        except HTTPException:
+            # Re-raise HTTP exceptions (như 404)
+            raise
+        except Exception as e:
+            # Lỗi kết nối MySQL -> fallback sang CSV
+            logger.warning(f"⚠️ MySQL connection failed: {e}. Falling back to CSV...")
+            return load_user_transactions_from_csv(user_id)
+    else:
+        return load_user_transactions_from_csv(user_id)
 
 
 @router.get("/savings-suggestions/{user_id}", response_model=SavingsSuggestionsResponse)
@@ -179,10 +349,13 @@ async def get_savings_suggestions(user_id: int):
                 suggested_weekly = weekly_avg * (1 - reduction_pct)
                 monthly_savings = (weekly_avg - suggested_weekly) * 4
                 
-                message = (
-                    f"Bạn chi trung bình {int(weekly_avg):,}đ/tuần cho '{category}'. "
-                    f"Nếu giảm còn {int(suggested_weekly):,}đ, "
-                    f"bạn sẽ tiết kiệm được {int(monthly_savings):,}đ/tháng."
+                # Lấy message từ template trong database
+                message = get_message_from_template(
+                    'SAVINGS_SUGGESTION',
+                    category=category,
+                    weekly_avg=weekly_avg,
+                    suggested_weekly=suggested_weekly,
+                    monthly_savings=monthly_savings
                 )
                 
                 suggestions.append(SavingsSuggestion(
@@ -330,18 +503,39 @@ async def get_proactive_insights(user_id: int):
             cat_avg = stats['mean']
             
             if cat_current > cat_avg * 1.3:
+                # Tính % tăng so với trung bình
+                increase_percent = ((cat_current / cat_avg) - 1) * 100
+                
+                # Lấy message từ template
+                message = get_message_from_template(
+                    'ANOMALY_DETECTED',
+                    category=category,
+                    current_amount=cat_current,
+                    increase_percent=increase_percent,
+                    average_amount=cat_avg
+                )
+                
                 insights.append(SpendingInsight(
                     insight_type="warning",
                     category=category,
-                    message=f"Chi tiêu '{category}' tháng này ({int(cat_current):,}đ) cao hơn 30% so với trung bình ({int(cat_avg):,}đ).",
+                    message=message,
                     actionable=True,
                     impact_score=0.8
                 ))
             elif cat_current < cat_avg * 0.7:
+                # Tính % tiết kiệm được
+                save_percent = (1 - (cat_current / cat_avg)) * 100
+                
+                message = get_message_from_template(
+                    'SPENDING_ACHIEVEMENT',
+                    category=category,
+                    save_percent=save_percent
+                )
+                
                 insights.append(SpendingInsight(
                     insight_type="achievement",
                     category=category,
-                    message=f"Tuyệt vời! Bạn đã tiết kiệm được trong danh mục '{category}' tháng này.",
+                    message=message,
                     actionable=False,
                     impact_score=0.6
                 ))
@@ -354,9 +548,19 @@ async def get_proactive_insights(user_id: int):
             avg_monthly = all_months[:-1].mean()  # Exclude current month
             
             if total_current > avg_monthly * 1.2:
+                increase_percent = ((total_current / avg_monthly) - 1) * 100
+                
+                message = get_message_from_template(
+                    'ANOMALY_DETECTED',
+                    category='Tổng chi tiêu',
+                    current_amount=total_current,
+                    increase_percent=increase_percent,
+                    average_amount=avg_monthly
+                )
+                
                 insights.append(SpendingInsight(
                     insight_type="warning",
-                    message=f"Tổng chi tiêu tháng này ({int(total_current):,}đ) cao hơn 20% so với trung bình ({int(avg_monthly):,}đ).",
+                    message=message,
                     actionable=True,
                     impact_score=0.9
                 ))
@@ -364,10 +568,15 @@ async def get_proactive_insights(user_id: int):
         # 3. Find categories with increasing trend
         for category, stats in user_stats.items():
             if stats['trend'] > stats['mean'] * 0.1:  # Significant upward trend
+                message = get_message_from_template(
+                    'SPENDING_TIP',
+                    category=category
+                )
+                
                 insights.append(SpendingInsight(
                     insight_type="tip",
                     category=category,
-                    message=f"Chi tiêu '{category}' đang có xu hướng tăng. Cân nhắc xem xét lại các khoản chi này.",
+                    message=message,
                     actionable=True,
                     impact_score=0.7
                 ))

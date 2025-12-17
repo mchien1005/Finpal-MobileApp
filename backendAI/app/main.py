@@ -104,6 +104,47 @@ async def health_check():
     }
 
 
+@app.get("/health/database")
+async def database_health_check():
+    """
+    Database health check - Kiểm tra kết nối MySQL database
+    
+    Trả về:
+    - status: "connected" hoặc "disconnected"
+    - data_source: "mysql" hoặc "csv"
+    - database: tên database
+    - host: host của database
+    """
+    from app.services.database import get_database_service
+    from app.api.insights import USE_MYSQL
+    
+    result = {
+        "status": "unknown",
+        "data_source": "mysql" if USE_MYSQL else "csv",
+        "database": settings.DB_NAME,
+        "host": f"{settings.DB_HOST}:{settings.DB_PORT}"
+    }
+    
+    if USE_MYSQL:
+        try:
+            db = get_database_service()
+            if db.check_connection():
+                result["status"] = "connected"
+                result["message"] = "✅ Kết nối MySQL thành công. Đang sử dụng dữ liệu thật."
+            else:
+                result["status"] = "disconnected"
+                result["message"] = "❌ Không thể kết nối MySQL. Sẽ fallback sang CSV."
+        except Exception as e:
+            result["status"] = "error"
+            result["message"] = f"❌ Lỗi kết nối: {str(e)}"
+            result["data_source"] = "csv (fallback)"
+    else:
+        result["status"] = "disabled"
+        result["message"] = "ℹ️ MySQL đã tắt. Đang sử dụng dữ liệu mẫu từ CSV."
+    
+    return result
+
+
 if __name__ == "__main__":
     # Chạy server khi file được execute trực tiếp
     # Run the application using Uvicorn ASGI server
