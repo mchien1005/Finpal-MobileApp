@@ -256,11 +256,12 @@ const PermissionTab = () => {
           setConfirmModalVisible(false);
           setAdminToDelete(null);
         }}
-        title="Xác nhận xóa Admin"
-        content={`Bạn có chắc chắn muốn xóa admin\n"${adminToDelete?.email}"?`}
-        confirmText="Xóa"
+        title="Xóa Admin"
+        content="Bạn có chắc chắn muốn xóa admin này?"
+        confirmText="Xác nhận"
         cancelText="Hủy"
         danger={true}
+        adminInfo={adminToDelete}
       />
 
       <SuccessModal
