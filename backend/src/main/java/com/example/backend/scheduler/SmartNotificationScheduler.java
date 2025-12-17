@@ -167,7 +167,7 @@ public class SmartNotificationScheduler {
             createAndPushNotification(user, "BUDGET_ALERT", title,
                     message, Notification.NotificationPriority.HIGH, "/budgets/" + budget.getId());
 
-            fcmService.sendBudgetAlert(user.getId(), budget.getName(), usagePercentage, spentAmount.doubleValue());
+            // fcmService.sendBudgetAlert(user.getId(), budget.getName(), usagePercentage, spentAmount.doubleValue());
             return 1;
 
         } else if (usagePercentage >= budget.getAlertThreshold()) {
@@ -194,7 +194,7 @@ public class SmartNotificationScheduler {
             createAndPushNotification(user, "BUDGET_ALERT", title,
                     message, Notification.NotificationPriority.MEDIUM, "/budgets/" + budget.getId());
 
-            fcmService.sendBudgetAlert(user.getId(), budget.getName(), usagePercentage, spentAmount.doubleValue());
+            // fcmService.sendBudgetAlert(user.getId(), budget.getName(), usagePercentage, spentAmount.doubleValue());
             return 1;
         }
 
@@ -259,13 +259,13 @@ public class SmartNotificationScheduler {
                                 "/dashboard/insights");
 
                         // Gửi push notification
-                        fcmService.sendSavingsSuggestion(
-                                user.getId(),
-                                topSuggestion.getCategory(),
-                                topSuggestion.getCurrentWeeklyAvg(),
-                                topSuggestion.getSuggestedWeeklyTarget(),
-                                topSuggestion.getMonthlySavings()
-                        );
+                        // fcmService.sendSavingsSuggestion(
+                        //         user.getId(),
+                        //         topSuggestion.getCategory(),
+                        //         topSuggestion.getCurrentWeeklyAvg(),
+                        //         topSuggestion.getSuggestedWeeklyTarget(),
+                        //         topSuggestion.getMonthlySavings()
+                        // );
 
                         suggestionCount++;
                     }
@@ -323,11 +323,11 @@ public class SmartNotificationScheduler {
                                                 : "/dashboard/analytics");
 
                                 // Parse message để lấy thông tin chi tiết (simplified)
-                                fcmService.sendAnomalyAlert(
-                                        user.getId(),
-                                        insight.getCategory() != null ? insight.getCategory() : "Tổng chi tiêu",
-                                        0, 0, 30 // Simplified - actual values would be parsed
-                                );
+                                // fcmService.sendAnomalyAlert(
+                                //         user.getId(),
+                                //         insight.getCategory() != null ? insight.getCategory() : "Tổng chi tiêu",
+                                //         0, 0, 30 // Simplified - actual values would be parsed
+                                // );
 
                                 anomalyCount++;
                             }
@@ -420,9 +420,9 @@ public class SmartNotificationScheduler {
                     Notification.NotificationPriority.HIGH,
                     "/savings-goals/" + goal.getId());
 
-            fcmService.sendAchievementNotification(user.getId(), 
-                    "Hoàn thành Mục tiêu!",
-                    String.format("Bạn đã đạt mục tiêu '%s'! 🎊", goal.getName()));
+            // fcmService.sendAchievementNotification(user.getId(), 
+            //         "Hoàn thành Mục tiêu!",
+            //         String.format("Bạn đã đạt mục tiêu '%s'! 🎊", goal.getName()));
             return 1;
         }
 
@@ -449,8 +449,8 @@ public class SmartNotificationScheduler {
                     Notification.NotificationPriority.MEDIUM,
                     "/savings-goals/" + goal.getId());
 
-            fcmService.sendGoalReminder(user.getId(), goal.getName(),
-                    goal.getCurrentAmount().doubleValue(), goal.getTargetAmount().doubleValue(), 7);
+            // fcmService.sendGoalReminder(user.getId(), goal.getName(),
+            //         goal.getCurrentAmount().doubleValue(), goal.getTargetAmount().doubleValue(), 7);
             return 1;
         }
 
@@ -477,8 +477,8 @@ public class SmartNotificationScheduler {
                     Notification.NotificationPriority.HIGH,
                     "/savings-goals/" + goal.getId());
 
-            fcmService.sendGoalReminder(user.getId(), goal.getName(),
-                    goal.getCurrentAmount().doubleValue(), goal.getTargetAmount().doubleValue(), 0);
+            // fcmService.sendGoalReminder(user.getId(), goal.getName(),
+            //         goal.getCurrentAmount().doubleValue(), goal.getTargetAmount().doubleValue(), 0);
             return 1;
         }
 
