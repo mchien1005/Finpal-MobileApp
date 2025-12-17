@@ -467,7 +467,6 @@ const BankAndSmsparserPage = () => {
           <Button
             type="text"
             icon={<DeleteOutlined />}
-            onClick={() => handleDeleteBank(record)}
             style={{ color: '#6a7282' }}
           />
         </div>
@@ -749,7 +748,6 @@ const BankAndSmsparserPage = () => {
                     <div style={{ display: 'flex', gap: 8 }}>
                       <Button
                         size="small"
-                        onClick={() => handleUpdatePattern(failCase)}
                         style={{
                           borderRadius: 8,
                           border: '1px solid rgba(0,0,0,0.1)',

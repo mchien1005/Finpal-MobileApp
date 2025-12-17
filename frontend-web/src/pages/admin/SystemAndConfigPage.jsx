@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import { useSidebar } from '../../contexts/SidebarContext';
+import SettingTab from './system-config/SettingTab';
 
 const tabs = ['Cài đặt Hệ thống', 'Sao lưu & Khôi phục', 'Quản lý API'];
 
@@ -82,13 +83,9 @@ const SystemAndConfigPage = () => {
         </div>
 
         {/* Tab Panel Content */}
-        {activeTab === 0 && <import tab vô đây />}
-        {activeTab === 1 && <import tab vô đây />}
-        {activeTab === 2 && <import tab vô đây />}
-        {/* //ví dụ: */}
-        {/* {activeTab === 0 && <NotificationTemplatesTab />}
-        {activeTab === 1 && <TipsTab />}
-        {activeTab === 2 && <FAQsTab />} */}
+        {activeTab === 0 && <SettingTab />}
+        {activeTab === 1 && <div>Sao lưu & Khôi phục tab - Coming soon</div>}
+        {activeTab === 2 && <div>Quản lý API tab - Coming soon</div>}
       </div>
     </div>
   );
