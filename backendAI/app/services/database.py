@@ -449,13 +449,18 @@ class DatabaseService:
             
             # Format số tiền với dấu phẩy
             if key in ['amount', 'spent_amount', 'budget_amount', 'target_amount', 
-                       'current_amount', 'monthly_savings', 'potential_savings']:
+                       'current_amount', 'monthly_savings', 'potential_savings',
+                       'weekly_avg', 'suggested_weekly', 'average_amount']:
                 if isinstance(value, (int, float)):
                     formatted_value = f"{value:,.0f}đ"
                 else:
                     formatted_value = str(value)
-            elif key == 'percentage':
-                formatted_value = f"{value:.0f}%"
+            # Format phần trăm
+            elif key in ['percentage', 'save_percent', 'increase_percent', 'progress', 'savings_percent']:
+                if isinstance(value, (int, float)):
+                    formatted_value = f"{value:.0f}%"
+                else:
+                    formatted_value = str(value)
             else:
                 formatted_value = str(value)
             
