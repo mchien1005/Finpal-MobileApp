@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { Card, Table, Button, Tag } from 'antd';
 import { PlusOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
 import AddAdminModal from '../../../components/admin/AddAdminModal';
+import AdminDetailModal from '../../../components/admin/AdminDetailModal';
 
 const PermissionTab = () => {
   const [addModalVisible, setAddModalVisible] = useState(false);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [admins, setAdmins] = useState([
     {
       key: '1',
@@ -38,6 +41,11 @@ const PermissionTab = () => {
     };
     setAdmins([...admins, newAdmin]);
     setAddModalVisible(false);
+  };
+
+  const handleViewAdmin = (admin) => {
+    setSelectedAdmin(admin);
+    setDetailModalVisible(true);
   };
 
   const columns = [
@@ -138,11 +146,12 @@ const PermissionTab = () => {
       key: 'action',
       width: 120,
       align: 'center',
-      render: () => (
+      render: (_, record) => (
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
           <Button
             type="text"
             icon={<EyeOutlined style={{ fontSize: 16 }} />}
+            onClick={() => handleViewAdmin(record)}
             style={{ color: '#111827' }}
           />
           <Button
@@ -210,6 +219,12 @@ const PermissionTab = () => {
         visible={addModalVisible}
         onClose={() => setAddModalVisible(false)}
         onAdd={handleAddAdmin}
+      />
+
+      <AdminDetailModal
+        visible={detailModalVisible}
+        onClose={() => setDetailModalVisible(false)}
+        admin={selectedAdmin}
       />
     </Card>
   );
