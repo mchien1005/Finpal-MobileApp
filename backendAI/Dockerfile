@@ -30,6 +30,7 @@ RUN pip install --default-timeout=1000 --no-cache-dir \
 
 RUN pip install --default-timeout=1000 --no-cache-dir \
   sqlalchemy==2.0.23 \
+  pymysql==1.1.0 \
   httpx==0.25.2 \
   requests==2.31.0 \
   python-dotenv==1.0.0 \

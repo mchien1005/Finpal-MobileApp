@@ -72,7 +72,15 @@ services:
       - finpal-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/actuator/health",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -85,10 +93,18 @@ services:
       dockerfile: Dockerfile
     container_name: finpal-backend-ai
     environment:
-      BACKEND_URL: http://backend:8080
-      DATABASE_URL: mysql://root:root@mysql:3306/finpal_db
-      MODEL_PATH: /app/data/models
+      # Database - Kết nối MySQL container
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: finpal_db
+      DB_USER: root
+      DB_PASSWORD: root
+      # Java Backend
+      JAVA_BACKEND_URL: http://backend:8080
+      # Python settings
       PYTHONUNBUFFERED: 1
+      MODEL_PATH: /app/data/models
+      DEBUG: "True"
     ports:
       - "8000:8000"
     volumes:
@@ -101,7 +117,11 @@ services:
       - finpal-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "python -c 'import requests; requests.get(\"http://localhost:8000/health\")'"]
+      test:
+        [
+          "CMD-SHELL",
+          'python -c ''import requests; requests.get("http://localhost:8000/health")''',
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
