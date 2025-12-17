@@ -22,6 +22,7 @@ import {
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import { useSidebar } from '../../contexts/SidebarContext';
 import SuccessModal from '../../components/common/SuccessModal';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -36,6 +37,8 @@ const BankAndSmsparserPage = () => {
   const [isTestParserModalOpen, setIsTestParserModalOpen] = useState(false);
   const [testSmsValue, setTestSmsValue] = useState('');
   const [testResult, setTestResult] = useState(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deletingBank, setDeletingBank] = useState(null);
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
   const [testForm] = Form.useForm();
@@ -91,6 +94,31 @@ const BankAndSmsparserPage = () => {
         error: 'Không thể parse SMS - format không khớp với template nào',
       });
     }
+  };
+
+  // Handler to update pattern from failed case
+  const handleUpdatePattern = (failCase) => {
+    // Find the bank from bankTemplatesData based on the bank code
+    const bank = bankTemplatesData.find(b => b.code === failCase.bank);
+    if (bank) {
+      handleEditBank(bank);
+    }
+  };
+
+  // Handler to open delete confirmation
+  const handleDeleteBank = (bank) => {
+    setDeletingBank(bank);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  // Handler to confirm delete
+  const handleConfirmDelete = () => {
+    console.log('Delete bank:', deletingBank);
+    // TODO: Call API to delete bank
+    setIsDeleteConfirmOpen(false);
+    setDeletingBank(null);
+    setSuccessMessage('Xóa ngân hàng thành công!');
+    setIsSuccessModalOpen(true);
   };
 
   // Stats data
@@ -1173,6 +1201,21 @@ const BankAndSmsparserPage = () => {
         onClose={() => setIsSuccessModalOpen(false)}
         message={successMessage}
         buttonText="Đồng ý"
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        open={isDeleteConfirmOpen}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setIsDeleteConfirmOpen(false);
+          setDeletingBank(null);
+        }}
+        title="Xác nhận xóa"
+        content={`Bạn có chắc chắn muốn xóa ngân hàng ${deletingBank?.name || ''} (${deletingBank?.code || ''})?\nHành động này không thể hoàn tác.`}
+        confirmText="Xóa"
+        cancelText="Hủy"
+        danger={true}
       />
     </div>
   );

@@ -8,7 +8,7 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import UserManagementPage from './pages/admin/UserManagementPage';
 // import ContentManagementPage from './pages/admin/ContentManagementPage';
 // import AIModelManagementPage from './pages/admin/AIModelManagementPage';
-// import SecurityAndAuditPage from './pages/admin/SecurityAndAuditPage';
+import SecurityAndAuditPage from './pages/admin/SecurityAndAuditPage';
 import SystemAndConfigPage from './pages/admin/SystemAndConfigPage';
 import authService from './services/authService';
 import { SidebarProvider } from './contexts/SidebarContext';
@@ -77,14 +77,14 @@ function App() {
               </AdminRoute>
             }
             /> */}
-            {/* <Route
+            <Route
             path="/admin/security"
             element={
               <AdminRoute>
                 <SecurityAndAuditPage />
               </AdminRoute>
             }
-            /> */}
+            />
             <Route
             path="/admin/settings"
             element={

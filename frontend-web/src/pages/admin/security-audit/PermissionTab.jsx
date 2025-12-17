@@ -1,322 +1,276 @@
-import React from 'react';
-import { Card, Row, Col, Table, Tag, Button, Typography } from 'antd';
-import {
-  SafetyOutlined,
-  WarningOutlined,
-  LineChartOutlined,
-  LockOutlined,
-  DownloadOutlined,
-} from '@ant-design/icons';
-
-const { Title, Text } = Typography;
+import React, { useState } from 'react';
+import { Card, Table, Button, Tag } from 'antd';
+import { PlusOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
+import AddAdminModal from '../../../components/admin/AddAdminModal';
+import AdminDetailModal from '../../../components/admin/AdminDetailModal';
+import SuccessModal from '../../../components/common/SuccessModal';
+import ConfirmModal from '../../../components/common/ConfirmModal';
 
 const PermissionTab = () => {
-  // Stats cards data
-  const statsCards = [
-    {
-      title: 'Điểm Bảo mật',
-      value: '98/100',
-      icon: <SafetyOutlined style={{ fontSize: 24, color: '#00C950' }} />,
-      bgColor: '#dcfce7',
-    },
-    {
-      title: 'Đăng nhập Thất bại',
-      value: '15 hôm nay',
-      icon: <WarningOutlined style={{ fontSize: 24, color: '#e7000b' }} />,
-      bgColor: '#ffe2e2',
-    },
-    {
-      title: 'Admin Hoạt động',
-      value: '2',
-      icon: <LineChartOutlined style={{ fontSize: 24, color: '#155dfc' }} />,
-      bgColor: '#dbeafe',
-    },
-    {
-      title: 'Yêu cầu Dữ liệu',
-      value: '3 chờ xử lý',
-      icon: <LockOutlined style={{ fontSize: 24, color: '#9333ea' }} />,
-      bgColor: '#f3e8ff',
-    },
-  ];
-
-  // GDPR requests data
-  const gdprData = [
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [selectedAdmin, setSelectedAdmin] = useState(null);
+  const [adminToDelete, setAdminToDelete] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [admins, setAdmins] = useState([
     {
       key: '1',
-      requestId: 'REQ001',
-      user: 'user123@gmail.com',
-      requestType: 'Export data',
-      requestDate: '23/03/2024',
-      status: 'Chờ xử lý',
-      statusColor: '#fef9c2',
-      statusTextColor: '#a65f00',
-      requestTypeColor: '#dbeafe',
-      requestTypeTextColor: '#1447e6',
+      email: 'moderator@finpal.com',
+      name: 'Moderator',
+      role: 'Moderator',
+      permissions: ['View Users', 'Edit Content'],
+      lastActive: '2 giờ trước',
+      status: 'Hoạt động',
     },
     {
       key: '2',
-      requestId: 'REQ002',
-      user: 'user456@gmail.com',
-      requestType: 'Delete account',
-      requestDate: '22/03/2024',
-      status: 'Hoàn thành',
-      statusColor: '#dcfce7',
-      statusTextColor: '#008236',
-      requestTypeColor: '#ffe2e2',
-      requestTypeTextColor: '#c10007',
+      email: 'support@finpal.com',
+      name: 'Support Team',
+      role: 'Support',
+      permissions: ['View Users', 'View Logs'],
+      lastActive: '1 ngày trước',
+      status: 'Không hoạt động',
     },
-    {
-      key: '3',
-      requestId: 'REQ003',
-      user: 'user789@gmail.com',
-      requestType: 'Anonymize data',
-      requestDate: '21/03/2024',
-      status: 'Đang xử lý',
-      statusColor: '#dbeafe',
-      statusTextColor: '#1447e6',
-      requestTypeColor: '#dbeafe',
-      requestTypeTextColor: '#1447e6',
-    },
-  ];
+  ]);
 
-  // Table columns
+  const handleAddAdmin = (formData) => {
+    const newAdmin = {
+      key: String(admins.length + 1),
+      email: formData.email,
+      name: formData.name,
+      role: formData.role,
+      permissions: formData.permissions.split(',').map((p) => p.trim()),
+      lastActive: 'Vừa xong',
+      status: 'Hoạt động',
+    };
+    setAdmins([...admins, newAdmin]);
+    setAddModalVisible(false);
+    setSuccessMessage('Thêm Admin thành công!');
+    setSuccessModalVisible(true);
+  };
+
+  const handleViewAdmin = (admin) => {
+    setSelectedAdmin(admin);
+    setDetailModalVisible(true);
+  };
+
+  const handleDeleteClick = (admin) => {
+    setAdminToDelete(admin);
+    setConfirmModalVisible(true);
+  };
+
+  const handleConfirmDelete = () => {
+    setAdmins(admins.filter((admin) => admin.key !== adminToDelete.key));
+    setConfirmModalVisible(false);
+    setAdminToDelete(null);
+    setSuccessMessage('Xóa Admin thành công!');
+    setSuccessModalVisible(true);
+  };
+
   const columns = [
     {
-      title: 'Mã yêu cầu',
-      dataIndex: 'requestId',
-      key: 'requestId',
-      width: 120,
-      render: (text) => (
-        <Text style={{ color: '#155dfc', fontWeight: 500 }}>{text}</Text>
-      ),
-    },
-    {
-      title: 'Người dùng',
-      dataIndex: 'user',
-      key: 'user',
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
       width: 200,
+      render: (text) => <span style={{ fontSize: 14, color: '#2563eb', cursor: 'pointer' }}>{text}</span>,
     },
     {
-      title: 'Loại yêu cầu',
-      dataIndex: 'requestType',
-      key: 'requestType',
-      width: 170,
-      render: (text, record) => (
+      title: 'Tên',
+      dataIndex: 'name',
+      key: 'name',
+      width: 150,
+      render: (text) => <span style={{ fontSize: 14, color: '#111827' }}>{text}</span>,
+    },
+    {
+      title: 'Vai trò',
+      dataIndex: 'role',
+      key: 'role',
+      width: 120,
+      render: (role) => (
         <Tag
-          color={record.requestTypeColor}
           style={{
+            background: '#dbeafe',
+            color: '#2563eb',
             border: 'none',
-            borderRadius: 8,
-            color: record.requestTypeTextColor,
+            borderRadius: 6,
+            fontSize: 12,
+            fontWeight: 500,
+            padding: '2px 10px',
           }}
         >
-          {text}
+          {role}
         </Tag>
       ),
     },
     {
-      title: 'Ngày yêu cầu',
-      dataIndex: 'requestDate',
-      key: 'requestDate',
-      width: 140,
+      title: 'Quyền',
+      dataIndex: 'permissions',
+      key: 'permissions',
+      width: 300,
+      render: (permissions) => (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {permissions.map((permission, index) => (
+            <Tag
+              key={index}
+              style={{
+                background: '#dcfce7',
+                color: '#16a34a',
+                border: 'none',
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 500,
+                padding: '2px 10px',
+              }}
+            >
+              {permission}
+            </Tag>
+          ))}
+        </div>
+      ),
+    },
+    {
+      title: 'Hoạt động lần cuối',
+      dataIndex: 'lastActive',
+      key: 'lastActive',
+      width: 150,
+      render: (text) => <span style={{ fontSize: 14, color: '#6b7280' }}>{text}</span>,
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 130,
-      render: (text, record) => (
-        <Tag
-          color={record.statusColor}
-          style={{
-            border: 'none',
-            borderRadius: 8,
-            color: record.statusTextColor,
-          }}
-        >
-          {text}
-        </Tag>
-      ),
+      width: 140,
+      render: (status) => {
+        const isActive = status === 'Hoạt động';
+        return (
+          <Tag
+            style={{
+              background: isActive ? '#dcfce7' : '#f3f4f6',
+              color: isActive ? '#16a34a' : '#6b7280',
+              border: 'none',
+              borderRadius: 6,
+              fontSize: 12,
+              fontWeight: 500,
+              padding: '2px 10px',
+            }}
+          >
+            {status}
+          </Tag>
+        );
+      },
     },
     {
       title: 'Thao tác',
       key: 'action',
-      width: 210,
-      align: 'right',
-      render: (_, record) => {
-        if (record.status === 'Chờ xử lý') {
-          return (
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <Button
-                type="primary"
-                size="small"
-                style={{
-                  background: '#155dfc',
-                  borderColor: '#155dfc',
-                  borderRadius: 8,
-                  height: 32,
-                  paddingLeft: 12,
-                  paddingRight: 12,
-                }}
-              >
-                Xử lý
-              </Button>
-              <Button
-                size="small"
-                style={{
-                  color: '#e7000b',
-                  borderRadius: 8,
-                  height: 32,
-                  paddingLeft: 12,
-                  paddingRight: 12,
-                  border: '1px solid rgba(0,0,0,0.1)',
-                }}
-              >
-                Từ chối
-              </Button>
-            </div>
-          );
-        } else if (record.status === 'Hoàn thành') {
-          return (
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Button
-                icon={<DownloadOutlined />}
-                size="small"
-                style={{
-                  borderRadius: 8,
-                  height: 32,
-                  paddingLeft: 12,
-                  paddingRight: 12,
-                  border: '1px solid rgba(0,0,0,0.1)',
-                }}
-              >
-                Tải xuống
-              </Button>
-            </div>
-          );
-        }
-        return null;
-      },
+      width: 120,
+      align: 'center',
+      render: (_, record) => (
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+          <Button
+            type="text"
+            icon={<EyeOutlined style={{ fontSize: 16 }} />}
+            onClick={() => handleViewAdmin(record)}
+            style={{ color: '#111827' }}
+          />
+          <Button
+            type="text"
+            icon={<DeleteOutlined style={{ fontSize: 16 }} />}
+            onClick={() => handleDeleteClick(record)}
+            style={{ color: '#dc2626' }}
+          />
+        </div>
+      ),
     },
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Stats Cards */}
-      <Row gutter={[24, 24]}>
-        {statsCards.map((card, index) => (
-          <Col xs={24} sm={12} lg={6} key={index}>
-            <Card
-              style={{
-                borderRadius: 14,
-                border: '1px solid rgba(0,0,0,0.1)',
-                height: '100%',
-              }}
-              bodyStyle={{ padding: '24px' }}
-            >
-              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 10,
-                    background: card.bgColor,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  {card.icon}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <Text
-                    type="secondary"
-                    style={{
-                      fontSize: 14,
-                      display: 'block',
-                      marginBottom: 32,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {card.title.replace('\n', ' ')}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      fontWeight: 400,
-                      color: '#101828',
-                      display: 'block',
-                    }}
-                  >
-                    {card.value}
-                  </Text>
-                </div>
-              </div>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-
-      {/* Section Header */}
-      <div>
-        <Title level={4} style={{ margin: 0, marginBottom: 4 }}>
-          Quyền riêng tư Dữ liệu & GDPR
-        </Title>
-        <Text type="secondary">Xử lý yêu cầu về dữ liệu cá nhân</Text>
-      </div>
-
-      {/* GDPR Requests Table */}
-      <Card
+    <Card
+      style={{
+        borderRadius: 12,
+        border: '1px solid #e5e7eb',
+        boxShadow: 'none',
+        background: '#fff',
+      }}
+      bodyStyle={{ padding: 0 }}
+    >
+      <div
         style={{
-          borderRadius: 14,
-          border: '1px solid rgba(0,0,0,0.1)',
+          padding: '20px 24px',
+          borderBottom: '1px solid #e5e7eb',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
-        bodyStyle={{ padding: 1 }}
       >
-        <Table
-          columns={columns}
-          dataSource={gdprData}
-          pagination={false}
-          scroll={{ x: 1000 }}
-        />
-      </Card>
-
-      {/* GDPR Compliance Info */}
-      <Card
-        style={{
-          borderRadius: 14,
-          border: '1px solid #bedbff',
-          background: '#eff6ff',
-        }}
-        bodyStyle={{ padding: 24 }}
-      >
-        <div style={{ display: 'flex', gap: 12 }}>
-          <SafetyOutlined style={{ fontSize: 24, color: '#1447e6' }} />
-          <div>
-            <Title level={5} style={{ margin: 0, marginBottom: 8, color: '#1c398e' }}>
-              Tuân thủ GDPR
-            </Title>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <Text style={{ color: '#1447e6' }}>
-                ✓ Dữ liệu được mã hóa AES-256
-              </Text>
-              <Text style={{ color: '#1447e6' }}>
-                ✓ Users có quyền xem, export, xóa dữ liệu cá nhân
-              </Text>
-              <Text style={{ color: '#1447e6' }}>
-                ✓ Dữ liệu không được chia sẻ với bên thứ ba
-              </Text>
-              <Text style={{ color: '#1447e6' }}>
-                ✓ Audit logs đầy đủ cho mọi thao tác
-              </Text>
-            </div>
-          </div>
+        <div>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', margin: 0, marginBottom: 4 }}>
+            Vai trò & Phân quyền Admin
+          </h3>
+          <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>
+            Quản lý phân quyền admin
+          </p>
         </div>
-      </Card>
-    </div>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => setAddModalVisible(true)}
+          style={{
+            background: '#2563eb',
+            border: 'none',
+            borderRadius: 8,
+            height: 36,
+            padding: '0 16px',
+            fontSize: 14,
+            fontWeight: 500,
+          }}
+        >
+          Thêm Admin
+        </Button>
+      </div>
+      <Table
+        columns={columns}
+        dataSource={admins}
+        pagination={false}
+        tableLayout="fixed"
+      />
+
+      <AddAdminModal
+        visible={addModalVisible}
+        onClose={() => setAddModalVisible(false)}
+        onAdd={handleAddAdmin}
+      />
+
+      <AdminDetailModal
+        visible={detailModalVisible}
+        onClose={() => setDetailModalVisible(false)}
+        admin={selectedAdmin}
+      />
+
+      <ConfirmModal
+        open={confirmModalVisible}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setConfirmModalVisible(false);
+          setAdminToDelete(null);
+        }}
+        title="Xóa Admin"
+        content="Bạn có chắc chắn muốn xóa admin này?"
+        confirmText="Xác nhận"
+        cancelText="Hủy"
+        danger={true}
+        adminInfo={adminToDelete}
+      />
+
+      <SuccessModal
+        open={successModalVisible}
+        onClose={() => setSuccessModalVisible(false)}
+        message={successMessage}
+        buttonText="Đồng ý"
+      />
+    </Card>
   );
 };
 
