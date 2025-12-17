@@ -10,7 +10,7 @@ import {
 
 const { Title, Text } = Typography;
 
-const PermissionTab = () => {
+const DataPrivacyTab = () => {
   // Stats cards data
   const statsCards = [
     {
@@ -321,3 +321,4 @@ const PermissionTab = () => {
 };
 
 export default DataPrivacyTab;
+
