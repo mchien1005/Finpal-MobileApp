@@ -18,7 +18,25 @@ Tên bảng (tiếng Việt):
 - ngan_sach: Budgets
 - muc_tieu_tiet_kiem: Savings Goals
 - mau_thong_bao: Notification Templates
+
+Yêu cầu:
+- pip install pymysql sqlalchemy pandas
 """
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Import pymysql và đăng ký với MySQLdb
+PYMYSQL_AVAILABLE = False
+try:
+    import pymysql
+    pymysql.install_as_MySQLdb()
+    PYMYSQL_AVAILABLE = True
+    logger.info("✅ pymysql loaded successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ pymysql not available: {e}. MySQL features will be disabled.")
+    logger.warning("   To fix: pip install pymysql")
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -26,12 +44,8 @@ from sqlalchemy.pool import QueuePool
 import pandas as pd
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
-import logging
-import re
 
 from app.config import settings
-
-logger = logging.getLogger(__name__)
 
 
 class DatabaseService:
@@ -534,8 +548,28 @@ def get_database_service() -> DatabaseService:
     
     Returns:
         DatabaseService instance
+        
+    Raises:
+        ImportError: Nếu pymysql chưa được cài đặt
     """
     global _db_service
+    
+    if not PYMYSQL_AVAILABLE:
+        raise ImportError(
+            "pymysql is not installed. Please install it with: pip install pymysql"
+        )
+    
     if _db_service is None:
         _db_service = DatabaseService()
     return _db_service
+
+
+def is_mysql_available() -> bool:
+    """
+    Kiểm tra xem MySQL có khả dụng không
+    
+    Returns:
+        True nếu pymysql đã cài và có thể kết nối MySQL
+    """
+    return PYMYSQL_AVAILABLE
+

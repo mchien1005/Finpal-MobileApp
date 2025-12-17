@@ -5,11 +5,18 @@ Services Package - Các service của ứng dụng
 - training_history.py: Quản lý lịch sử training ML models
 """
 
-from app.services.database import DatabaseService, get_database_service
+from app.services.database import (
+    DatabaseService, 
+    get_database_service,
+    is_mysql_available,
+    PYMYSQL_AVAILABLE
+)
 from app.services.training_history import TrainingHistoryService
 
 __all__ = [
     "DatabaseService",
-    "get_database_service", 
+    "get_database_service",
+    "is_mysql_available",
+    "PYMYSQL_AVAILABLE",
     "TrainingHistoryService"
 ]

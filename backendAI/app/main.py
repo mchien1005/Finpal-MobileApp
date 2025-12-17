@@ -114,16 +114,26 @@ async def database_health_check():
     - data_source: "mysql" hoặc "csv"
     - database: tên database
     - host: host của database
+    - pymysql_installed: True/False
     """
-    from app.services.database import get_database_service
+    from app.services.database import get_database_service, is_mysql_available, PYMYSQL_AVAILABLE
     from app.api.insights import USE_MYSQL
     
     result = {
         "status": "unknown",
         "data_source": "mysql" if USE_MYSQL else "csv",
         "database": settings.DB_NAME,
-        "host": f"{settings.DB_HOST}:{settings.DB_PORT}"
+        "host": f"{settings.DB_HOST}:{settings.DB_PORT}",
+        "pymysql_installed": PYMYSQL_AVAILABLE
     }
+    
+    # Kiểm tra pymysql đã cài chưa
+    if not PYMYSQL_AVAILABLE:
+        result["status"] = "error"
+        result["data_source"] = "csv (fallback)"
+        result["message"] = "❌ pymysql chưa được cài đặt. Chạy: pip install pymysql"
+        result["fix_command"] = "pip install pymysql"
+        return result
     
     if USE_MYSQL:
         try:
@@ -134,6 +144,11 @@ async def database_health_check():
             else:
                 result["status"] = "disconnected"
                 result["message"] = "❌ Không thể kết nối MySQL. Sẽ fallback sang CSV."
+        except ImportError as e:
+            result["status"] = "error"
+            result["message"] = f"❌ Lỗi import: {str(e)}"
+            result["data_source"] = "csv (fallback)"
+            result["fix_command"] = "pip install pymysql"
         except Exception as e:
             result["status"] = "error"
             result["message"] = f"❌ Lỗi kết nối: {str(e)}"
