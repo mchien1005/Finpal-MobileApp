@@ -148,14 +148,15 @@ public class SmartNotificationScheduler {
         // Xác định level cảnh báo và gửi notification
         if (usagePercentage >= 100) {
             // Đã vượt ngân sách - dùng template NOT007
+            java.util.Map<String, Object> placeholders = new java.util.HashMap<>();
+            placeholders.put("budget_name", budget.getName() != null ? budget.getName() : "Ngân sách");
+            placeholders.put("percentage", usagePercentage);
+            placeholders.put("spent_amount", spentAmount.doubleValue());
+            placeholders.put("budget_amount", budget.getAmount().doubleValue());
+
             NotificationTemplateService.RenderedTemplate rendered = templateService.renderTemplate(
                 TPL_BUDGET_EXCEEDED,  // NOT007
-                java.util.Map.of(
-                    "budget_name", budget.getName(),
-                    "percentage", usagePercentage,
-                    "spent_amount", spentAmount.doubleValue(),
-                    "budget_amount", budget.getAmount().doubleValue()
-                )
+                placeholders
             );
 
             String title = rendered != null ? rendered.getTitle() : "🚨 Ngân sách Vượt quá!";
@@ -171,15 +172,16 @@ public class SmartNotificationScheduler {
 
         } else if (usagePercentage >= budget.getAlertThreshold()) {
             // Sắp hết ngân sách - dùng template NOT006
+            java.util.Map<String, Object> placeholders = new java.util.HashMap<>();
+            placeholders.put("budget_name", budget.getName() != null ? budget.getName() : "Ngân sách");
+            placeholders.put("percentage", usagePercentage);
+            placeholders.put("spent_amount", spentAmount.doubleValue());
+            placeholders.put("budget_amount", budget.getAmount().doubleValue());
+            placeholders.put("days_remaining", daysRemaining);
+
             NotificationTemplateService.RenderedTemplate rendered = templateService.renderTemplate(
                 TPL_BUDGET_WARNING,  // NOT006
-                java.util.Map.of(
-                    "budget_name", budget.getName(),
-                    "percentage", usagePercentage,
-                    "spent_amount", spentAmount.doubleValue(),
-                    "budget_amount", budget.getAmount().doubleValue(),
-                    "days_remaining", daysRemaining
-                )
+                placeholders
             );
 
             String title = rendered != null ? rendered.getTitle() : "⚠️ Cảnh báo Ngân sách";
@@ -227,15 +229,17 @@ public class SmartNotificationScheduler {
                         SavingsSuggestionsResponse.SavingsSuggestion topSuggestion = 
                                 suggestions.getSuggestions().get(0);
 
+                        // Tạo map placeholders (dùng HashMap vì Map.of không chấp nhận null)
+                        java.util.Map<String, Object> placeholders = new java.util.HashMap<>();
+                        placeholders.put("category", topSuggestion.getCategory() != null ? topSuggestion.getCategory() : "Chi tiêu");
+                        placeholders.put("weekly_avg", topSuggestion.getCurrentWeeklyAvg() != null ? topSuggestion.getCurrentWeeklyAvg() : 0.0);
+                        placeholders.put("suggested_weekly", topSuggestion.getSuggestedWeeklyTarget() != null ? topSuggestion.getSuggestedWeeklyTarget() : 0.0);
+                        placeholders.put("monthly_savings", topSuggestion.getMonthlySavings() != null ? topSuggestion.getMonthlySavings() : 0.0);
+
                         // Lấy và render template từ database
                         NotificationTemplateService.RenderedTemplate rendered = templateService.renderTemplate(
                             TPL_SAVINGS_SUGGESTION,  // NOT008
-                            java.util.Map.of(
-                                "category", topSuggestion.getCategory(),
-                                "weekly_avg", topSuggestion.getCurrentWeeklyAvg(),
-                                "suggested_weekly", topSuggestion.getSuggestedWeeklyTarget(),
-                                "monthly_savings", topSuggestion.getMonthlySavings()
-                            )
+                            placeholders
                         );
 
                         // Fallback nếu không có template
@@ -243,10 +247,10 @@ public class SmartNotificationScheduler {
                         String message = rendered != null ? rendered.getContent() : 
                                 String.format("FinPal nhận thấy bạn chi trung bình %,.0fđ cho '%s' mỗi tuần. " +
                                         "Nếu bạn giảm còn %,.0fđ, bạn sẽ tiết kiệm được %,.0fđ/tháng!",
-                                        topSuggestion.getCurrentWeeklyAvg(),
-                                        topSuggestion.getCategory(),
-                                        topSuggestion.getSuggestedWeeklyTarget(),
-                                        topSuggestion.getMonthlySavings()
+                                        topSuggestion.getCurrentWeeklyAvg() != null ? topSuggestion.getCurrentWeeklyAvg() : 0.0,
+                                        topSuggestion.getCategory() != null ? topSuggestion.getCategory() : "Chi tiêu",
+                                        topSuggestion.getSuggestedWeeklyTarget() != null ? topSuggestion.getSuggestedWeeklyTarget() : 0.0,
+                                        topSuggestion.getMonthlySavings() != null ? topSuggestion.getMonthlySavings() : 0.0
                                 );
 
                         createAndPushNotification(user, "SAVINGS_SUGGESTION", 
@@ -398,12 +402,13 @@ public class SmartNotificationScheduler {
 
         // Đã đạt mục tiêu - dùng template NOT014
         if (progress >= 100) {
+            java.util.Map<String, Object> placeholders = new java.util.HashMap<>();
+            placeholders.put("goal_name", goal.getName() != null ? goal.getName() : "Mục tiêu");
+            placeholders.put("target_amount", goal.getTargetAmount().doubleValue());
+
             NotificationTemplateService.RenderedTemplate rendered = templateService.renderTemplate(
                 TPL_GOAL_COMPLETED,  // NOT014
-                java.util.Map.of(
-                    "goal_name", goal.getName(),
-                    "target_amount", goal.getTargetAmount().doubleValue()
-                )
+                placeholders
             );
 
             String title = rendered != null ? rendered.getTitle() : "🎉 Chúc mừng! Đạt Mục tiêu!";
@@ -423,14 +428,15 @@ public class SmartNotificationScheduler {
 
         // Reminder 7 ngày trước deadline - dùng template NOT012
         if (daysUntilDeadline == 7) {
+            java.util.Map<String, Object> placeholders = new java.util.HashMap<>();
+            placeholders.put("goal_name", goal.getName() != null ? goal.getName() : "Mục tiêu");
+            placeholders.put("progress", progress);
+            placeholders.put("current_amount", goal.getCurrentAmount().doubleValue());
+            placeholders.put("target_amount", goal.getTargetAmount().doubleValue());
+
             NotificationTemplateService.RenderedTemplate rendered = templateService.renderTemplate(
                 TPL_GOAL_REMINDER,  // NOT012
-                java.util.Map.of(
-                    "goal_name", goal.getName(),
-                    "progress", progress,
-                    "current_amount", goal.getCurrentAmount().doubleValue(),
-                    "target_amount", goal.getTargetAmount().doubleValue()
-                )
+                placeholders
             );
 
             String title = rendered != null ? rendered.getTitle() : "🎯 Mục tiêu còn 7 ngày!";
@@ -450,14 +456,15 @@ public class SmartNotificationScheduler {
 
         // Reminder vào ngày deadline - dùng template NOT013
         if (daysUntilDeadline == 0) {
+            java.util.Map<String, Object> placeholders = new java.util.HashMap<>();
+            placeholders.put("goal_name", goal.getName() != null ? goal.getName() : "Mục tiêu");
+            placeholders.put("progress", progress);
+            placeholders.put("current_amount", goal.getCurrentAmount().doubleValue());
+            placeholders.put("target_amount", goal.getTargetAmount().doubleValue());
+
             NotificationTemplateService.RenderedTemplate rendered = templateService.renderTemplate(
                 TPL_GOAL_DEADLINE,  // NOT013
-                java.util.Map.of(
-                    "goal_name", goal.getName(),
-                    "progress", progress,
-                    "current_amount", goal.getCurrentAmount().doubleValue(),
-                    "target_amount", goal.getTargetAmount().doubleValue()
-                )
+                placeholders
             );
 
             String title = rendered != null ? rendered.getTitle() : "⏰ Deadline Mục tiêu Hôm nay!";

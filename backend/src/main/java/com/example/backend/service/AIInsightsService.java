@@ -48,9 +48,8 @@ public class AIInsightsService {
             String url = aiBackendUrl + "/api/insights/savings-suggestions/" + userId;
 
             log.debug("Fetching AI savings suggestions for user: {}", userId);
-            ResponseEntity<SavingsSuggestionsResponse> response = restTemplate.postForEntity(
+            ResponseEntity<SavingsSuggestionsResponse> response = restTemplate.getForEntity(
                     url,
-                    null,
                     SavingsSuggestionsResponse.class);
 
             SavingsSuggestionsResponse suggestions = response.getBody();
