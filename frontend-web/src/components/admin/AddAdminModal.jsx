@@ -5,7 +5,7 @@ import { CloseOutlined } from '@ant-design/icons';
 const AddAdminModal = ({ visible, onClose, onAdd }) => {
   const [formData, setFormData] = useState({
     email: '',
-    role: '',
+    role: 'Admin',
     name: '',
     permissions: '',
     fullName: '',
@@ -23,7 +23,7 @@ const AddAdminModal = ({ visible, onClose, onAdd }) => {
     onAdd(formData);
     setFormData({
       email: '',
-      role: '',
+      role: 'Admin',
       name: '',
       permissions: '',
       fullName: '',
@@ -36,7 +36,7 @@ const AddAdminModal = ({ visible, onClose, onAdd }) => {
   const handleCancel = () => {
     setFormData({
       email: '',
-      role: '',
+      role: 'Admin',
       name: '',
       permissions: '',
       fullName: '',
@@ -52,27 +52,27 @@ const AddAdminModal = ({ visible, onClose, onAdd }) => {
       open={visible}
       onCancel={handleCancel}
       footer={null}
-      closeIcon={<CloseOutlined style={{ fontSize: 16, color: '#6b7280' }} />}
-      width={720}
+      closeIcon={<CloseOutlined style={{ fontSize: 18, color: '#6b7280' }} />}
+      width={840}
       style={{ top: 40 }}
       styles={{
-        body: { padding: '24px' },
+        body: { padding: '32px' },
         content: { borderRadius: 16 },
       }}
     >
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 600, color: '#111827', margin: 0, marginBottom: 4 }}>
+      <div style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 24, fontWeight: 600, color: '#111827', margin: 0, marginBottom: 6 }}>
           Thêm Admin
         </h2>
-        <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>
+        <p style={{ fontSize: 15, color: '#6b7280', margin: 0 }}>
           Thêm một admin mới vào hệ thống.
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 32 }}>
         {/* Row 1 */}
         <div>
-          <label style={{ display: 'block', fontSize: 14, color: '#374151', marginBottom: 6, fontWeight: 500 }}>
+          <label style={{ display: 'block', fontSize: 15, color: '#374151', marginBottom: 8, fontWeight: 500 }}>
             Email
           </label>
           <Input
@@ -80,34 +80,34 @@ const AddAdminModal = ({ visible, onClose, onAdd }) => {
             value={formData.email}
             onChange={(e) => handleChange('email', e.target.value)}
             style={{
-              height: 40,
+              height: 48,
               borderRadius: 8,
               border: '1px solid #d1d5db',
-              fontSize: 14,
+              fontSize: 15,
             }}
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: 14, color: '#374151', marginBottom: 6, fontWeight: 500 }}>
+          <label style={{ display: 'block', fontSize: 15, color: '#374151', marginBottom: 8, fontWeight: 500 }}>
             Vai trò
           </label>
           <Input
-            placeholder="Super Admin"
+            placeholder="Admin"
             value={formData.role}
             onChange={(e) => handleChange('role', e.target.value)}
             style={{
-              height: 40,
+              height: 48,
               borderRadius: 8,
               border: '1px solid #d1d5db',
-              fontSize: 14,
+              fontSize: 15,
             }}
           />
         </div>
 
         {/* Row 2 */}
         <div>
-          <label style={{ display: 'block', fontSize: 14, color: '#374151', marginBottom: 6, fontWeight: 500 }}>
+          <label style={{ display: 'block', fontSize: 15, color: '#374151', marginBottom: 8, fontWeight: 500 }}>
             Tên đăng nhập
           </label>
           <Input
@@ -115,16 +115,16 @@ const AddAdminModal = ({ visible, onClose, onAdd }) => {
             value={formData.name}
             onChange={(e) => handleChange('name', e.target.value)}
             style={{
-              height: 40,
+              height: 48,
               borderRadius: 8,
               border: '1px solid #d1d5db',
-              fontSize: 14,
+              fontSize: 15,
             }}
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: 14, color: '#374151', marginBottom: 6, fontWeight: 500 }}>
+          <label style={{ display: 'block', fontSize: 15, color: '#374151', marginBottom: 8, fontWeight: 500 }}>
             Quyền
           </label>
           <Input
@@ -132,17 +132,17 @@ const AddAdminModal = ({ visible, onClose, onAdd }) => {
             value={formData.permissions}
             onChange={(e) => handleChange('permissions', e.target.value)}
             style={{
-              height: 40,
+              height: 48,
               borderRadius: 8,
               border: '1px solid #d1d5db',
-              fontSize: 14,
+              fontSize: 15,
             }}
           />
         </div>
 
         {/* Row 3 */}
         <div>
-          <label style={{ display: 'block', fontSize: 14, color: '#374151', marginBottom: 6, fontWeight: 500 }}>
+          <label style={{ display: 'block', fontSize: 15, color: '#374151', marginBottom: 8, fontWeight: 500 }}>
             Họ và tên
           </label>
           <Input
@@ -150,16 +150,16 @@ const AddAdminModal = ({ visible, onClose, onAdd }) => {
             value={formData.fullName}
             onChange={(e) => handleChange('fullName', e.target.value)}
             style={{
-              height: 40,
+              height: 48,
               borderRadius: 8,
               border: '1px solid #d1d5db',
-              fontSize: 14,
+              fontSize: 15,
             }}
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: 14, color: '#374151', marginBottom: 6, fontWeight: 500 }}>
+          <label style={{ display: 'block', fontSize: 15, color: '#374151', marginBottom: 8, fontWeight: 500 }}>
             Mật khẩu
           </label>
           <Input.Password
@@ -167,17 +167,17 @@ const AddAdminModal = ({ visible, onClose, onAdd }) => {
             value={formData.password}
             onChange={(e) => handleChange('password', e.target.value)}
             style={{
-              height: 40,
+              height: 48,
               borderRadius: 8,
               border: '1px solid #d1d5db',
-              fontSize: 14,
+              fontSize: 15,
             }}
           />
         </div>
 
         {/* Row 4 */}
         <div>
-          <label style={{ display: 'block', fontSize: 14, color: '#374151', marginBottom: 6, fontWeight: 500 }}>
+          <label style={{ display: 'block', fontSize: 15, color: '#374151', marginBottom: 8, fontWeight: 500 }}>
             Số điện thoại
           </label>
           <Input
@@ -185,16 +185,16 @@ const AddAdminModal = ({ visible, onClose, onAdd }) => {
             value={formData.phone}
             onChange={(e) => handleChange('phone', e.target.value)}
             style={{
-              height: 40,
+              height: 48,
               borderRadius: 8,
               border: '1px solid #d1d5db',
-              fontSize: 14,
+              fontSize: 15,
             }}
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: 14, color: '#374151', marginBottom: 6, fontWeight: 500 }}>
+          <label style={{ display: 'block', fontSize: 15, color: '#374151', marginBottom: 8, fontWeight: 500 }}>
             Nhập lại mật khẩu
           </label>
           <Input.Password
@@ -202,10 +202,10 @@ const AddAdminModal = ({ visible, onClose, onAdd }) => {
             value={formData.confirmPassword}
             onChange={(e) => handleChange('confirmPassword', e.target.value)}
             style={{
-              height: 40,
+              height: 48,
               borderRadius: 8,
               border: '1px solid #d1d5db',
-              fontSize: 14,
+              fontSize: 15,
             }}
           />
         </div>
@@ -216,13 +216,13 @@ const AddAdminModal = ({ visible, onClose, onAdd }) => {
         <Button
           onClick={handleCancel}
           style={{
-            height: 40,
-            padding: '0 20px',
+            height: 44,
+            padding: '0 24px',
             borderRadius: 8,
             border: '1px solid #d1d5db',
             background: '#fff',
             color: '#374151',
-            fontSize: 14,
+            fontSize: 15,
             fontWeight: 500,
           }}
         >
@@ -232,13 +232,13 @@ const AddAdminModal = ({ visible, onClose, onAdd }) => {
           type="primary"
           onClick={handleSubmit}
           style={{
-            height: 40,
-            padding: '0 20px',
+            height: 44,
+            padding: '0 24px',
             borderRadius: 8,
             border: 'none',
             background: '#9333ea',
             color: '#fff',
-            fontSize: 14,
+            fontSize: 15,
             fontWeight: 500,
           }}
         >
