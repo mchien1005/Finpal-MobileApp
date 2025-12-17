@@ -4,12 +4,16 @@ import { PlusOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
 import AddAdminModal from '../../../components/admin/AddAdminModal';
 import AdminDetailModal from '../../../components/admin/AdminDetailModal';
 import SuccessModal from '../../../components/common/SuccessModal';
+import ConfirmModal from '../../../components/common/ConfirmModal';
 
 const PermissionTab = () => {
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
+  const [adminToDelete, setAdminToDelete] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
   const [admins, setAdmins] = useState([
     {
       key: '1',
@@ -43,12 +47,26 @@ const PermissionTab = () => {
     };
     setAdmins([...admins, newAdmin]);
     setAddModalVisible(false);
+    setSuccessMessage('Thêm Admin thành công!');
     setSuccessModalVisible(true);
   };
 
   const handleViewAdmin = (admin) => {
     setSelectedAdmin(admin);
     setDetailModalVisible(true);
+  };
+
+  const handleDeleteClick = (admin) => {
+    setAdminToDelete(admin);
+    setConfirmModalVisible(true);
+  };
+
+  const handleConfirmDelete = () => {
+    setAdmins(admins.filter((admin) => admin.key !== adminToDelete.key));
+    setConfirmModalVisible(false);
+    setAdminToDelete(null);
+    setSuccessMessage('Xóa Admin thành công!');
+    setSuccessModalVisible(true);
   };
 
   const columns = [
@@ -160,6 +178,7 @@ const PermissionTab = () => {
           <Button
             type="text"
             icon={<DeleteOutlined style={{ fontSize: 16 }} />}
+            onClick={() => handleDeleteClick(record)}
             style={{ color: '#dc2626' }}
           />
         </div>
@@ -230,10 +249,24 @@ const PermissionTab = () => {
         admin={selectedAdmin}
       />
 
+      <ConfirmModal
+        open={confirmModalVisible}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setConfirmModalVisible(false);
+          setAdminToDelete(null);
+        }}
+        title="Xác nhận xóa Admin"
+        content={`Bạn có chắc chắn muốn xóa admin\n"${adminToDelete?.email}"?`}
+        confirmText="Xóa"
+        cancelText="Hủy"
+        danger={true}
+      />
+
       <SuccessModal
         open={successModalVisible}
         onClose={() => setSuccessModalVisible(false)}
-        message="Thêm Admin thành công!"
+        message={successMessage}
         buttonText="Đồng ý"
       />
     </Card>
