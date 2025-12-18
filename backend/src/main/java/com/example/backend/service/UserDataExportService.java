@@ -214,14 +214,8 @@ public class UserDataExportService {
                 .setFontSize(14)
                 .setMarginTop(15));
 
-        // Combine system and user categories
-        List<Category> userCategories = categoryRepository.findAll().stream()
-                .filter(cat -> Boolean.FALSE.equals(cat.getIsSystem()) && userId.equals(cat.getParentId()) || userId.equals(cat.getId()))
-                .toList();
-        List<Category> systemCategories = categoryRepository.findByIsSystemTrue();
-        List<Category> categories = new java.util.ArrayList<>();
-        categories.addAll(userCategories);
-        categories.addAll(systemCategories);
+        // Lấy tất cả danh mục
+        List<Category> categories = categoryRepository.findAll();
 
         if (categories.isEmpty()) {
             document.add(new Paragraph("Khong co danh muc ca nhan.").setFont(font));
