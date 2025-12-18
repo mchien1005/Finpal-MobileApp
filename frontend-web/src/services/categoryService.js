@@ -23,8 +23,36 @@ export const getCategoryById = async (id) => {
     return response.data;
 };
 
+// Tạo danh mục mới
+export const createCategory = async (categoryData) => {
+    const response = await api.post('/categories', categoryData);
+    return response.data;
+};
+
+// Cập nhật danh mục
+export const updateCategory = async (id, categoryData) => {
+    const response = await api.put(`/categories/${id}`, categoryData);
+    return response.data;
+};
+
+// Xóa danh mục
+export const deleteCategory = async (id) => {
+    const response = await api.delete(`/categories/${id}`);
+    return response.data;
+};
+
+// Lấy thống kê danh mục
+export const getCategoryStats = async () => {
+    const response = await api.get('/categories/stats');
+    return response.data;
+};
+
 export default {
     getCategories,
     getCategoriesByType,
     getCategoryById,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    getCategoryStats,
 };

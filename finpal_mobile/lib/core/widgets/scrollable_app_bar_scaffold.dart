@@ -17,6 +17,7 @@ class ScrollableAppBarScaffold extends StatelessWidget {
   final Function(String)? onLanguageChanged;
   final Function(bool)? onThemeChanged;
   final bool showSearchAction;
+  final String? customTitle; // Tiêu đề tùy chỉnh thay vì 'Xin chào, userName'
 
   const ScrollableAppBarScaffold({
     super.key,
@@ -31,6 +32,7 @@ class ScrollableAppBarScaffold extends StatelessWidget {
     this.onLanguageChanged,
     this.onThemeChanged,
     this.showSearchAction = false,
+    this.customTitle,
   });
 
   @override
@@ -59,16 +61,16 @@ class ScrollableAppBarScaffold extends StatelessWidget {
                   'FinPal',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    fontWeight: FontWeight.normal,
                   ),
                 ),
                 Text(
-                  'Xin chào, $userName',
+                  customTitle ?? 'Xin chào, $userName',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.normal,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
@@ -76,10 +78,7 @@ class ScrollableAppBarScaffold extends StatelessWidget {
             actions: [
               if (showSearchAction)
                 IconButton(
-                  icon: const Icon(
-                    Icons.search,
-                    color: Colors.white,
-                  ),
+                  icon: const Icon(Icons.search, color: Colors.white),
                   onPressed: () {
                     Navigator.push(
                       context,

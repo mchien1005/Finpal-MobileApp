@@ -5,9 +5,10 @@ import '../../../core/utils/app_bar_with_drawer.dart';
 import '../../../core/utils/bottom_nav_helper.dart';
 import '../../../data/services/transaction_service.dart';
 import '../../../data/models/category.dart';
-import '../../../core/widgets/success_notification_dialog.dart';
-import '../../widgets/sms_scanner_banner.dart';
+import 'widgets/add_transaction_tab.dart';
+import 'widgets/add_budget_tab.dart';
 
+/// Màn hình thêm giao dịch với 2 tab: Thêm giao dịch và Thêm ngân sách
 class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({super.key});
 
@@ -15,25 +16,35 @@ class AddTransactionScreen extends StatefulWidget {
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
 }
 
-class _AddTransactionScreenState extends State<AddTransactionScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _amountController = TextEditingController();
-  final _descriptionController = TextEditingController();
+class _AddTransactionScreenState extends State<AddTransactionScreen>
+    with SingleTickerProviderStateMixin {
+  // Tab Controller
+  late TabController _tabController;
+
+  // Transaction Service
   final _transactionService = TransactionService();
-  String _transactionType = 'expense'; // 'expense' or 'income'
-  String? _selectedSource;
-  Category? _selectedCategory;
-  DateTime? _selectedDate;
-  bool _isLoading = false;
+
+  // Categories
   List<Category> _categories = [];
   bool _isCategoriesLoading = true;
+
+  // Transaction type cho tab giao dịch
+  String _transactionType = 'expense';
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadCategories();
   }
 
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  /// Tải danh mục từ API
   Future<void> _loadCategories() async {
     setState(() {
       _isCategoriesLoading = true;
@@ -61,618 +72,104 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleAddTransaction() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    if (_selectedSource == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng chọn nguồn giao dịch'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (_selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng chọn ngày giao dịch'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
+  /// Xử lý thay đổi loại giao dịch
+  void _onTransactionTypeChanged(String type) {
     setState(() {
-      _isLoading = true;
+      _transactionType = type;
     });
-
-    try {
-      final amount = double.parse(_amountController.text);
-      final type = _transactionType == 'expense' ? 'EXPENSE' : 'INCOME';
-
-      await _transactionService.addTransaction(
-        type: type,
-        amount: amount,
-        transactionSource: _selectedSource!,
-        categoryId: _selectedCategory?.id,
-        description: _descriptionController.text,
-        transactionDate: _selectedDate!,
-        isAuto: false,
-      );
-
-      if (mounted) {
-        // Show success dialog
-        await SuccessNotificationDialog.show(
-          context,
-          message: 'Thêm giao dịch thành công!',
-          onConfirm: () {
-            // Clear form after user confirms
-            _amountController.clear();
-            _descriptionController.clear();
-            setState(() {
-              _selectedSource = null;
-              _selectedCategory = null;
-              _selectedDate = null;
-            });
-          },
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lỗi: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+    _loadCategories();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AppBarWithDrawer.scrollable(
-      context,
-      userName: 'Nguyễn Văn A',
-      notificationCount: 3,
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          // SMS Auto-fill Banner
-          const SmsScannerBanner(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await BottomNavHelper.handleBackButton(context);
+      },
+      child: AppBarWithDrawer.scrollable(
+        context,
+        userName: 'Nguyễn Văn A',
+        notificationCount: 3,
+        backgroundColor: AppColors.background,
+        customTitle: 'Thêm giao dịch, ngân sách',
+        body: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Tab Bar
+            _buildTabBar(),
 
-          // Form Container
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // Tab Content - Sử dụng SizedBox với chiều cao cố định hoặc LayoutBuilder
+            SizedBox(
+              height:
+                  MediaQuery.of(context).size.height -
+                  250, // Trừ đi AppBar và BottomNav
+              child: TabBarView(
+                controller: _tabController,
                 children: [
-                  const Text(
-                    'Thêm giao dịch thủ công',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
+                  // Tab 1: Thêm giao dịch
+                  AddTransactionTab(
+                    categories: _categories,
+                    isCategoriesLoading: _isCategoriesLoading,
+                    transactionType: _transactionType,
+                    onTransactionTypeChanged: _onTransactionTypeChanged,
                   ),
-                  const SizedBox(height: 24),
-
-                  // Transaction Type Toggle
-                  const Text(
-                    'Loại giao dịch',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(child: _buildTypeButton('Chi tiêu', 'expense')),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildTypeButton('Thu nhập', 'income')),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Amount Field
-                  const Text(
-                    'Số tiền (VNĐ)',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _amountController,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(fontSize: 16),
-                    decoration: InputDecoration(
-                      hintText: '0',
-                      suffixText: 'đ',
-                      filled: true,
-                      fillColor: AppColors.inputBackground,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Vui lòng nhập số tiền';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Source Dropdown
-                  const Text(
-                    'Nguồn giao dịch',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: _selectedSource,
-                    hint: const Text('Chọn danh mục'),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: AppColors.inputBackground,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                    items: ['Tiền mặt', 'Ngân hàng', 'Ví điện tử']
-                        .map(
-                          (item) =>
-                              DropdownMenuItem(value: item, child: Text(item)),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedSource = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Category Dropdown
-                  const Text(
-                    'Danh mục',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _isCategoriesLoading
-                      ? Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.inputBackground,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Row(
-                            children: [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                              SizedBox(width: 12),
-                              Text('Đang tải danh mục...'),
-                            ],
-                          ),
-                        )
-                      : DropdownButtonFormField<Category>(
-                          value: _selectedCategory,
-                          hint: const Text('Chọn danh mục'),
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: AppColors.inputBackground,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                          ),
-                          items: _categories
-                              .map(
-                                (category) => DropdownMenuItem<Category>(
-                                  value: category,
-                                  child: Text(category.name),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedCategory = value;
-                            });
-                          },
-                        ),
-                  const SizedBox(height: 20),
-
-                  // Description Field
-                  const Text(
-                    'Mô tả',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _descriptionController,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: 'Ví dụ: Mua bánh mì sáng, đổ xăng...',
-                      filled: true,
-                      fillColor: AppColors.inputBackground,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Date Field
-                  const Text(
-                    'Ngày giao dịch',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: _selectedDate ?? DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                      );
-                      if (date != null) {
-                        setState(() {
-                          _selectedDate = date;
-                        });
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.inputBackground,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _selectedDate != null
-                                ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                                : 'Chọn ngày',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: _selectedDate != null
-                                  ? AppColors.textPrimary
-                                  : AppColors.textPlaceholder,
-                            ),
-                          ),
-                          const Icon(
-                            Icons.calendar_today,
-                            size: 20,
-                            color: AppColors.textPlaceholder,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Add Transaction Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: _isLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                              color: Color(0xFFD7006E),
-                            ),
-                          )
-                        : ElevatedButton(
-                            onPressed: _handleAddTransaction,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD7006E),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.add, size: 16),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Thêm giao dịch',
-                                  style: TextStyle(fontSize: 14),
-                                ),
-                              ],
-                            ),
-                          ),
-                  ),
+                  // Tab 2: Thêm ngân sách
+                  const AddBudgetTab(),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 24),
+          ],
+        ),
+        bottomNavigationBar: CustomBottomNavBar(
+          currentIndex: 2,
+          onTap: (index) {
+            BottomNavHelper.navigateToIndex(context, index, 2);
+          },
+        ),
+      ),
+    );
+  }
 
-          // Recent SMS Card
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(
-                color: Colors.black.withOpacity(0.1),
-                width: 1.275,
-              ),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header with title and badge
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'SMS gần đây',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.black,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 9.275,
-                        vertical: 3.275,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFECEEF2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Colors.transparent,
-                          width: 1.275,
-                        ),
-                      ),
-                      child: const Text(
-                        '3 tin mới',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xFF030213),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 28),
-
-                // SMS List
-                _buildSmsItem(
-                  bankName: 'VCB',
-                  amount: '+15,000,000đ',
-                  description: 'ND: Chuyen tien luong',
-                  dateTime: '01/11/2025 08:00',
-                  isIncome: true,
-                ),
-                const SizedBox(height: 8),
-                _buildSmsItem(
-                  bankName: 'Techcombank',
-                  amount: '-125,000đ',
-                  description: 'ND: THE COFFEE HOUSE',
-                  dateTime: '13/11/2025 10:30',
-                  isIncome: false,
-                ),
-                const SizedBox(height: 8),
-                _buildSmsItem(
-                  bankName: 'ACB',
-                  amount: '-450,000đ',
-                  description: 'ND: SHOPEE',
-                  dateTime: '12/11/2025 20:15',
-                  isIncome: false,
-                ),
-              ],
-            ),
+  /// Build Tab Bar với 2 tab
+  Widget _buildTabBar() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFD7006E).withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-          const SizedBox(height: 100),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 2,
-        onTap: (index) {
-          BottomNavHelper.navigateToIndex(context, index, 2);
-        },
-      ),
-    );
-  }
-
-  Widget _buildTypeButton(String label, String type) {
-    final isSelected = _transactionType == type;
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _transactionType = type;
-          _selectedCategory = null; // Reset selected category
-        });
-        _loadCategories(); // Reload categories for new type
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (type == 'expense'
-                    ? const Color(0xFFFB2C36)
-                    : const Color(0xFF00C950))
-              : Colors.white,
-          border: Border.all(
-            color: isSelected ? Colors.transparent : Colors.grey.shade300,
-            width: 1.3,
-          ),
-          borderRadius: BorderRadius.circular(8),
+      child: TabBar(
+        controller: _tabController,
+        indicator: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: const Color(0xFFD7006E),
         ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: isSelected ? Colors.white : AppColors.textPrimary,
-          ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelColor: Colors.white,
+        unselectedLabelColor: const Color(0xFFD7006E),
+        labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
         ),
-      ),
-    );
-  }
-
-  Widget _buildSmsItem({
-    required String bankName,
-    required String amount,
-    required String description,
-    required String dateTime,
-    required bool isIncome,
-  }) {
-    return Container(
-      padding: const EdgeInsets.only(
-        left: 13.264,
-        right: 13.265,
-        top: 13.265,
-        bottom: 1.275,
-      ),
-      decoration: BoxDecoration(
-        color: isIncome ? const Color(0xFFF0FDF4) : const Color(0xFFEFF6FF),
-        border: Border.all(
-          color: isIncome ? const Color(0xFFB9F8CF) : const Color(0xFFBEDBFF),
-          width: 1.275,
-        ),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Bank name and amount
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                bankName,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: isIncome
-                      ? const Color(0xFF016630)
-                      : const Color(0xFF193CB8),
-                ),
-              ),
-              Text(
-                amount,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: isIncome
-                      ? const Color(0xFF00A63E)
-                      : const Color(0xFFE7000B),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 3.983),
-          // Description
-          Text(
-            description,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: Color(0xFF4A5565),
-            ),
-          ),
-          const SizedBox(height: 3.983),
-          // Date time
-          Text(
-            dateTime,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: Color(0xFF99A1AF),
-            ),
-          ),
+        dividerColor: Colors.transparent,
+        padding: const EdgeInsets.all(4),
+        tabs: const [
+          Tab(text: 'Thêm giao dịch'),
+          Tab(text: 'Thêm ngân sách'),
         ],
       ),
     );
