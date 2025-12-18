@@ -49,8 +49,8 @@ dependencies:
   firebase_core: ^3.8.1
   firebase_messaging: ^15.1.6
 
-  # Lưu ý: flutter_local_notifications tạm thời bỏ ra do xung đột Kotlin version
-  # FCM vẫn có thể hiển thị notification mà không cần package này
+  # Local Notifications (Foreground)
+  flutter_local_notifications: ^18.0.1
 
 dev_dependencies:
   flutter_test:
