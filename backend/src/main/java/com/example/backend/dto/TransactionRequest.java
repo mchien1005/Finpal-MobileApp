@@ -49,4 +49,7 @@ public class TransactionRequest {
 
     @Schema(description = "Ghi chú thêm", example = "Đi làm mưa to")
     private String notes;
+
+    @Schema(description = "Nội dung SMS gốc (cho giao dịch tự động)", example = "VCB: TK 1234xxx GD -100,000 VND...")
+    private String smsContent;
 }

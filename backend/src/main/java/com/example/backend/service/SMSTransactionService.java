@@ -66,6 +66,8 @@ public class SMSTransactionService {
                 .description("Giao dịch từ SMS - " + parsedData.getMerchant())
                 .transactionDate(parsedData.getTransactionDate())
                 .isAuto(true) // Đánh dấu là tự động tạo từ SMS
+                .notes("Quét từ SMS ngân hàng " + parsedData.getBankCode()) // Ghi chú
+                .smsContent(smsContent) // Lưu nội dung SMS gốc
                 .build();
 
         // Tạo giao dịch (sẽ tự động phân loại category)

@@ -83,6 +83,7 @@ public class TransactionService {
         transaction.setTransactionDate(request.getTransactionDate());
         transaction.setIsAuto(request.getIsAuto());
         transaction.setNotes(request.getNotes());
+        transaction.setSmsContentEncrypted(request.getSmsContent()); // Lưu nội dung SMS gốc
         transaction.setIsVerified(false);
         transaction.setIsAnomaly(false);
 
