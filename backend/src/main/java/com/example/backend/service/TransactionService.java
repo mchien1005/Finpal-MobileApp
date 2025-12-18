@@ -9,6 +9,7 @@ import com.example.backend.model.*;
 import com.example.backend.repository.CategoryRepository;
 import com.example.backend.repository.TransactionRepository;
 import com.example.backend.repository.UserRepository;
+import com.example.backend.util.EncryptionUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class TransactionService {
     private final CategoryRuleService categoryRuleService;
     private final AICategorizationService aiCategorizationService;
     private final EntityManager entityManager;
+    private final EncryptionUtil encryptionUtil;
 
     public enum CategorizationStrategy {
         AI_FIRST,      // Ưu tiên AI → Rule fallback
@@ -83,7 +85,10 @@ public class TransactionService {
         transaction.setTransactionDate(request.getTransactionDate());
         transaction.setIsAuto(request.getIsAuto());
         transaction.setNotes(request.getNotes());
-        transaction.setSmsContentEncrypted(request.getSmsContent()); // Lưu nội dung SMS gốc
+        // Mã hóa nội dung SMS trước khi lưu
+        if (request.getSmsContent() != null && !request.getSmsContent().isEmpty()) {
+            transaction.setSmsContentEncrypted(encryptionUtil.encrypt(request.getSmsContent()));
+        }
         transaction.setIsVerified(false);
         transaction.setIsAnomaly(false);
 
