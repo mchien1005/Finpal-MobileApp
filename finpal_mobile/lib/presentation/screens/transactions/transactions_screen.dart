@@ -162,103 +162,113 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
   @override
   Widget build(BuildContext context) {
-    return AppBarWithDrawer.scrollable(
-      context,
-      userName: 'Nguyễn Văn A',
-      notificationCount: 3,
-      showSearchAction: true,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppColors.backgroundGradientStart,
-              AppColors.backgroundGradientMid,
-              AppColors.backgroundGradientEnd,
-            ],
-            stops: [0.0, 0.045, 1.0],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await BottomNavHelper.handleBackButton(context);
+      },
+      child: AppBarWithDrawer.scrollable(
+        context,
+        userName: 'Nguyễn Văn A',
+        notificationCount: 3,
+        showSearchAction: true,
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppColors.backgroundGradientStart,
+                AppColors.backgroundGradientMid,
+                AppColors.backgroundGradientEnd,
+              ],
+              stops: [0.0, 0.045, 1.0],
+            ),
           ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.borderColor, width: 1.12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(24, 24, 24, 16),
-                      child: Text(
-                        'Lịch sử giao dịch',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppColors.borderColor,
+                      width: 1.12,
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Container(
-                        height: 36,
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFECECF0),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: TabBar(
-                          controller: _tabController,
-                          indicator: BoxDecoration(
-                            color: AppColors.white,
-                            borderRadius: BorderRadius.circular(9),
-                            border: Border.all(
-                              color: AppColors.borderColor,
-                              width: 1.12,
-                            ),
-                          ),
-                          indicatorSize: TabBarIndicatorSize.tab,
-                          indicatorPadding: const EdgeInsets.symmetric(
-                            horizontal: 2,
-                          ),
-                          dividerColor: Colors.transparent,
-                          labelColor: AppColors.textPrimary,
-                          unselectedLabelColor: AppColors.textPrimary,
-                          labelStyle: const TextStyle(
-                            fontSize: 14,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(24, 24, 24, 16),
+                        child: Text(
+                          'Lịch sử giao dịch',
+                          style: TextStyle(
+                            fontSize: 20,
                             fontWeight: FontWeight.w400,
+                            color: AppColors.textPrimary,
                           ),
-                          tabs: const [
-                            Tab(text: 'Tất cả'),
-                            Tab(text: 'Chi tiêu'),
-                            Tab(text: 'Thu nhập'),
-                          ],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    _buildCurrentTabContent(),
-                    const SizedBox(height: 16),
-                  ],
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Container(
+                          height: 36,
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFECECF0),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: TabBar(
+                            controller: _tabController,
+                            indicator: BoxDecoration(
+                              color: AppColors.white,
+                              borderRadius: BorderRadius.circular(9),
+                              border: Border.all(
+                                color: AppColors.borderColor,
+                                width: 1.12,
+                              ),
+                            ),
+                            indicatorSize: TabBarIndicatorSize.tab,
+                            indicatorPadding: const EdgeInsets.symmetric(
+                              horizontal: 2,
+                            ),
+                            dividerColor: Colors.transparent,
+                            labelColor: AppColors.textPrimary,
+                            unselectedLabelColor: AppColors.textPrimary,
+                            labelStyle: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            tabs: const [
+                              Tab(text: 'Tất cả'),
+                              Tab(text: 'Chi tiêu'),
+                              Tab(text: 'Thu nhập'),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildCurrentTabContent(),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _selectedNavIndex,
-        onTap: (index) {
-          BottomNavHelper.navigateToIndex(context, index, _selectedNavIndex);
-        },
+        bottomNavigationBar: CustomBottomNavBar(
+          currentIndex: _selectedNavIndex,
+          onTap: (index) {
+            BottomNavHelper.navigateToIndex(context, index, _selectedNavIndex);
+          },
+        ),
       ),
     );
   }
@@ -578,7 +588,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                     ConfirmationDialog.show(
                       context,
                       title: 'Xóa giao dịch',
-                      message: 'Bạn có chắc chắn muốn xóa  không? \nHành động này không thể hoàn tác.',
+                      message:
+                          'Bạn có chắc chắn muốn xóa  không? \nHành động này không thể hoàn tác.',
                       confirmText: 'Xóa',
                       cancelText: 'Hủy',
                       confirmColor: const Color(0xFFD7006E),

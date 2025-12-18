@@ -20,6 +20,7 @@ class AppBarWithDrawer {
     Color? backgroundColor,
     VoidCallback? onNotificationPressed,
     bool showSearchAction = false,
+    String? customTitle,
   }) {
     return ScrollableAppBarScaffold(
       userName: userName,
@@ -29,6 +30,7 @@ class AppBarWithDrawer {
       backgroundColor: backgroundColor,
       onNotificationPressed: onNotificationPressed,
       showSearchAction: showSearchAction,
+      customTitle: customTitle,
       onLogoutPressed: () {
         ConfirmationDialog.show(
           context,

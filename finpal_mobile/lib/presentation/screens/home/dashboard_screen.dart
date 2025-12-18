@@ -16,45 +16,52 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
-    return AppBarWithDrawer.scrollable(
-      context,
-      userName: 'Nguyễn Văn A',
-      notificationCount: 3,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppColors.backgroundGradientStart,
-              AppColors.backgroundGradientMid,
-              AppColors.backgroundGradientEnd,
-            ],
-            stops: [0.0, 0.045, 1.0],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await BottomNavHelper.handleBackButton(context);
+      },
+      child: AppBarWithDrawer.scrollable(
+        context,
+        userName: 'Nguyễn Văn A',
+        notificationCount: 3,
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppColors.backgroundGradientStart,
+                AppColors.backgroundGradientMid,
+                AppColors.backgroundGradientEnd,
+              ],
+              stops: [0.0, 0.045, 1.0],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSummaryCards(),
+                const SizedBox(height: 16),
+                _buildProgressCard(),
+                const SizedBox(height: 16),
+                _buildCategoryCard(),
+                const SizedBox(height: 16),
+                _buildWarningCard(),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSummaryCards(),
-              const SizedBox(height: 16),
-              _buildProgressCard(),
-              const SizedBox(height: 16),
-              _buildCategoryCard(),
-              const SizedBox(height: 16),
-              _buildWarningCard(),
-              const SizedBox(height: 20),
-            ],
-          ),
+        bottomNavigationBar: CustomBottomNavBar(
+          currentIndex: 0,
+          onTap: (index) {
+            BottomNavHelper.navigateToIndex(context, index, 0);
+          },
         ),
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 0,
-        onTap: (index) {
-          BottomNavHelper.navigateToIndex(context, index, 0);
-        },
       ),
     );
   }

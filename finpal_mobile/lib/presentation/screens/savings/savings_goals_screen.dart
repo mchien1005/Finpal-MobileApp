@@ -70,106 +70,119 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AppBarWithDrawer.scrollable(
-      context,
-      userName: 'Nguyễn Văn A',
-      notificationCount: 3,
-      backgroundColor: Colors.white,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Lỗi tải dữ liệu',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(
-                      _errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadGoals,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD7006E),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await BottomNavHelper.handleBackButton(context);
+      },
+      child: AppBarWithDrawer.scrollable(
+        context,
+        userName: 'Nguyễn Văn A',
+        notificationCount: 3,
+        backgroundColor: Colors.white,
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _errorMessage != null
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Lỗi tải dữ liệu',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
                       ),
                     ),
-                    child: const Text(
-                      'Thử lại',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Summary Card
-                    _buildSummaryCard(),
-
-                    const SizedBox(height: 16),
-
-                    // Add Goal Button
-                    _buildAddGoalButton(),
-
-                    const SizedBox(height: 20),
-
-                    // Goals List - Dynamic from API
-                    if (_goals.isEmpty)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(32.0),
-                          child: Text(
-                            'Chưa có mục tiêu nào.\nHãy tạo mục tiêu đầu tiên!',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
-                          ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        _errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
                         ),
-                      )
-                    else
-                      ..._goals
-                          .map(
-                            (goal) => Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: _buildGoalCardFromApi(goal),
-                            ),
-                          )
-                          .toList(),
-
+                      ),
+                    ),
                     const SizedBox(height: 16),
-
-                    // AI Suggestion Card
-                    _buildAISuggestionCard(),
-
-                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: _loadGoals,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD7006E),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                      ),
+                      child: const Text(
+                        'Thử lại',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
                   ],
                 ),
+              )
+            : SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Summary Card
+                      _buildSummaryCard(),
+
+                      const SizedBox(height: 16),
+
+                      // Add Goal Button
+                      _buildAddGoalButton(),
+
+                      const SizedBox(height: 20),
+
+                      // Goals List - Dynamic from API
+                      if (_goals.isEmpty)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: Text(
+                              'Chưa có mục tiêu nào.\nHãy tạo mục tiêu đầu tiên!',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        ..._goals
+                            .map(
+                              (goal) => Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: _buildGoalCardFromApi(goal),
+                              ),
+                            )
+                            .toList(),
+
+                      const SizedBox(height: 16),
+
+                      // AI Suggestion Card
+                      _buildAISuggestionCard(),
+
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
               ),
-            ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 4,
-        onTap: (index) {
-          BottomNavHelper.navigateToIndex(context, index, 4);
-        },
+        bottomNavigationBar: CustomBottomNavBar(
+          currentIndex: 4,
+          onTap: (index) {
+            BottomNavHelper.navigateToIndex(context, index, 4);
+          },
+        ),
       ),
     );
   }
