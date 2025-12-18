@@ -58,12 +58,14 @@ public class SMSTransactionService {
         }
 
         // Xây dựng transaction request với nguon_giao_dich từ bankCode
+        // Gộp merchant vào description để phân loại
+        String description = parsedData.getMerchant() != null ? parsedData.getMerchant() : "Giao dịch từ SMS";
+        
         TransactionRequest transactionRequest = TransactionRequest.builder()
                 .transactionSource(parsedData.getBankCode()) // VCB, TCB, BIDV...
                 .amount(parsedData.getAmount())
                 .type(parsedData.getType())
-                .merchant(parsedData.getMerchant())
-                .description("Giao dịch từ SMS - " + parsedData.getMerchant())
+                .description(description) // Merchant info gộp vào description
                 .transactionDate(parsedData.getTransactionDate())
                 .isAuto(true) // Đánh dấu là tự động tạo từ SMS
                 .notes("Quét từ SMS ngân hàng " + parsedData.getBankCode()) // Ghi chú

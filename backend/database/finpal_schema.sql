@@ -56,7 +56,6 @@ CREATE TABLE IF NOT EXISTS giao_dich (
     so_tien DECIMAL(15, 2) NOT NULL,
     loai ENUM('INCOME', 'EXPENSE') NOT NULL,
     nguon_giao_dich VARCHAR(50) COMMENT 'Nguồn giao dịch: VCB, TCB, CASH, MOMO...',
-    don_vi_chap_nhan VARCHAR(255) COMMENT 'Đơn vị nhận tiền: GRAB, SHOPEE, CGV...',
     mo_ta TEXT COMMENT 'Mô tả giao dịch',
     ngay_giao_dich DATETIME NOT NULL,
     -- Thông tin SMS
@@ -80,7 +79,6 @@ CREATE TABLE IF NOT EXISTS giao_dich (
         INDEX idx_danh_muc (id_danh_muc),
         INDEX idx_loai (loai),
         INDEX idx_nguon_giao_dich (nguon_giao_dich),
-        INDEX idx_don_vi_chap_nhan (don_vi_chap_nhan),
         INDEX idx_ngay_giao_dich (ngay_giao_dich)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================

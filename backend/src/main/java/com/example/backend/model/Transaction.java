@@ -41,9 +41,6 @@ public class Transaction {
     @Column(name = "loai", nullable = false)
     private TransactionType type;
 
-    @Column(name = "don_vi_chap_nhan", length = 255)
-    private String merchant;
-
     @Column(name = "mo_ta", columnDefinition = "TEXT")
     private String description;
 

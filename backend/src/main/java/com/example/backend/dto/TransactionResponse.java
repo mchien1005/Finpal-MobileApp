@@ -22,7 +22,6 @@ public class TransactionResponse {
     private String categoryIcon;
     private BigDecimal amount;
     private String type; // INCOME or EXPENSE
-    private String merchant;
     private String description;
     private LocalDateTime transactionDate;
     private Boolean isAuto;
@@ -47,7 +46,6 @@ public class TransactionResponse {
                 .categoryName(transaction.getCategory() != null ? transaction.getCategory().getName() : null)
                 .amount(transaction.getAmount())
                 .type(transaction.getType().name())
-                .merchant(transaction.getMerchant())
                 .description(transaction.getDescription())
                 .transactionDate(transaction.getTransactionDate())
                 .isAuto(transaction.getIsAuto())

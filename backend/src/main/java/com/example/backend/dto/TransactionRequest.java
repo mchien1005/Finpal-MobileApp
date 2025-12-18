@@ -33,10 +33,7 @@ public class TransactionRequest {
     @Schema(description = "Loại giao dịch: INCOME hoặc EXPENSE", example = "EXPENSE", requiredMode = Schema.RequiredMode.REQUIRED)
     private String type;
 
-    @Schema(description = "Tên merchant/cửa hàng", example = "Grab")
-    private String merchant;
-
-    @Schema(description = "Mô tả giao dịch", example = "Grab đi làm sáng")
+    @Schema(description = "Mô tả giao dịch (bao gồm tên cửa hàng/merchant)", example = "Grab đi làm sáng")
     private String description;
 
     @NotNull(message = "Ngày giao dịch không được để trống")

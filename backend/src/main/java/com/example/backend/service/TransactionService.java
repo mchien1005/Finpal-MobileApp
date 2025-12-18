@@ -80,7 +80,6 @@ public class TransactionService {
         transaction.setTransactionSource(request.getTransactionSource()); // VCB, TCB, CASH, MOMO...
         transaction.setAmount(request.getAmount());
         transaction.setType(Transaction.TransactionType.valueOf(request.getType()));
-        transaction.setMerchant(request.getMerchant());
         transaction.setDescription(request.getDescription());
         transaction.setTransactionDate(request.getTransactionDate());
         transaction.setIsAuto(request.getIsAuto());
@@ -98,10 +97,13 @@ public class TransactionService {
                     .orElseThrow(() -> new RuntimeException("Category not found"));
             transaction.setCategory(category);
             transaction.setCategorizationSource("USER"); // User tự chọn category
-        } else if (request.getDescription() != null && !request.getDescription().trim().isEmpty()) {
-            // Auto-categorize theo strategy được cấu hình
-            autoCategorizeTransaction(transaction, request.getDescription().trim(), 
-                                     request.getAmount().doubleValue(), user.getId());
+        } else {
+            // Sử dụng description để phân loại
+            String textToAnalyze = request.getDescription();
+            if (textToAnalyze != null && !textToAnalyze.trim().isEmpty()) {
+                autoCategorizeTransaction(transaction, textToAnalyze.trim(), 
+                                         request.getAmount().doubleValue(), user.getId());
+            }
         }
 
         Transaction saved = transactionRepository.save(transaction);
@@ -320,9 +322,7 @@ public class TransactionService {
             if (filter.getEndDate() != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("transactionDate"), filter.getEndDate()));
             }
-            if (filter.getMerchant() != null && !filter.getMerchant().isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("merchant")), "%" + filter.getMerchant().toLowerCase() + "%"));
-            }
+            // Merchant filter đã được gộp vào description
             if (filter.getIsAuto() != null) {
                 predicates.add(cb.equal(root.get("isAuto"), filter.getIsAuto()));
             }
@@ -332,9 +332,8 @@ public class TransactionService {
             if (filter.getKeyword() != null && !filter.getKeyword().isBlank()) {
                 String keyword = "%" + filter.getKeyword().toLowerCase() + "%";
                 Predicate descPredicate = cb.like(cb.lower(root.get("description")), keyword);
-                Predicate merchantPredicate = cb.like(cb.lower(root.get("merchant")), keyword);
                 Predicate notesPredicate = cb.like(cb.lower(root.get("notes")), keyword);
-                predicates.add(cb.or(descPredicate, merchantPredicate, notesPredicate));
+                predicates.add(cb.or(descPredicate, notesPredicate));
             }
         }
 
@@ -427,7 +426,6 @@ public class TransactionService {
 
         transaction.setAmount(request.getAmount());
         transaction.setType(Transaction.TransactionType.valueOf(request.getType()));
-        transaction.setMerchant(request.getMerchant());
         transaction.setDescription(request.getDescription());
         transaction.setTransactionDate(request.getTransactionDate());
         transaction.setNotes(request.getNotes());
