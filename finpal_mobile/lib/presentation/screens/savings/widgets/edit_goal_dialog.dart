@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../data/models/savings_goal_model.dart';
+import '../../../../data/services/savings_goal_service.dart';
 
 class EditGoalDialog extends StatefulWidget {
+  final int goalId;
   final String goalName;
   final double targetAmount;
   final double savedAmount;
@@ -10,6 +13,7 @@ class EditGoalDialog extends StatefulWidget {
 
   const EditGoalDialog({
     super.key,
+    required this.goalId,
     required this.goalName,
     required this.targetAmount,
     required this.savedAmount,
@@ -29,6 +33,7 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
   late TextEditingController _monthlyContributionController;
   late TextEditingController _dateController;
   late DateTime _selectedDate;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -239,7 +244,7 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Saved Amount
+                    // Saved Amount - Display only
                     const Text(
                       'Số tiền đã tiết kiệm (VNĐ)',
                       style: TextStyle(
@@ -251,18 +256,17 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _savedAmountController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      enabled: false, // Read-only - cannot edit
                       decoration: InputDecoration(
-                        hintText: 'Nhập số tiền đã tiết kiệm',
+                        hintText: 'Dùng nút "Góp tiền" để thêm tiền',
                         hintStyle: const TextStyle(
                           color: Color(0xFF717182),
-                          fontSize: 16,
+                          fontSize: 14,
                           fontFamily: 'Arimo',
                         ),
                         filled: true,
-                        fillColor: const Color(0xFFF3F3F5),
-                        border: OutlineInputBorder(
+                        fillColor: const Color(0xFFE5E7EB), // Gray background
+                        disabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide.none,
                         ),
@@ -270,18 +274,21 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                           horizontal: 12,
                           vertical: 8,
                         ),
+                        suffixIcon: const Tooltip(
+                          message:
+                              'Không thể sửa trực tiếp.\nDùng nút "Góp tiền" bên dưới để thêm tiền.',
+                          child: Icon(
+                            Icons.info_outline,
+                            size: 20,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
                       ),
                       style: const TextStyle(
                         fontSize: 16,
-                        color: Color(0xFF0A0A0A),
+                        color: Color(0xFF6B7280), // Lighter color for disabled
                         fontFamily: 'Arimo',
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Vui lòng nhập số tiền đã tiết kiệm';
-                        }
-                        return null;
-                      },
                     ),
                     const SizedBox(height: 16),
 
@@ -336,7 +343,7 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Monthly Contribution
+                    // Monthly Contribution - Auto-calculated, display only
                     const Text(
                       'Góp mỗi tháng (VNĐ)',
                       style: TextStyle(
@@ -348,18 +355,17 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _monthlyContributionController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      enabled: false, // Read-only - auto calculated
                       decoration: InputDecoration(
-                        hintText: 'Nhập số tiền góp mỗi tháng',
+                        hintText: 'Tự động tính dựa trên thời hạn',
                         hintStyle: const TextStyle(
                           color: Color(0xFF717182),
-                          fontSize: 16,
+                          fontSize: 14,
                           fontFamily: 'Arimo',
                         ),
                         filled: true,
-                        fillColor: const Color(0xFFF3F3F5),
-                        border: OutlineInputBorder(
+                        fillColor: const Color(0xFFE5E7EB), // Gray for disabled
+                        disabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide.none,
                         ),
@@ -367,18 +373,21 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                           horizontal: 12,
                           vertical: 8,
                         ),
+                        suffixIcon: const Tooltip(
+                          message:
+                              'Số tiền gợi ý mỗi tháng để đạt mục tiêu.\nTự động tính từ (Số tiền còn lại ÷ Số tháng còn lại)',
+                          child: Icon(
+                            Icons.info_outline,
+                            size: 20,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
                       ),
                       style: const TextStyle(
                         fontSize: 16,
                         color: Color(0xFF0A0A0A),
                         fontFamily: 'Arimo',
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Vui lòng nhập số tiền góp mỗi tháng';
-                        }
-                        return null;
-                      },
                     ),
                     const SizedBox(height: 24),
 
@@ -411,23 +420,7 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () {
-                              if (_formKey.currentState!.validate()) {
-                                Navigator.of(context).pop({
-                                  'name': _nameController.text,
-                                  'targetAmount': double.parse(
-                                    _targetAmountController.text,
-                                  ),
-                                  'savedAmount': double.parse(
-                                    _savedAmountController.text,
-                                  ),
-                                  'deadline': _selectedDate,
-                                  'monthlyContribution': double.parse(
-                                    _monthlyContributionController.text,
-                                  ),
-                                });
-                              }
-                            },
+                            onPressed: _isLoading ? null : _updateGoal,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFD7006E),
                               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -435,14 +428,25 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            child: const Text(
-                              'Cập nhật',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white,
-                                fontFamily: 'Arimo',
-                              ),
-                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Text(
+                                    'Cập nhật',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white,
+                                      fontFamily: 'Arimo',
+                                    ),
+                                  ),
                           ),
                         ),
                       ],
@@ -466,5 +470,48 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
         ],
       ),
     );
+  }
+
+  Future<void> _updateGoal() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final request = SavingsGoalRequest(
+        name: _nameController.text,
+        targetAmount: double.parse(_targetAmountController.text),
+        deadline:
+            '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}',
+      );
+
+      final response = await SavingsGoalService.updateSavingsGoal(
+        widget.goalId,
+        request,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop(response);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi cập nhật mục tiêu: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 }
