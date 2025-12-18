@@ -92,7 +92,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
                         @Param("endDate") LocalDateTime endDate,
                         @Param("type") Transaction.TransactionType type);
 
-        @Query("SELECT t.id, t.type, t.amount, t.merchant, t.description, t.category.name, t.transactionDate, t.transactionSource "
+        @Query("SELECT t.id, t.type, t.amount, t.description, t.category.name, t.transactionDate, t.transactionSource "
                         +
                         "FROM Transaction t " +
                         "WHERE t.user.id = :userId " +

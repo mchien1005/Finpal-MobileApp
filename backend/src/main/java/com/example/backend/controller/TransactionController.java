@@ -79,7 +79,6 @@ public class TransactionController {
             @Parameter(description = "Loại: INCOME hoặc EXPENSE") @RequestParam(required = false) String type,
             @Parameter(description = "Từ ngày (yyyy-MM-dd)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @Parameter(description = "Đến ngày (yyyy-MM-dd)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @Parameter(description = "Tên cửa hàng/merchant") @RequestParam(required = false) String merchant,
             @Parameter(description = "Giao dịch tự động (từ SMS)") @RequestParam(required = false) Boolean isAuto,
             @Parameter(description = "Đã xác minh") @RequestParam(required = false) Boolean isVerified,
             @Parameter(description = "Từ khóa tìm kiếm") @RequestParam(required = false) String keyword,
@@ -96,7 +95,6 @@ public class TransactionController {
         filter.setType(type);
         filter.setStartDate(startDate != null ? startDate.atStartOfDay() : null);
         filter.setEndDate(endDate != null ? endDate.atTime(23, 59, 59) : null);
-        filter.setMerchant(merchant);
         filter.setIsAuto(isAuto);
         filter.setIsVerified(isVerified);
         filter.setKeyword(keyword);

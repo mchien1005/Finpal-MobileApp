@@ -15,8 +15,7 @@ public class TransactionFilter {
     private String type; // INCOME, EXPENSE
     private LocalDateTime startDate;
     private LocalDateTime endDate;
-    private String merchant;
     private Boolean isAuto;
     private Boolean isVerified;
-    private String keyword; // Search in description, merchant, notes
+    private String keyword; // Tìm kiếm trong description và notes
 }

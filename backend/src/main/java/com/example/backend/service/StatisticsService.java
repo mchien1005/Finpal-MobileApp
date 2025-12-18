@@ -127,27 +127,27 @@ public class StatisticsService {
                 List<Transaction> transactions = transactionRepository
                                 .findByUserIdAndTransactionDateBetween(user.getId(), monthStart, monthEnd);
 
-                // Insight 1: Merchant chi tiêu thường xuyên (>= 3 lần)
-                Map<String, Long> merchantFrequency = transactions.stream()
-                                .filter(t -> t.getMerchant() != null && !t.getMerchant().trim().isEmpty())
+                // Insight 1: Chi tiêu thường xuyên dựa trên mô tả (>= 3 lần)
+                Map<String, Long> descriptionFrequency = transactions.stream()
+                                .filter(t -> t.getDescription() != null && !t.getDescription().trim().isEmpty())
                                 .filter(t -> t.getType() == Transaction.TransactionType.EXPENSE)
-                                .collect(Collectors.groupingBy(Transaction::getMerchant, Collectors.counting()));
+                                .collect(Collectors.groupingBy(Transaction::getDescription, Collectors.counting()));
 
-                merchantFrequency.entrySet().stream()
+                descriptionFrequency.entrySet().stream()
                                 .filter(e -> e.getValue() >= 3) // Xuất hiện >= 3 lần
                                 .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
                                 .limit(3)
                                 .forEach(entry -> {
                                         SpendingInsightDTO insight = new SpendingInsightDTO();
-                                        insight.setInsightType("FREQUENT_MERCHANT");
+                                        insight.setInsightType("FREQUENT_SPENDING");
                                         insight.setTitle("Frequent Spending");
-                                        insight.setMerchantName(entry.getKey());
+                                        insight.setMerchantName(entry.getKey()); // Dùng description
                                         insight.setFrequency(entry.getValue().intValue());
                                         insight.setDescription(
-                                                        "You've spent at " + entry.getKey() + " " + entry.getValue()
-                                                                        + " times this month");
+                                                        "You've spent on '" + entry.getKey() + "' "
+                                                                        + entry.getValue() + " times this month");
                                         insight.setSeverity("INFO");
-                                        insight.setSuggestion("Consider setting a budget for frequent merchants");
+                                        insight.setSuggestion("Consider setting a budget for frequent spending");
                                         insights.add(insight);
                                 });
 
@@ -216,7 +216,7 @@ public class StatisticsService {
                                                 insight.setInsightType("UNUSUAL_TRANSACTION");
                                                 insight.setTitle("Large Transaction Detected");
                                                 insight.setAmount(t.getAmount());
-                                                insight.setMerchantName(t.getMerchant());
+                                                insight.setMerchantName(t.getDescription()); // Dùng description thay vì merchant
                                                 insight.setCategoryName(
                                                                 t.getCategory() != null ? t.getCategory().getName()
                                                                                 : "Uncategorized");

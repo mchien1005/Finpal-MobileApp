@@ -18,8 +18,7 @@ public class TopTransactionDTO {
     private Long transactionId;
     private String type; // INCOME, EXPENSE
     private BigDecimal amount;
-    private String merchant;
-    private String description;
+    private String description; // Đã gộp merchant vào description
     private String categoryName;
     private String categoryIcon;
     private LocalDateTime transactionDate;
