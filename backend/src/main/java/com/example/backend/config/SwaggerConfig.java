@@ -36,9 +36,9 @@ public class SwaggerConfig {
                                                                 ### Hướng dẫn sử dụng:
 
                                                                 1. **Đăng ký tài khoản**: POST `/api/auth/register`
-                                                                2. **Đăng nhập**: POST `/api/auth/login` → Nhận JWT token
-                                                                3. **Authorize**: Click nút "Authorize" 🔒 ở trên, nhập: `Bearer YOUR_TOKEN`
-                                                                4. **Test APIs**: Tất cả endpoints đã được bảo vệ bởi JWT
+                                                                2. **Authorize**: Click nút \"Authorize\" 🔒 ở trên
+                                                                3. **Nhập username và password** đã đăng ký
+                                                                4. **Test APIs**: Tất cả endpoints đã được bảo vệ
 
                                                                 ---
 
@@ -59,13 +59,10 @@ public class SwaggerConfig {
                                                                 .name("MIT License")
                                                                 .url("https://opensource.org/licenses/MIT")))
                                 .components(new Components()
-                                                .addSecuritySchemes("bearer-jwt", new SecurityScheme()
+                                                .addSecuritySchemes("basicAuth", new SecurityScheme()
                                                                 .type(SecurityScheme.Type.HTTP)
-                                                                .scheme("bearer")
-                                                                .bearerFormat("JWT")
-                                                                .in(SecurityScheme.In.HEADER)
-                                                                .name("Authorization")
-                                                                .description("JWT token từ `/api/auth/login`. Format: `Bearer YOUR_TOKEN`")))
-                                .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"));
+                                                                .scheme("basic")
+                                                                .description("Đăng nhập bằng username và password")))
+                                .addSecurityItem(new SecurityRequirement().addList("basicAuth"));
         }
 }

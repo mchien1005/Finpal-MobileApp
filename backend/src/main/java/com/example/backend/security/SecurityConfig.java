@@ -46,6 +46,7 @@ public class SecurityConfig {
         // - Whitelist các endpoint public (auth, swagger, actuator)
         // - Thêm JwtAuthenticationFilter trước UsernamePasswordAuthenticationFilter
         // - Sử dụng stateless session (token-based)
+        // - HTTP Basic Auth cho Swagger UI
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
@@ -70,6 +71,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
+                // Hỗ trợ HTTP Basic Auth cho Swagger UI
+                .httpBasic(basic -> basic.realmName("Finpal API"))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
