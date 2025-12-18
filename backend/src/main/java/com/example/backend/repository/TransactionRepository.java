@@ -105,4 +105,20 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
                         @Param("endDate") LocalDateTime endDate,
                         @Param("type") Transaction.TransactionType type,
                         @Param("limit") int limit);
+
+        /**
+         * Kiểm tra giao dịch trùng lặp từ SMS
+         * Dùng để tránh tạo giao dịch trùng khi user quét SMS nhiều lần
+         */
+        @Query("SELECT COUNT(t) > 0 FROM Transaction t WHERE t.user.id = :userId " +
+                        "AND t.amount = :amount " +
+                        "AND t.transactionSource = :transactionSource " +
+                        "AND t.transactionDate BETWEEN :startDate AND :endDate " +
+                        "AND t.isAuto = true")
+        boolean existsDuplicateSMSTransaction(
+                        @Param("userId") Long userId,
+                        @Param("amount") BigDecimal amount,
+                        @Param("transactionSource") String transactionSource,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 }
