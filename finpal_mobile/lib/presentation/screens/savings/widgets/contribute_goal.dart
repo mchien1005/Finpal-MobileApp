@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../data/models/savings_goal_model.dart';
+import '../../../../data/services/savings_goal_service.dart';
 
 class ContributeGoalDialog extends StatefulWidget {
+  final int goalId;
   final String goalName;
   final double currentAmount;
   final double targetAmount;
@@ -9,6 +12,7 @@ class ContributeGoalDialog extends StatefulWidget {
 
   const ContributeGoalDialog({
     super.key,
+    required this.goalId,
     required this.goalName,
     required this.currentAmount,
     required this.targetAmount,
@@ -24,6 +28,7 @@ class _ContributeGoalDialogState extends State<ContributeGoalDialog> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   String _selectedQuickOption = '';
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -371,15 +376,7 @@ class _ContributeGoalDialogState extends State<ContributeGoalDialog> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: ElevatedButton(
-                              onPressed: () {
-                                if (_formKey.currentState!.validate()) {
-                                  // Handle contribution
-                                  Navigator.of(context).pop({
-                                    'amount': _contributionAmount,
-                                    'note': _noteController.text,
-                                  });
-                                }
-                              },
+                              onPressed: _isLoading ? null : _addContribution,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,
@@ -390,14 +387,26 @@ class _ContributeGoalDialogState extends State<ContributeGoalDialog> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              child: const Text(
-                                'Xác nhận góp tiền',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white,
-                                  fontFamily: 'Arimo',
-                                ),
-                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Xác nhận góp tiền',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.white,
+                                        fontFamily: 'Arimo',
+                                      ),
+                                    ),
                             ),
                           ),
                         ),
@@ -453,5 +462,46 @@ class _ContributeGoalDialogState extends State<ContributeGoalDialog> {
         ),
       ],
     );
+  }
+
+  Future<void> _addContribution() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final request = SavingsContributionRequest(
+        amount: _contributionAmount,
+        notes: _noteController.text.isNotEmpty ? _noteController.text : null,
+      );
+
+      final response = await SavingsGoalService.addContribution(
+        widget.goalId,
+        request,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop(response);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi góp tiền: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 }
