@@ -111,4 +111,19 @@ public class DashboardController {
         List<MonthlyTrendDTO> trends = dashboardService.getMonthlyTrend(username, months);
         return ResponseEntity.ok(trends);
     }
+
+    @Operation(
+        summary = "Ngân sách theo danh mục",
+        description = "Lấy danh sách ngân sách đang hoạt động theo danh mục, bao gồm tiến độ và thời gian."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Thành công"),
+        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
+    })
+    @GetMapping("/category-budgets")
+    public ResponseEntity<List<CategoryBudgetDTO>> getCategoryBudgets(Authentication authentication) {
+        String username = authentication.getName();
+        List<CategoryBudgetDTO> budgets = dashboardService.getCategoryBudgets(username);
+        return ResponseEntity.ok(budgets);
+    }
 }

@@ -299,4 +299,32 @@ public class DashboardService {
                                 .divide(oldValue, 4, RoundingMode.HALF_UP)
                                 .multiply(BigDecimal.valueOf(100));
         }
+
+        private final BudgetService budgetService;
+
+        /**
+         * Lấy danh sách ngân sách theo danh mục cho Dashboard
+         * 
+         * @param username Tên đăng nhập
+         * @return List<CategoryBudgetDTO>
+         */
+        @Transactional(readOnly = true)
+        public List<CategoryBudgetDTO> getCategoryBudgets(String username) {
+                // Lấy các ngân sách đang hoạt động
+                List<BudgetResponse> activeBudgets = budgetService.getActiveBudgets(username, LocalDate.now());
+
+                return activeBudgets.stream()
+                                .filter(b -> b.getCategoryId() != null) // Chỉ lấy ngân sách cho category cụ thể
+                                .map(b -> CategoryBudgetDTO.builder()
+                                                .categoryId(b.getCategoryId())
+                                                .categoryName(b.getCategoryName())
+                                                .budgetAmount(b.getAmount())
+                                                .spentAmount(b.getSpentAmount())
+                                                .percentage(b.getUsagePercentage())
+                                                .startDate(b.getStartDate())
+                                                .endDate(b.getEndDate())
+                                                .status(b.getStatus())
+                                                .build())
+                                .collect(Collectors.toList());
+        }
 }
