@@ -26,9 +26,6 @@ public class SavingsGoalRequest {
     @Schema(description = "Tên mục tiêu", example = "Mua iPhone 16", requiredMode = Schema.RequiredMode.REQUIRED)
     private String name;
 
-    @Schema(description = "Mô tả chi tiết", example = "Tiết kiệm mua iPhone 16 Pro Max 256GB")
-    private String description;
-
     @NotNull(message = "Số tiền mục tiêu không được để trống")
     @Positive(message = "Số tiền mục tiêu phải lớn hơn 0")
     @Schema(description = "Số tiền mục tiêu", example = "35000000", requiredMode = Schema.RequiredMode.REQUIRED)

@@ -110,7 +110,6 @@ CREATE TABLE IF NOT EXISTS muc_tieu_tiet_kiem (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     id_nguoi_dung BIGINT NOT NULL,
     ten_muc_tieu VARCHAR(200) NOT NULL COMMENT 'Ví dụ: Mua tai nghe, Du lịch Đà Lạt',
-    mo_ta TEXT,
     so_tien_muc_tieu DECIMAL(15, 2) NOT NULL,
     so_tien_hien_tai DECIMAL(15, 2) DEFAULT 0.00,
     han_chot DATE NULL,

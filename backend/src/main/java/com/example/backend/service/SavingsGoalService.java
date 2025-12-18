@@ -95,7 +95,6 @@ public class SavingsGoalService {
         SavingsGoal goal = new SavingsGoal();
         goal.setUserId(user.getId());
         goal.setName(request.getName());
-        goal.setDescription(request.getDescription());
         goal.setTargetAmount(request.getTargetAmount());
         goal.setCurrentAmount(BigDecimal.ZERO);
         goal.setDeadline(request.getDeadline());
@@ -127,7 +126,6 @@ public class SavingsGoalService {
         }
 
         goal.setName(request.getName());
-        goal.setDescription(request.getDescription());
         goal.setTargetAmount(request.getTargetAmount());
         goal.setDeadline(request.getDeadline());
 
@@ -250,7 +248,6 @@ public class SavingsGoalService {
         response.setId(goal.getId());
         response.setUserId(goal.getUserId());
         response.setName(goal.getName());
-        response.setDescription(goal.getDescription());
         response.setTargetAmount(goal.getTargetAmount());
         response.setCurrentAmount(goal.getCurrentAmount());
         response.setDeadline(goal.getDeadline());

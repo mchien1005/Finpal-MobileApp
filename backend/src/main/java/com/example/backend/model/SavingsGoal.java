@@ -26,9 +26,6 @@ public class SavingsGoal {
     @Column(name = "ten_muc_tieu", nullable = false, length = 200)
     private String name;
 
-    @Column(name = "mo_ta", columnDefinition = "TEXT")
-    private String description;
-
     @Column(name = "so_tien_muc_tieu", nullable = false, precision = 15, scale = 2)
     private BigDecimal targetAmount;
 
