@@ -106,7 +106,7 @@ public class EmailService {
                             <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email này.</p>
                             <div class="footer">
                                 <p>Email này được gửi tự động vào: %s</p>
-                                <p>© 2024 FinPal. All rights reserved.</p>
+                                <p>© 2025 FinPal. All rights reserved.</p>
                             </div>
                         </div>
                     </div>
@@ -165,7 +165,7 @@ public class EmailService {
                             <p>Chúng tôi rất tiếc khi phải chia tay với bạn. Cảm ơn bạn đã sử dụng FinPal!</p>
                             <div class="footer">
                                 <p>Email này được gửi vào: %s</p>
-                                <p>© 2024 FinPal. All rights reserved.</p>
+                                <p>© 2025 FinPal. All rights reserved.</p>
                             </div>
                         </div>
                     </div>
@@ -220,7 +220,7 @@ public class EmailService {
                             <p>Bạn có thể tạo yêu cầu mới nếu cần thiết.</p>
                             <div class="footer">
                                 <p>Email này được gửi vào: %s</p>
-                                <p>© 2024 FinPal. All rights reserved.</p>
+                                <p>© 2025 FinPal. All rights reserved.</p>
                             </div>
                         </div>
                     </div>

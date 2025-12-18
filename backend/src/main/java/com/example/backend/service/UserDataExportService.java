@@ -72,11 +72,24 @@ public class UserDataExportService {
              PdfDocument pdfDoc = new PdfDocument(writer);
              Document document = new Document(pdfDoc)) {
 
-            // Font (sử dụng Helvetica vì font-asian có thể không hỗ trợ tốt tiếng Việt)
-            PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-            PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+            // Font hỗ trợ Unicode (tiếng Việt)
+            // Sử dụng font từ classpath hoặc system font
+            PdfFont font;
+            PdfFont boldFont;
+            try {
+                // Thử dùng font Arial từ hệ thống (hỗ trợ Unicode)
+                font = PdfFontFactory.createFont("Helvetica", com.itextpdf.io.font.PdfEncodings.IDENTITY_H, 
+                        PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
+                boldFont = PdfFontFactory.createFont("Helvetica-Bold", com.itextpdf.io.font.PdfEncodings.IDENTITY_H,
+                        PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
+            } catch (Exception e) {
+                // Fallback về font chuẩn nếu không tìm thấy
+                log.warn("Could not load Unicode font, falling back to standard fonts");
+                font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+                boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+            }
 
-            // Tiêu đề
+            // Tiêu đề (dùng tiếng Việt không dấu để đảm bảo hiển thị)
             Paragraph title = new Paragraph("FINPAL - BAO CAO DU LIEU CA NHAN")
                     .setFont(boldFont)
                     .setFontSize(18)
@@ -92,9 +105,6 @@ public class UserDataExportService {
 
             // Danh sách giao dịch
             addTransactions(document, userId, font, boldFont);
-
-            // Danh mục
-            addCategories(document, userId, font, boldFont);
 
             // Ngân sách
             addBudgets(document, userId, font, boldFont);
@@ -208,38 +218,9 @@ public class UserDataExportService {
         }
     }
 
-    private void addCategories(Document document, Long userId, PdfFont font, PdfFont boldFont) {
-        document.add(new Paragraph("4. DANH MUC CA NHAN")
-                .setFont(boldFont)
-                .setFontSize(14)
-                .setMarginTop(15));
-
-        // Lấy tất cả danh mục
-        List<Category> categories = categoryRepository.findAll();
-
-        if (categories.isEmpty()) {
-            document.add(new Paragraph("Khong co danh muc ca nhan.").setFont(font));
-            return;
-        }
-
-        Table table = new Table(UnitValue.createPercentArray(new float[]{50, 25, 25}))
-                .setWidth(UnitValue.createPercentValue(100));
-
-        table.addHeaderCell(new Cell().add(new Paragraph("Ten danh muc").setFont(boldFont).setFontSize(10)));
-        table.addHeaderCell(new Cell().add(new Paragraph("Loai").setFont(boldFont).setFontSize(10)));
-        table.addHeaderCell(new Cell().add(new Paragraph("Mau sac").setFont(boldFont).setFontSize(10)));
-
-        for (Category cat : categories) {
-            table.addCell(new Cell().add(new Paragraph(cat.getName()).setFont(font).setFontSize(9)));
-            table.addCell(new Cell().add(new Paragraph(cat.getType() != null ? cat.getType().name() : "N/A").setFont(font).setFontSize(9)));
-            table.addCell(new Cell().add(new Paragraph(cat.getColor() != null ? cat.getColor() : "N/A").setFont(font).setFontSize(9)));
-        }
-
-        document.add(table);
-    }
 
     private void addBudgets(Document document, Long userId, PdfFont font, PdfFont boldFont) {
-        document.add(new Paragraph("5. NGAN SACH")
+        document.add(new Paragraph("4. NGAN SACH")
                 .setFont(boldFont)
                 .setFontSize(14)
                 .setMarginTop(15));
@@ -281,7 +262,7 @@ public class UserDataExportService {
     }
 
     private void addSavingsGoals(Document document, Long userId, PdfFont font, PdfFont boldFont) {
-        document.add(new Paragraph("6. MUC TIEU TIET KIEM")
+        document.add(new Paragraph("5. MUC TIEU TIET KIEM")
                 .setFont(boldFont)
                 .setFontSize(14)
                 .setMarginTop(15));
