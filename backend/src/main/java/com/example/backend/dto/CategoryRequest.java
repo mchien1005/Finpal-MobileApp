@@ -26,9 +26,5 @@ public class CategoryRequest {
     
     private String description;
 
-    private Long parentId; // Null nếu là parent category
-
-    private Boolean isSystem = false;
-
     private Integer displayOrder = 0;
 }

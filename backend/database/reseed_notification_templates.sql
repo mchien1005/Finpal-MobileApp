@@ -141,6 +141,14 @@ VALUES
         'INFO',
         'ACTIVE',
         0
+    ),
+    (
+        'NOT016',
+        '📅 Tổng kết Tuần',
+        'Tuần vừa qua: Tổng thu {total_income} - Tổng chi {total_expense} = Tiết kiệm {savings} ({savings_percent})',
+        'INFO',
+        'ACTIVE',
+        0
     );
 
 -- Kiểm tra kết quả

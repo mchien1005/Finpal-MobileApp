@@ -41,15 +41,10 @@ CREATE TABLE IF NOT EXISTS danh_muc (
     mau_sac VARCHAR(20) NULL COMMENT 'Màu hiển thị: #00C950 hoặc 0xFF00C950',
     bieu_tuong VARCHAR(100) NULL COMMENT 'Tên icon: food, shopping-cart',
     mo_ta TEXT NULL COMMENT 'Mô tả danh mục',
-    id_cha BIGINT NULL COMMENT 'Category cha (cho sub-category)',
-    la_he_thong BOOLEAN DEFAULT FALSE COMMENT 'Category hệ thống không thể xóa',
     thu_tu_hien_thi INT DEFAULT 0,
     ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ngay_cap_nhat TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_cha) REFERENCES danh_muc(id) ON DELETE
-    SET NULL,
-        INDEX idx_loai (loai),
-        INDEX idx_id_cha (id_cha)
+    INDEX idx_loai (loai)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- =====================================================
 -- 3. BẢNG GIAO_DICH (TRANSACTIONS) - Giao dịch tài chính

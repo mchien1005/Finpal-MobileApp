@@ -80,6 +80,7 @@ public class SmartNotificationScheduler {
     private static final String TPL_GOAL_DEADLINE = "NOT013";
     private static final String TPL_GOAL_COMPLETED = "NOT014";
     private static final String TPL_MONTHLY_SUMMARY = "NOT015";
+    private static final String TPL_WEEKLY_SUMMARY = "NOT016";
 
     // ======================== BUDGET ALERTS ========================
     
@@ -320,8 +321,12 @@ public class SmartNotificationScheduler {
                                     continue;
                                 }
 
+                                // Lấy title từ template config để linh động
+                                var template = templateService.getTemplateByCode(TPL_ANOMALY_DETECTED);
+                                String title = template != null ? template.getTitle() : "🔔 Phát hiện Chi tiêu Bất thường";
+
                                 createAndPushNotification(user, "ANOMALY_ALERT",
-                                        "🔔 Phát hiện Chi tiêu Bất thường",
+                                        title,
                                         insight.getMessage(), 
                                         Notification.NotificationPriority.HIGH,
                                         insight.getCategory() != null 
@@ -564,6 +569,161 @@ public class SmartNotificationScheduler {
 
         } catch (Exception e) {
             log.error("❌ Error in proactive insights scheduler: {}", e.getMessage());
+        }
+    }
+
+    // ======================== MONTHLY SUMMARY ========================
+
+    /**
+     * Gửi tổng kết thu chi tháng trước
+     * Chạy vào ngày mùng 1 hàng tháng lúc 9:00 AM
+     * 
+     * Sử dụng template NOT015
+     */
+    @Scheduled(cron = "${scheduler.smart-notifications.monthly-summary.cron:0 0 9 1 * *}")
+    @Transactional
+    public void sendMonthlySummary() {
+        log.info("📅 Starting monthly summary generation...");
+
+        try {
+            List<User> activeUsers = getActiveUsersWithNotifications();
+            int summaryCount = 0;
+            LocalDate today = LocalDate.now();
+            LocalDateTime startOfLastMonth = today.minusMonths(1).withDayOfMonth(1).atStartOfDay();
+            LocalDateTime endOfLastMonth = today.withDayOfMonth(1).minusDays(1).atTime(23, 59, 59);
+            String monthLabel = String.valueOf(startOfLastMonth.getMonthValue());
+
+            for (User user : activeUsers) {
+                try {
+                    // 1. Tính toán tổng thu chi
+                    BigDecimal totalIncome = transactionRepository.sumByUserIdAndTypeAndDateRange(
+                            user.getId(), Transaction.TransactionType.INCOME, startOfLastMonth, endOfLastMonth);
+                    
+                    BigDecimal totalExpense = transactionRepository.sumByUserIdAndTypeAndDateRange(
+                            user.getId(), Transaction.TransactionType.EXPENSE, startOfLastMonth, endOfLastMonth);
+
+                    if (totalIncome.compareTo(BigDecimal.ZERO) == 0 && totalExpense.compareTo(BigDecimal.ZERO) == 0) {
+                        continue; // Bỏ qua nếu không có giao dịch
+                    }
+
+                    BigDecimal savings = totalIncome.subtract(totalExpense);
+                    double savingsPercent = totalIncome.compareTo(BigDecimal.ZERO) > 0 
+                            ? savings.divide(totalIncome, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue()
+                            : 0.0;
+
+                    // 2. Render Template
+                    java.util.Map<String, Object> placeholders = new java.util.HashMap<>();
+                    placeholders.put("month", monthLabel);
+                    placeholders.put("total_income", totalIncome.doubleValue());
+                    placeholders.put("total_expense", totalExpense.doubleValue());
+                    placeholders.put("savings", savings.doubleValue());
+                    placeholders.put("savings_percent", String.format("%.1f%%", savingsPercent));
+
+                    NotificationTemplateService.RenderedTemplate rendered = templateService.renderTemplate(
+                            TPL_MONTHLY_SUMMARY, // NOT015
+                            placeholders
+                    );
+
+                    String title = rendered != null ? rendered.getTitle() : "📊 Tổng kết Tháng " + monthLabel;
+                    String message = rendered != null ? rendered.getContent() :
+                            String.format("Tháng %s: Tổng thu %,.0fđ - Tổng chi %,.0fđ = Tiết kiệm %,.0fđ (%s)",
+                                    monthLabel, totalIncome.doubleValue(), totalExpense.doubleValue(), 
+                                    savings.doubleValue(), String.format("%.1f%%", savingsPercent));
+
+                    // 3. Gửi thông báo
+                    createAndPushNotification(user, "MONTHLY_REPORT",
+                            title, message,
+                            Notification.NotificationPriority.LOW,
+                            "/dashboard/reports?period=monthly");
+
+                    summaryCount++;
+
+                } catch (Exception e) {
+                    log.error("Error generating monthly summary for user {}: {}", user.getId(), e.getMessage());
+                }
+            }
+            
+            log.info("✅ Monthly summary completed. Sent {} reports", summaryCount);
+
+        } catch (Exception e) {
+            log.error("❌ Error in monthly summary scheduler: {}", e.getMessage());
+        }
+    }
+
+    // ======================== WEEKLY SUMMARY ========================
+
+    /**
+     * Gửi tổng kết thu chi tuần trước
+     * Chạy vào Chủ nhật hàng tuần lúc 9:00 AM
+     * 
+     * Sử dụng template NOT016
+     */
+    @Scheduled(cron = "${scheduler.smart-notifications.weekly-summary.cron:0 0 9 * * SUN}")
+    @Transactional
+    public void sendWeeklySummary() {
+        log.info("📅 Starting weekly summary generation...");
+
+        try {
+            List<User> activeUsers = getActiveUsersWithNotifications();
+            int summaryCount = 0;
+            LocalDate today = LocalDate.now();
+            // Tuần trước: Từ Thứ 2 tuần trước đến Chủ nhật tuần trước
+            LocalDateTime startOfLastWeek = today.minusWeeks(1).with(java.time.DayOfWeek.MONDAY).atStartOfDay();
+            LocalDateTime endOfLastWeek = today.minusWeeks(1).with(java.time.DayOfWeek.SUNDAY).atTime(23, 59, 59);
+
+            for (User user : activeUsers) {
+                try {
+                    // 1. Tính toán tổng thu chi tuần trước
+                    BigDecimal totalIncome = transactionRepository.sumByUserIdAndTypeAndDateRange(
+                            user.getId(), Transaction.TransactionType.INCOME, startOfLastWeek, endOfLastWeek);
+                    
+                    BigDecimal totalExpense = transactionRepository.sumByUserIdAndTypeAndDateRange(
+                            user.getId(), Transaction.TransactionType.EXPENSE, startOfLastWeek, endOfLastWeek);
+
+                    if (totalIncome.compareTo(BigDecimal.ZERO) == 0 && totalExpense.compareTo(BigDecimal.ZERO) == 0) {
+                        continue; // Bỏ qua nếu không có giao dịch
+                    }
+
+                    BigDecimal savings = totalIncome.subtract(totalExpense);
+                    double savingsPercent = totalIncome.compareTo(BigDecimal.ZERO) > 0 
+                            ? savings.divide(totalIncome, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue()
+                            : 0.0;
+
+                    // 2. Render Template
+                    java.util.Map<String, Object> placeholders = new java.util.HashMap<>();
+                    placeholders.put("total_income", totalIncome.doubleValue());
+                    placeholders.put("total_expense", totalExpense.doubleValue());
+                    placeholders.put("savings", savings.doubleValue());
+                    placeholders.put("savings_percent", String.format("%.1f%%", savingsPercent));
+
+                    NotificationTemplateService.RenderedTemplate rendered = templateService.renderTemplate(
+                            TPL_WEEKLY_SUMMARY, // NOT016
+                            placeholders
+                    );
+
+                    String title = rendered != null ? rendered.getTitle() : "📅 Tổng kết Tuần";
+                    String message = rendered != null ? rendered.getContent() :
+                            String.format("Tuần vừa qua: Tổng thu %,.0fđ - Tổng chi %,.0fđ = Tiết kiệm %,.0fđ (%s)",
+                                    totalIncome.doubleValue(), totalExpense.doubleValue(), 
+                                    savings.doubleValue(), String.format("%.1f%%", savingsPercent));
+
+                    // 3. Gửi thông báo
+                    createAndPushNotification(user, "WEEKLY_REPORT",
+                            title, message,
+                            Notification.NotificationPriority.LOW,
+                            "/dashboard/reports?period=weekly");
+
+                    summaryCount++;
+
+                } catch (Exception e) {
+                    log.error("Error generating weekly summary for user {}: {}", user.getId(), e.getMessage());
+                }
+            }
+            
+            log.info("✅ Weekly summary completed. Sent {} reports", summaryCount);
+
+        } catch (Exception e) {
+            log.error("❌ Error in weekly summary scheduler: {}", e.getMessage());
         }
     }
 

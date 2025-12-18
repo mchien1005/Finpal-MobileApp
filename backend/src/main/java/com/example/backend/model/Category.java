@@ -25,12 +25,6 @@ public class Category {
     @Column(name = "loai", nullable = false)
     private CategoryType type = CategoryType.EXPENSE;
 
-    @Column(name = "id_cha")
-    private Long parentId;
-
-    @Column(name = "la_he_thong")
-    private Boolean isSystem = false;
-
     @Column(name = "thu_tu_hien_thi")
     private Integer displayOrder = 0;
 
@@ -48,13 +42,6 @@ public class Category {
 
     @Column(name = "ngay_cap_nhat")
     private LocalDateTime updatedAt;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_cha", insertable = false, updatable = false)
-    private Category parent;
-
-    @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY)
-    private java.util.List<Category> subCategories;
 
     @PrePersist
     protected void onCreate() {

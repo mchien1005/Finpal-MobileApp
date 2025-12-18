@@ -52,40 +52,40 @@ VALUES (
 -- =====================================================
 -- 2. DANH_MUC - Danh mục hệ thống
 -- =====================================================
-INSERT INTO danh_muc (id_cha, ten_danh_muc, loai, mau_sac, bieu_tuong, mo_ta)
+INSERT INTO danh_muc (ten_danh_muc, loai, mau_sac, bieu_tuong, mo_ta)
 VALUES
 -- ======================
 -- EXPENSE (CHI TIÊU)
 -- Format icon: Sử dụng tên icon từ material_design_icons_flutter package
 -- Trong Flutter: MdiIcons.fromString('food') hoặc MdiIcons.food
 -- ======================
-(NULL, 'Ăn uống', 'EXPENSE', '#FF7043', 'food', 'Chi phí ăn uống, cafe, ăn ngoài'),
-(NULL, 'Di chuyển', 'EXPENSE', '#29B6F6', 'car', 'Xăng xe, taxi, vé xe buýt'),
-(NULL, 'Mua sắm', 'EXPENSE', '#AB47BC', 'shopping', 'Quần áo, giày dép, phụ kiện'),
-(NULL, 'Giải trí', 'EXPENSE', '#FFCA28', 'movie', 'Xem phim, du lịch, vui chơi'),
-(NULL, 'Sức khỏe', 'EXPENSE', '#EF5350', 'heart_pulse', 'Thuốc men, khám bệnh, thể thao'),
-(NULL, 'Giáo dục', 'EXPENSE', '#42A5F5', 'school', 'Học phí, sách vở, khóa học'),
-(NULL, 'Hóa đơn & Tiện ích', 'EXPENSE', '#26A69A', 'flash', 'Điện, nước, internet, điện thoại'),
-(NULL, 'Nhà ở', 'EXPENSE', '#8D6E63', 'home', 'Tiền thuê nhà, sửa chữa, nội thất'),
-(NULL, 'Gia đình', 'EXPENSE', '#EC407A', 'account_group', 'Chi tiêu cho con cái, cha mẹ'),
-(NULL, 'Bảo hiểm', 'EXPENSE', '#78909C', 'shield_check', 'Bảo hiểm y tế, bảo hiểm nhân thọ'),
-(NULL, 'Đầu tư', 'EXPENSE', '#66BB6A', 'chart_line', 'Mua vàng, chứng khoán, bất động sản'),
-(NULL, 'Quà tặng', 'EXPENSE', '#FFA726', 'gift', 'Quà sinh nhật, đám cưới, lễ tết'),
-(NULL, 'Công việc', 'EXPENSE', '#5C6BC0', 'briefcase', 'Chi phí công tác, tiếp khách'),
-(NULL, 'Làm đẹp', 'EXPENSE', '#F06292', 'face_woman', 'Spa, cắt tóc, mỹ phẩm'),
-(NULL, 'Khác (Chi)', 'EXPENSE', '#BDBDBD', 'dots_horizontal', 'Các khoản chi khác'),
+('Ăn uống', 'EXPENSE', '#FF7043', 'food', 'Chi phí ăn uống, cafe, ăn ngoài'),
+('Di chuyển', 'EXPENSE', '#29B6F6', 'car', 'Xăng xe, taxi, vé xe buýt'),
+('Mua sắm', 'EXPENSE', '#AB47BC', 'shopping', 'Quần áo, giày dép, phụ kiện'),
+('Giải trí', 'EXPENSE', '#FFCA28', 'movie', 'Xem phim, du lịch, vui chơi'),
+('Sức khỏe', 'EXPENSE', '#EF5350', 'heart_pulse', 'Thuốc men, khám bệnh, thể thao'),
+('Giáo dục', 'EXPENSE', '#42A5F5', 'school', 'Học phí, sách vở, khóa học'),
+('Hóa đơn & Tiện ích', 'EXPENSE', '#26A69A', 'flash', 'Điện, nước, internet, điện thoại'),
+('Nhà ở', 'EXPENSE', '#8D6E63', 'home', 'Tiền thuê nhà, sửa chữa, nội thất'),
+('Gia đình', 'EXPENSE', '#EC407A', 'account_group', 'Chi tiêu cho con cái, cha mẹ'),
+('Bảo hiểm', 'EXPENSE', '#78909C', 'shield_check', 'Bảo hiểm y tế, bảo hiểm nhân thọ'),
+('Đầu tư', 'EXPENSE', '#66BB6A', 'chart_line', 'Mua vàng, chứng khoán, bất động sản'),
+('Quà tặng', 'EXPENSE', '#FFA726', 'gift', 'Quà sinh nhật, đám cưới, lễ tết'),
+('Công việc', 'EXPENSE', '#5C6BC0', 'briefcase', 'Chi phí công tác, tiếp khách'),
+('Làm đẹp', 'EXPENSE', '#F06292', 'face_woman', 'Spa, cắt tóc, mỹ phẩm'),
+('Khác (Chi)', 'EXPENSE', '#BDBDBD', 'dots_horizontal', 'Các khoản chi khác'),
 
 -- ======================
 -- INCOME (THU NHẬP)
 -- ======================
-(NULL, 'Lương', 'INCOME', '#4CAF50', 'cash', 'Lương chính thức hàng tháng'),
-(NULL, 'Thưởng', 'INCOME', '#FFD54F', 'trophy', 'Thưởng dự án, thưởng tết'),
-(NULL, 'Làm thêm', 'INCOME', '#81C784', 'clock_outline', 'Thu nhập từ công việc làm thêm'),
-(NULL, 'Kinh doanh', 'INCOME', '#26C6DA', 'store', 'Lợi nhuận từ kinh doanh bán hàng'),
-(NULL, 'Đầu tư', 'INCOME', '#66BB6A', 'trending_up', 'Lời từ đầu tư, cổ tức'),
-(NULL, 'Cho vay', 'INCOME', '#90A4AE', 'handshake', 'Thu hồi nợ'),
-(NULL, 'Được tặng', 'INCOME', '#FF8A65', 'gift_open', 'Tiền lì xì, quà tặng tiền mặt'),
-(NULL, 'Khác (Thu)', 'INCOME', '#BDBDBD', 'dots_horizontal', 'Các khoản thu khác');
+('Lương', 'INCOME', '#4CAF50', 'cash', 'Lương chính thức hàng tháng'),
+('Thưởng', 'INCOME', '#FFD54F', 'trophy', 'Thưởng dự án, thưởng tết'),
+('Làm thêm', 'INCOME', '#81C784', 'clock_outline', 'Thu nhập từ công việc làm thêm'),
+('Kinh doanh', 'INCOME', '#26C6DA', 'store', 'Lợi nhuận từ kinh doanh bán hàng'),
+('Đầu tư', 'INCOME', '#66BB6A', 'trending_up', 'Lời từ đầu tư, cổ tức'),
+('Cho vay', 'INCOME', '#90A4AE', 'handshake', 'Thu hồi nợ'),
+('Được tặng', 'INCOME', '#FF8A65', 'gift_open', 'Tiền lì xì, quà tặng tiền mặt'),
+('Khác (Thu)', 'INCOME', '#BDBDBD', 'dots_horizontal', 'Các khoản thu khác');
 
 -- =====================================================
 -- 3. BO_PHAN_TICH_SMS - Cấu hình parse SMS ngân hàng
