@@ -88,6 +88,10 @@ class TransactionService {
       try {
         final List<dynamic> jsonList = jsonDecode(response.body);
         print('✅ Found ${jsonList.length} categories');
+        // Debug: In ra icon của mỗi category
+        for (var json in jsonList) {
+          print('📌 Category: ${json['name']} - Icon: ${json['icon']}');
+        }
         return jsonList.map((json) => Category.fromJson(json)).toList();
       } catch (e) {
         print('❌ Error parsing categories: $e');

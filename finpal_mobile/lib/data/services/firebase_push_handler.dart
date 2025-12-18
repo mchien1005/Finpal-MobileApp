@@ -109,9 +109,9 @@ class FirebasePushHandler {
       await FirebaseMessaging.instance
           .setForegroundNotificationPresentationOptions(
             alert: true, // iOS needs this true to show heads-up in foreground
-        badge: true,
-        sound: true,
-      );
+            badge: true,
+            sound: true,
+          );
 
       if (kDebugMode) {
         print('🔔 Permission status: ${settings.authorizationStatus}');
