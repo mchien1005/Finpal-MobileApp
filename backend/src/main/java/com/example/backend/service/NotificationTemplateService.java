@@ -29,6 +29,7 @@ public class NotificationTemplateService {
     private final NotificationTemplateRepository templateRepository;
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final FcmService fcmService;
 
     /**
      * Lấy tất cả templates
@@ -175,8 +176,10 @@ public class NotificationTemplateService {
             }
         }
 
-        // Create notifications
+        // Create notifications & Prepare for FCM
         int sentCount = 0;
+        List<Long> userIdsForPush = new java.util.ArrayList<>();
+        
         for (User user : targetUsers) {
             try {
                 Notification notification = new Notification();
@@ -189,9 +192,23 @@ public class NotificationTemplateService {
 
                 notificationRepository.save(notification);
                 sentCount++;
+                
+                // Add to push list
+                userIdsForPush.add(user.getId());
+                
             } catch (Exception e) {
                 log.error("Failed to send notification to user {}: {}", user.getId(), e.getMessage());
             }
+        }
+
+        // Trigger FCM Push Notifications (Multicast)
+        if (!userIdsForPush.isEmpty()) {
+            Map<String, String> data = new java.util.HashMap<>();
+            data.put("type", template.getType().name());
+            data.put("templateCode", template.getTemplateCode());
+            data.put("priority", mapTypeToPriority(template.getType()).toString());
+            
+            fcmService.sendPushToMultipleUsers(userIdsForPush, template.getTitle(), message, data);
         }
 
         // Update sent count
