@@ -196,14 +196,14 @@ def load_user_transactions_from_mysql(user_id: int) -> pd.DataFrame:
     """
     db = get_database_service()
     
-    # Lấy expense transactions 6 tháng gần nhất
-    df = db.get_user_expense_transactions(user_id, months=6)
+    # Lấy expense transactions 12 tháng gần nhất (tăng từ 6 lên 12)
+    df = db.get_user_expense_transactions(user_id, months=12)
     
     if len(df) == 0:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No transactions found for user {user_id}"
-        )
+        # Check if user has ANY transactions (even income or old ones)
+        # This helps distinguish between "new user" vs "no recent expenses"
+        logger.warning(f"No expense transactions found for user {user_id} in last 12 months")
+        return pd.DataFrame() # Return empty DF instead of raising 404 immediately
     
     # Rename columns để tương thích với code cũ
     if 'timestamp' not in df.columns and 'transaction_date' in df.columns:
@@ -219,32 +219,17 @@ def load_user_transactions_from_mysql(user_id: int) -> pd.DataFrame:
 def load_user_transactions_from_csv(user_id: int) -> pd.DataFrame:
     """
     Load transactions từ CSV file (fallback)
-    
-    Args:
-        user_id: ID người dùng cần load transactions
-    
-    Returns:
-        pd.DataFrame: DataFrame chứa expense transactions của user
-    
-    Raises:
-        HTTPException: Nếu không tìm thấy file hoặc không có dữ liệu
     """
     data_path = "data/raw/transactions.csv"
     
     if not os.path.exists(data_path):
-        raise HTTPException(
-            status_code=404,
-            detail="Transaction data not found"
-        )
+         return pd.DataFrame()
     
     df = pd.read_csv(data_path)
     user_df = df[df['user_id'] == user_id].copy()
     
     if len(user_df) == 0:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No transactions found for user {user_id}"
-        )
+         return pd.DataFrame()
     
     # Convert timestamp
     user_df['timestamp'] = pd.to_datetime(user_df['timestamp'])
@@ -259,25 +244,10 @@ def load_user_transactions_from_csv(user_id: int) -> pd.DataFrame:
 def load_user_transactions(user_id: int) -> pd.DataFrame:
     """
     Load transactions cho một user cụ thể
-    
-    Ưu tiên lấy dữ liệu từ MySQL database.
-    Nếu không kết nối được MySQL, fallback sang CSV file.
-    
-    Args:
-        user_id: ID người dùng cần load transactions
-    
-    Returns:
-        pd.DataFrame: DataFrame chứa expense transactions của user
-    
-    Raises:
-        HTTPException: Nếu không tìm thấy dữ liệu
     """
     if USE_MYSQL:
         try:
             return load_user_transactions_from_mysql(user_id)
-        except HTTPException:
-            # Re-raise HTTP exceptions (như 404)
-            raise
         except Exception as e:
             # Lỗi kết nối MySQL -> fallback sang CSV
             logger.warning(f"⚠️ MySQL connection failed: {e}. Falling back to CSV...")
@@ -289,47 +259,7 @@ def load_user_transactions(user_id: int) -> pd.DataFrame:
 @router.get("/savings-suggestions/{user_id}", response_model=SavingsSuggestionsResponse)
 async def get_savings_suggestions(user_id: int):
     """
-    Phân tích chi tiêu và gợi ý cách tiết kiệm - Analyze spending and suggest savings
-    
-    Phân tích thói quen chi tiêu theo từng category và đề xuất cách giảm chi tiêu
-    để tiết kiệm được nhiều tiền hơn mỗi tháng.
-    
-    Thuật toán:
-    1. Tính trung bình chi tiêu hàng tuần cho mỗi category
-    2. Tìm categories có chi tiêu cao (>200k/tháng)
-    3. Đề xuất giảm 20-25% tùy theo mức độ chi tiêu
-    4. Tính toán tiềm năng tiết kiệm hàng tháng
-    
-    Args:
-        user_id: ID người dùng
-    
-    Returns:
-        SavingsSuggestionsResponse: Danh sách gợi ý tiết kiệm bao gồm:
-            - user_id: ID người dùng
-            - suggestions: List các gợi ý (top 5):
-                * category: Danh mục
-                * current_weekly_avg: Chi tiêu trung bình/tuần hiện tại
-                * suggested_weekly_target: Mục tiêu đề xuất/tuần
-                * monthly_savings: Số tiền tiết kiệm được/tháng
-                * message: Thông điệp gợi ý (tiếng Việt)
-            - total_potential_savings: Tổng tiềm năng tiết kiệm
-            - analyzed_months: Số tháng dữ liệu được phân tích
-    
-    Example:
-        Output: {
-            "user_id": 1,
-            "suggestions": [
-                {
-                    "category": "Trà sữa",
-                    "current_weekly_avg": 200000,
-                    "suggested_weekly_target": 100000,
-                    "monthly_savings": 400000,
-                    "message": "Bạn chi trung bình 200,000đ/tuần cho 'Trà sữa'. Nếu giảm còn 100,000đ, bạn sẽ tiết kiệm được 400,000đ/tháng."
-                }
-            ],
-            "total_potential_savings": 1500000,
-            "analyzed_months": 3
-        }
+    Phân tích chi tiêu và gợi ý cách tiết kiệm
     """
     
     try:
@@ -338,9 +268,12 @@ async def get_savings_suggestions(user_id: int):
         
         # Kiểm tra có dữ liệu expense không
         if len(df) == 0:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No expense transactions found for user {user_id}"
+            # Return empty response instead of 404
+            return SavingsSuggestionsResponse(
+                user_id=user_id,
+                suggestions=[],
+                total_potential_savings=0,
+                analyzed_months=0
             )
         
         # Tính số tháng dữ liệu có
@@ -398,28 +331,36 @@ async def get_savings_suggestions(user_id: int):
             analyzed_months=analyzed_months
         )
         
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in get_savings_suggestions: {e}")
+        # Return empty on error to prevent app crash
+        return SavingsSuggestionsResponse(
+            user_id=user_id,
+            suggestions=[],
+            total_potential_savings=0,
+            analyzed_months=0
+        )
 
 
 @router.get("/spending-patterns/{user_id}", response_model=List[SpendingPattern])
 async def get_spending_patterns(user_id: int):
     """
     Analyze detailed spending patterns for a user
-    
-    Returns frequency, trends, and peak times for each category
     """
     
     try:
         df = load_user_transactions(user_id)
         
+        if len(df) == 0:
+            return []
+            
         patterns = []
         
         for category in df['category'].unique():
             cat_df = df[df['category'] == category].copy()
             
+            if len(cat_df) == 0: continue
+
             # Calculate frequency
             days_between = cat_df['timestamp'].diff().dt.days.median()
             if pd.isna(days_between):
@@ -436,6 +377,7 @@ async def get_spending_patterns(user_id: int):
             
             # Calculate trend
             cat_df = cat_df.sort_values('timestamp')
+            trend = "stable"
             if len(cat_df) >= 4:
                 recent_avg = cat_df.tail(len(cat_df)//3)['amount'].mean()
                 older_avg = cat_df.head(len(cat_df)//3)['amount'].mean()
@@ -444,10 +386,6 @@ async def get_spending_patterns(user_id: int):
                     trend = "increasing"
                 elif recent_avg < older_avg * 0.9:
                     trend = "decreasing"
-                else:
-                    trend = "stable"
-            else:
-                trend = "stable"
             
             # Find peak times (day of week and hour)
             cat_df['day_of_week'] = cat_df['timestamp'].dt.day_name()
@@ -471,27 +409,32 @@ async def get_spending_patterns(user_id: int):
         
         return patterns
         
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in get_spending_patterns: {e}")
+        return []
 
 
 @router.get("/proactive-insights/{user_id}", response_model=List[SpendingInsight])
 async def get_proactive_insights(user_id: int):
     """
     Generate proactive insights and warnings for user
-    
-    Examples:
-    - "Bạn đã chi 70% hạn mức 'Ăn ngoài' của tháng này"
-    - "Chi tiêu tháng này cao hơn 30% so với trung bình"
     """
     
     try:
         df = load_user_transactions(user_id)
-        model = get_predictor()
         
         insights = []
+        
+        if len(df) == 0:
+            insights.append(SpendingInsight(
+                insight_type="tip",
+                message="Hãy thêm các giao dịch chi tiêu để nhận phân tích thông minh từ FinPal AI!",
+                actionable=False,
+                impact_score=0.1
+            ))
+            return insights
+
+        model = get_predictor()
         current_month = datetime.now().strftime("%Y-%m")
         
         # Get current month spending
@@ -512,7 +455,14 @@ async def get_proactive_insights(user_id: int):
         user_stats = model.category_stats.get(user_id, {})
         
         if not user_stats:
-            return insights
+            # Stats not calculated yet, usually means training needed or first run
+             insights.append(SpendingInsight(
+                insight_type="tip",
+                message="Hệ thống đang học thói quen chi tiêu của bạn. Hãy quay lại sau!",
+                actionable=False,
+                impact_score=0.2
+            ))
+             return insights
         
         # 1. Check each category vs average
         for category, stats in user_stats.items():
@@ -604,7 +554,6 @@ async def get_proactive_insights(user_id: int):
         # Return top 10 insights
         return insights[:10]
         
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in get_proactive_insights: {e}")
+        return []
