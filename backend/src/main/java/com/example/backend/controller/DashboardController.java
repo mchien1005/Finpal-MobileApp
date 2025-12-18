@@ -2,6 +2,11 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.*;
 import com.example.backend.service.DashboardService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -17,25 +22,28 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
+@Tag(name = "📊 Dashboard", description = "API bảng điều khiển trực quan. Xem tổng quan tài chính, biểu đồ thu chi.")
 public class DashboardController {
 
     private final DashboardService dashboardService;
 
-    /**
-     * FR2.1: GET /api/dashboard/cash-flow
-     * Tổng quan Dòng tiền: Tổng Thu nhập (Tháng) - Tổng Chi tiêu (Tháng) = Còn lại
-     * 
-     * Response: {
-     * "monthlyIncome": 15000000,
-     * "monthlyExpense": 8000000,
-     * "netSavings": 7000000,
-     * "savingsRate": 46.67,
-     * "currentMonth": "2025-11",
-     * "totalBalance": 25000000
-     * }
-     */
+    @Operation(
+        summary = "Tổng quan dòng tiền",
+        description = """
+            Lấy tổng quan dòng tiền trong tháng:
+            - Tổng thu nhập
+            - Tổng chi tiêu
+            - Số tiền còn lại (net savings)
+            - Tỷ lệ tiết kiệm (%)
+            """
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Thành công"),
+        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
+    })
     @GetMapping("/cash-flow")
     public ResponseEntity<CashFlowDTO> getCashFlow(
+            @Parameter(description = "Tháng cần xem (yyyy-MM-dd), mặc định tháng hiện tại")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate month,
             Authentication authentication) {
         String username = authentication.getName();
@@ -43,26 +51,27 @@ public class DashboardController {
         return ResponseEntity.ok(cashFlow);
     }
 
-    /**
-     * FR2.2: GET /api/dashboard/spending-by-category
-     * Biểu đồ Phân loại: Data cho pie chart chi tiêu theo category
-     * 
-     * Response: [
-     * {
-     * "categoryId": 1,
-     * "categoryName": "Ăn uống",
-     * "icon": "🍔",
-     * "color": "#FF5722",
-     * "totalAmount": 3200000,
-     * "percentage": 40.0,
-     * "transactionCount": 25
-     * },
-     * ...
-     * ]
-     */
+    @Operation(
+        summary = "Chi tiêu theo danh mục",
+        description = """
+            Lấy dữ liệu chi tiêu phân loại theo danh mục (dùng cho biểu đồ tròn).
+            
+            **Response bao gồm:**
+            - Tên danh mục, icon, màu sắc
+            - Tổng số tiền chi tiêu
+            - Phần trăm so với tổng chi
+            - Số lượng giao dịch
+            """
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Thành công"),
+        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
+    })
     @GetMapping("/spending-by-category")
     public ResponseEntity<List<SpendingByCategoryDTO>> getSpendingByCategory(
+            @Parameter(description = "Từ ngày (yyyy-MM-dd)")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "Đến ngày (yyyy-MM-dd)")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             Authentication authentication) {
         String username = authentication.getName();
@@ -70,10 +79,14 @@ public class DashboardController {
         return ResponseEntity.ok(spending);
     }
 
-    /**
-     * GET /api/dashboard/summary
-     * Tổng quan tổng hợp dashboard (bao gồm cash flow + top categories)
-     */
+    @Operation(
+        summary = "Tổng quan dashboard",
+        description = "Lấy tất cả dữ liệu dashboard trong một request (cash flow + top categories + recent transactions)."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Thành công"),
+        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
+    })
     @GetMapping("/summary")
     public ResponseEntity<DashboardSummaryDTO> getDashboardSummary(Authentication authentication) {
         String username = authentication.getName();
@@ -81,12 +94,17 @@ public class DashboardController {
         return ResponseEntity.ok(summary);
     }
 
-    /**
-     * GET /api/dashboard/monthly-trend
-     * Xu hướng thu chi theo tháng (cho biểu đồ line chart)
-     */
+    @Operation(
+        summary = "Xu hướng thu chi theo tháng",
+        description = "Lấy dữ liệu xu hướng thu chi N tháng gần nhất (dùng cho biểu đồ đường)."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Thành công"),
+        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
+    })
     @GetMapping("/monthly-trend")
     public ResponseEntity<List<MonthlyTrendDTO>> getMonthlyTrend(
+            @Parameter(description = "Số tháng cần lấy (mặc định 6)")
             @RequestParam(required = false, defaultValue = "6") Integer months,
             Authentication authentication) {
         String username = authentication.getName();

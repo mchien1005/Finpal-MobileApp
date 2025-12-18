@@ -5,6 +5,11 @@ import com.example.backend.dto.TransactionFilter;
 import com.example.backend.dto.TransactionRequest;
 import com.example.backend.dto.TransactionResponse;
 import com.example.backend.service.TransactionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -17,40 +22,32 @@ import java.time.LocalDate;
 
 /**
  * Controller quản lý Giao dịch (Transactions)
- * 
- * Chức năng CRUD đầy đủ:
- * - Tạo giao dịch thủ công (manual entry)
- * - Xem danh sách giao dịch (with filter, pagination, sort)
- * - Xem chi tiết 1 giao dịch
- * - Sửa giao dịch (ví dụ: sửa category nếu AI phân loại sai)
- * - Xóa giao dịch
- * 
- * Note:
- * - Tất cả giao dịch đều được auto-categorize bằng AI
- * - User chỉ thấy giao dịch của chính mình (ownership validation)
  */
 @RestController
 @RequestMapping("/api/transactions")
 @RequiredArgsConstructor
+@Tag(name = "💳 Transactions", description = "API quản lý giao dịch thu chi. Hỗ trợ CRUD, filter, pagination và sắp xếp.")
 public class TransactionController {
 
     // Service xử lý business logic cho transactions
     private final TransactionService transactionService;
 
-    /**
-     * API tạo giao dịch thủ công (Manual Entry)
-     * 
-     * @param request        - Thông tin giao dịch (transactionSource, amount, type,
-     *                       merchant...)
-     * @param authentication - User đang đăng nhập
-     * @return TransactionResponse - Giao dịch vừa tạo
-     * 
-     *         HTTP 201 CREATED - Tạo thành công
-     *         HTTP 400 BAD_REQUEST - Dữ liệu không hợp lệ
-     * 
-     *         Note: Giao dịch sẽ được tự động phân loại bằng AI nếu không có
-     *         categoryId
-     */
+    @Operation(
+        summary = "Tạo giao dịch mới",
+        description = """
+            Tạo giao dịch thủ công (Manual Entry).
+            
+            **Lưu ý:**
+            - Nếu không có `categoryId`, hệ thống sẽ tự động phân loại bằng AI
+            - `type` phải là `INCOME` hoặc `EXPENSE`
+            - `amount` phải là số dương
+            """
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Tạo giao dịch thành công"),
+        @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ"),
+        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
+    })
     @PostMapping
     public ResponseEntity<TransactionResponse> createTransaction(
             @Valid @RequestBody TransactionRequest request,
@@ -60,46 +57,36 @@ public class TransactionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * API lấy danh sách giao dịch với filter, pagination và sort
-     * 
-     * @param transactionSource - Lọc theo nguồn giao dịch: VCB, TCB, MOMO...
-     *                          (optional)
-     * @param categoryId        - Lọc theo danh mục (optional)
-     * @param type              - Lọc theo loại: INCOME hoặc EXPENSE (optional)
-     * @param startDate         - Lọc từ ngày (optional)
-     * @param endDate           - Lọc đến ngày (optional)
-     * @param merchant          - Lọc theo merchant/cửa hàng (optional)
-     * @param isAuto            - Lọc giao dịch tự động (từ SMS) hoặc thủ công
-     *                          (optional)
-     * @param isVerified        - Lọc giao dịch đã xác minh (optional)
-     * @param keyword           - Tìm kiếm theo description hoặc merchant (optional)
-     * @param page              - Trang số (mặc định 0)
-     * @param size              - Số lượng items per page (mặc định 20)
-     * @param sortBy            - Sắp xếp theo field nào (mặc định transactionDate)
-     * @param sortDirection     - ASC hoặc DESC (mặc định DESC)
-     * @return PageResponse chứa list transactions và thông tin pagination
-     * 
-     *         Ví dụ:
-     *         GET
-     *         /api/transactions?type=EXPENSE&startDate=2025-11-01&endDate=2025-11-30&page=0&size=20
-     *         → Lấy tất cả giao dịch chi tiêu trong tháng 11/2025
-     */
+    @Operation(
+        summary = "Lấy danh sách giao dịch",
+        description = """
+            Lấy danh sách giao dịch với các bộ lọc, phân trang và sắp xếp.
+            
+            **Ví dụ:**
+            - Lấy chi tiêu tháng 11: `?type=EXPENSE&startDate=2025-11-01&endDate=2025-11-30`
+            - Lọc theo ngân hàng: `?transactionSource=VCB`
+            - Tìm kiếm: `?keyword=cafe`
+            """
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Thành công"),
+        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
+    })
     @GetMapping
     public ResponseEntity<PageResponse<TransactionResponse>> getTransactions(
-            @RequestParam(required = false) String transactionSource,
-            @RequestParam(required = false) Long categoryId,
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @RequestParam(required = false) String merchant,
-            @RequestParam(required = false) Boolean isAuto,
-            @RequestParam(required = false) Boolean isVerified,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "transactionDate") String sortBy,
-            @RequestParam(defaultValue = "DESC") String sortDirection,
+            @Parameter(description = "Nguồn giao dịch: VCB, TCB, MOMO...") @RequestParam(required = false) String transactionSource,
+            @Parameter(description = "ID danh mục") @RequestParam(required = false) Long categoryId,
+            @Parameter(description = "Loại: INCOME hoặc EXPENSE") @RequestParam(required = false) String type,
+            @Parameter(description = "Từ ngày (yyyy-MM-dd)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "Đến ngày (yyyy-MM-dd)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @Parameter(description = "Tên cửa hàng/merchant") @RequestParam(required = false) String merchant,
+            @Parameter(description = "Giao dịch tự động (từ SMS)") @RequestParam(required = false) Boolean isAuto,
+            @Parameter(description = "Đã xác minh") @RequestParam(required = false) Boolean isVerified,
+            @Parameter(description = "Từ khóa tìm kiếm") @RequestParam(required = false) String keyword,
+            @Parameter(description = "Số trang (bắt đầu từ 0)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Số items mỗi trang") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Sắp xếp theo field") @RequestParam(defaultValue = "transactionDate") String sortBy,
+            @Parameter(description = "Hướng sắp xếp: ASC hoặc DESC") @RequestParam(defaultValue = "DESC") String sortDirection,
             Authentication authentication) {
 
         // Build filter object từ request params
@@ -122,39 +109,44 @@ public class TransactionController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * API lấy chi tiết 1 giao dịch
-     * 
-     * @param id - Transaction ID
-     * @return TransactionResponse - Thông tin chi tiết giao dịch
-     * 
-     *         HTTP 200 OK - Tìm thấy
-     *         HTTP 404 NOT_FOUND - Không tìm thấy hoặc không có quyền xem
-     */
+    @Operation(
+        summary = "Lấy chi tiết giao dịch",
+        description = "Lấy thông tin chi tiết của một giao dịch theo ID."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Thành công"),
+        @ApiResponse(responseCode = "404", description = "Không tìm thấy giao dịch"),
+        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
+    })
     @GetMapping("/{id}")
     public ResponseEntity<TransactionResponse> getTransactionById(
-            @PathVariable Long id,
+            @Parameter(description = "ID giao dịch") @PathVariable Long id,
             Authentication authentication) {
         String username = authentication.getName();
         TransactionResponse response = transactionService.getTransactionById(id, username);
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * API cập nhật giao dịch
-     * 
-     * @param id      - Transaction ID cần update
-     * @param request - Thông tin mới
-     * @return TransactionResponse - Giao dịch sau khi update
-     * 
-     *         Use case:
-     *         - Sửa category nếu AI phân loại sai
-     *         - Sửa description/notes
-     *         - Sửa amount nếu nhập sai
-     */
+    @Operation(
+        summary = "Cập nhật giao dịch",
+        description = """
+            Cập nhật thông tin giao dịch.
+            
+            **Use case:**
+            - Sửa category nếu AI phân loại sai
+            - Sửa description/notes
+            - Sửa amount nếu nhập sai
+            """
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
+        @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ"),
+        @ApiResponse(responseCode = "404", description = "Không tìm thấy giao dịch"),
+        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
+    })
     @PutMapping("/{id}")
     public ResponseEntity<TransactionResponse> updateTransaction(
-            @PathVariable Long id,
+            @Parameter(description = "ID giao dịch") @PathVariable Long id,
             @Valid @RequestBody TransactionRequest request,
             Authentication authentication) {
         String username = authentication.getName();
@@ -162,17 +154,18 @@ public class TransactionController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * API xóa giao dịch
-     * 
-     * @param id - Transaction ID cần xóa
-     * @return HTTP 204 NO_CONTENT - Xóa thành công
-     * 
-     *         Note: Xóa thật (hard delete) khỏi database
-     */
+    @Operation(
+        summary = "Xóa giao dịch",
+        description = "Xóa giao dịch khỏi hệ thống (hard delete)."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Xóa thành công"),
+        @ApiResponse(responseCode = "404", description = "Không tìm thấy giao dịch"),
+        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
+    })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTransaction(
-            @PathVariable Long id,
+            @Parameter(description = "ID giao dịch") @PathVariable Long id,
             Authentication authentication) {
         String username = authentication.getName();
         transactionService.deleteTransaction(id, username);
