@@ -1,5 +1,6 @@
 import 'package:finpal_mobile/core/constants/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:finpal_mobile/data/services/auth_service.dart';
 import '../widgets/confirmation_dialog.dart';
 import '../widgets/scrollable_app_bar_scaffold.dart';
 import '../../presentation/screens/auth/login_screen.dart';
@@ -37,12 +38,17 @@ class AppBarWithDrawer {
           confirmText: 'Đăng xuất',
           cancelText: 'Hủy',
           confirmColor: AppColors.primary,
-          onConfirm: () {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-              (route) => false,
-            );
+          onConfirm: () async {
+            // Gọi logout để xóa token và unregister FCM
+            await AuthService().logout();
+
+            if (context.mounted) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+              );
+            }
           },
         );
       },

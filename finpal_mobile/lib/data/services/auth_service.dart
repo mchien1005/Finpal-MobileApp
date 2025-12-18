@@ -58,7 +58,12 @@ class AuthService {
 
   Future<void> logout() async {
     // Hủy đăng ký FCM token trước khi logout
-    await _fcmHandler.unregisterToken();
+    try {
+      await _fcmHandler.unregisterToken();
+    } catch (e) {
+      print('⚠️ Failed to unregister FCM token during logout: $e');
+    }
+    // Luôn clear data dù unregister có lỗi hay không
     await _storageService.clearAll();
   }
 
