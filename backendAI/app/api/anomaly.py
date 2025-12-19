@@ -88,30 +88,50 @@ def create_anomaly_message(
     if not is_anomaly:
         return "✅ Giao dịch bình thường, không phát hiện bất thường."
     
-    # Tính số lần cao hơn trung bình
-    times = round(amount / average_amount, 1) if average_amount > 0 else 0
+    # Format số thành số nguyên (không có phần thập phân)
+    amount_int = int(amount)
+    average_int = int(average_amount) if average_amount > 0 else 0
     
-    # Thử lấy từ DB template
-    message = get_message_from_template(
-        ANOMALY_TRANSACTION,
-        amount=amount,
-        merchant=merchant,
-        category=category,
-        times=times,
-        average=average_amount
-    )
-    
-    if message:
-        return message
-    
-    # Fallback message
-    if average_amount > 0:
+    # Tạo message dựa trên loại anomaly
+    if "cao hơn" in reason.lower() and "trung bình" in reason.lower():
+        # Rule 1: Cao hơn 3x trung bình
+        times = round(amount / average_amount, 1) if average_amount > 0 else 0
         return (
-            f"🚨 Phát hiện giao dịch bất thường: {amount:,.0f}đ tại '{merchant}' ({category}). "
-            f"Số tiền này cao hơn {times}x so với trung bình của bạn ({average_amount:,.0f}đ)."
+            f"🚨 Chi tiêu lớn: {amount_int:,}đ tại '{merchant}' ({category}). "
+            f"Khoản này gấp {times}x mức chi thường ngày của bạn ({average_int:,}đ). "
+            f"Hãy kiểm tra lại giao dịch này!"
         )
+    
+    elif "top 5%" in reason.lower() or "95%" in reason.lower():
+        # Rule 2: Nằm trong top 5% cao nhất
+        return (
+            f"🔔 Giao dịch đáng chú ý: {amount_int:,}đ tại '{merchant}' ({category}). "
+            f"Đây là một trong những khoản chi lớn nhất của bạn gần đây. "
+            f"Xem xét lại nếu cần thiết."
+        )
+    
+    elif "z-score" in reason.lower():
+        # Rule 3: Z-score cao
+        return (
+            f"⚠️ Chi tiêu khác thường: {amount_int:,}đ tại '{merchant}' ({category}). "
+            f"Giao dịch này khác biệt đáng kể so với thói quen chi tiêu của bạn. "
+            f"Hãy kiểm tra lại giao dịch này."
+        )
+    
+    elif "ai" in reason.lower() or "pattern" in reason.lower():
+        # Rule 4: Isolation Forest / AI detection
+        return (
+            f"🤖 AI phát hiện bất thường: {amount_int:,}đ tại '{merchant}' ({category}). "
+            f"Mô hình AI nhận thấy giao dịch này có đặc điểm khác với thói quen chi tiêu của bạn. "
+            f"Hãy kiểm tra lại giao dịch này."
+        )
+    
     else:
-        return f"🚨 Phát hiện giao dịch bất thường: {amount:,.0f}đ tại '{merchant}' ({category}). {reason}"
+        # Fallback message chung
+        return (
+            f"🚨 Phát hiện chi tiêu bất thường: {amount_int:,}đ tại '{merchant}' ({category}). "
+            f"{reason}. Hãy kiểm tra lại giao dịch này."
+        )
 
 
 def get_user_stats_from_mysql(user_id: int) -> dict:
@@ -183,11 +203,55 @@ async def detect_anomaly(transaction: AnomalyDetectionInput):
                 pass
         
         # ==========================================
-        # BƯỚC 2: Phát hiện anomaly
+        # BƯỚC 2: Isolation Forest Prediction
+        # ==========================================
+        isolation_forest_result = None
+        try:
+            model = get_detector()
+            if model and model.model is not None:
+                # Gọi method detect của Isolation Forest
+                if_is_anomaly, if_score, if_reason, if_recommendation = model.detect(
+                    user_id=user_id,
+                    amount=amount,
+                    merchant=merchant,
+                    category=category,
+                    timestamp=timestamp
+                )
+                isolation_forest_result = {
+                    'is_anomaly': if_is_anomaly,
+                    'score': if_score,
+                    'reason': if_reason,
+                    'recommendation': if_recommendation
+                }
+                logger.debug(f"Isolation Forest: is_anomaly={if_is_anomaly}, score={if_score:.2f}")
+        except Exception as e:
+            logger.warning(f"Isolation Forest prediction failed: {e}")
+        
+        # ==========================================
+        # BƯỚC 3: Rule-based Detection (nếu có user stats)
         # ==========================================
         
         # Nếu không có user stats -> không thể đánh giá chính xác
         if not user_stats:
+            # Dùng kết quả Isolation Forest nếu có
+            if isolation_forest_result:
+                message = create_anomaly_message(
+                    is_anomaly=isolation_forest_result['is_anomaly'],
+                    amount=amount,
+                    merchant=merchant,
+                    category=category,
+                    anomaly_score=isolation_forest_result['score'],
+                    average_amount=0,
+                    reason=isolation_forest_result['reason']
+                )
+                return AnomalyDetectionResult(
+                    is_anomaly=isolation_forest_result['is_anomaly'],
+                    anomaly_score=isolation_forest_result['score'],
+                    reason=isolation_forest_result['reason'],
+                    recommendation=isolation_forest_result['recommendation'],
+                    message=message
+                )
+            
             return AnomalyDetectionResult(
                 is_anomaly=False,
                 anomaly_score=0.0,
@@ -201,16 +265,22 @@ async def detect_anomaly(transaction: AnomalyDetectionInput):
         q95_amount = user_stats.get('q95_amount', 0)
         
         # ==========================================
-        # BƯỚC 3: Tính anomaly score dựa trên statistics
+        # BƯỚC 4: Tính anomaly score HYBRID (Rule + IF)
         # ==========================================
         
         # Z-score: số độ lệch chuẩn so với mean
         z_score = (amount - mean_amount) / std_amount if std_amount > 0 else 0
         
-        # Anomaly score dựa trên z-score (sigmoid)
+        # Rule-based score dựa trên z-score (sigmoid)
         import math
-        anomaly_score = 1 / (1 + math.exp(-z_score + 2))  # Center at z=2
-        anomaly_score = min(1.0, max(0.0, anomaly_score))
+        rule_score = 1 / (1 + math.exp(-z_score + 2))  # Center at z=2
+        rule_score = min(1.0, max(0.0, rule_score))
+        
+        # Kết hợp score: 60% Rule-based + 40% Isolation Forest
+        if isolation_forest_result:
+            anomaly_score = 0.6 * rule_score + 0.4 * isolation_forest_result['score']
+        else:
+            anomaly_score = rule_score
         
         # Xác định có phải anomaly không
         is_anomaly = False
@@ -222,14 +292,14 @@ async def detect_anomaly(transaction: AnomalyDetectionInput):
             is_anomaly = True
             multiplier = amount / mean_amount
             reason = f"Giao dịch cao hơn {multiplier:.1f}x mức trung bình"
-            recommendation = f"⚠️ Số tiền này cao bất thường. Trung bình bạn chi {mean_amount:,.0f}đ, nhưng giao dịch này là {amount:,.0f}đ. Xác nhận lại giao dịch."
+            recommendation = f"⚠️ Số tiền này cao bất thường. Trung bình bạn chi {int(mean_amount):,}đ, nhưng giao dịch này là {int(amount):,}đ. Xác nhận lại giao dịch."
             anomaly_score = min(1.0, 0.7 + multiplier * 0.05)
         
         # Rule 2: Cao hơn 95th percentile
         elif amount > q95_amount and q95_amount > 0:
             is_anomaly = True
             reason = "Giao dịch nằm trong top 5% cao nhất"
-            recommendation = f"⚠️ Giao dịch này cao hơn 95% các giao dịch trước đây của bạn ({q95_amount:,.0f}đ). Xem xét lại nếu cần."
+            recommendation = f"⚠️ Giao dịch này cao hơn 95% các giao dịch trước đây của bạn ({int(q95_amount):,}đ). Xem xét lại nếu cần."
             anomaly_score = max(anomaly_score, 0.65)
         
         # Rule 3: Z-score cao (> 3 std)
@@ -237,6 +307,15 @@ async def detect_anomaly(transaction: AnomalyDetectionInput):
             is_anomaly = True
             reason = f"Giao dịch bất thường (z-score: {z_score:.1f})"
             recommendation = "⚠️ Giao dịch có đặc điểm khác lạ so với thói quen chi tiêu của bạn. Kiểm tra lại."
+        
+        # Rule 4: Isolation Forest phát hiện bất thường (ML-based)
+        elif isolation_forest_result and isolation_forest_result['is_anomaly']:
+            # Chỉ đánh dấu nếu IF score đủ cao (> 0.6)
+            if isolation_forest_result['score'] > 0.6:
+                is_anomaly = True
+                reason = "AI phát hiện pattern bất thường"
+                recommendation = f"🤖 Mô hình AI nhận thấy giao dịch này có đặc điểm khác thường so với thói quen chi tiêu của bạn. Kiểm tra lại."
+                anomaly_score = max(anomaly_score, isolation_forest_result['score'])
         
         # ==========================================
         # BƯỚC 4: Tạo message từ template
