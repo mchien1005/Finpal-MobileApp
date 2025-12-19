@@ -2,7 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.SmartTip;
 import com.example.backend.dto.SmartTipsResponse;
-import com.example.backend.security.UserDetailsImpl;
+import com.example.backend.model.User;
 import com.example.backend.service.AIInsightsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -39,13 +39,13 @@ public class SmartTipsController {
         @ApiResponse(responseCode = "503", description = "AI service không khả dụng")
     })
     public ResponseEntity<SmartTipsResponse> getSmartTips(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @AuthenticationPrincipal User user,
             @Parameter(description = "Số lượng tips tối đa") 
             @RequestParam(defaultValue = "5") int maxTips) {
         
-        log.info("Getting smart tips for user: {}", userDetails.getId());
+        log.info("Getting smart tips for user: {}", user.getId());
         
-        SmartTipsResponse tips = aiInsightsService.getSmartTips(userDetails.getId(), maxTips);
+        SmartTipsResponse tips = aiInsightsService.getSmartTips(user.getId(), maxTips);
         
         if (tips == null) {
             return ResponseEntity.status(503).build();
