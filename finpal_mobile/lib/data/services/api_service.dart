@@ -120,4 +120,83 @@ class ApiService {
       );
     }
   }
+
+  Future<dynamic> put(
+    String endpoint,
+    Map<String, dynamic> body, {
+    bool includeAuth = true,
+  }) async {
+    try {
+      final headers = await _getHeaders(includeAuth: includeAuth);
+      final response = await http.put(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        try {
+          final error = jsonDecode(response.body);
+          throw ApiException(
+            message: error['message'] ?? 'Có lỗi xảy ra',
+            statusCode: response.statusCode,
+            type: 'validation',
+          );
+        } catch (e) {
+          if (e is ApiException) rethrow;
+          throw ApiException(
+            message: 'Có lỗi xảy ra',
+            statusCode: response.statusCode,
+            type: 'validation',
+          );
+        }
+      }
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException(
+        message:
+            'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.',
+        type: 'connection',
+      );
+    }
+  }
+
+  Future<void> delete(String endpoint, {bool includeAuth = true}) async {
+    try {
+      final headers = await _getHeaders(includeAuth: includeAuth);
+      final response = await http.delete(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: headers,
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        try {
+          final error = jsonDecode(response.body);
+          throw ApiException(
+            message: error['message'] ?? 'Có lỗi xảy ra',
+            statusCode: response.statusCode,
+            type: 'validation',
+          );
+        } catch (e) {
+          if (e is ApiException) rethrow;
+          throw ApiException(
+            message: 'Có lỗi xảy ra',
+            statusCode: response.statusCode,
+            type: 'validation',
+          );
+        }
+      }
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException(
+        message:
+            'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.',
+        type: 'connection',
+      );
+    }
+  }
 }

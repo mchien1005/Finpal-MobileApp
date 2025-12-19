@@ -7,6 +7,8 @@ import '../../presentation/screens/transactions/search_transaction_screen.dart';
 /// A scaffold with a scrollable app bar that hides when scrolling down
 class ScrollableAppBarScaffold extends StatelessWidget {
   final String userName;
+  final String? userEmail;
+  final String? avatarUrl;
   final int notificationCount;
   final Widget body;
   final Widget? bottomNavigationBar;
@@ -23,6 +25,8 @@ class ScrollableAppBarScaffold extends StatelessWidget {
     super.key,
     required this.body,
     this.userName = 'Nguyễn Văn A',
+    this.userEmail,
+    this.avatarUrl,
     this.notificationCount = 0,
     this.bottomNavigationBar,
     this.backgroundColor,
@@ -40,6 +44,9 @@ class ScrollableAppBarScaffold extends StatelessWidget {
     return Scaffold(
       backgroundColor: backgroundColor ?? AppColors.background,
       endDrawer: CustomDrawer(
+        userName: userName,
+        userEmail: userEmail ?? 'demo@finpal.com',
+        avatarUrl: avatarUrl,
         onLogoutPressed: onLogoutPressed,
         onSettingsPressed: onSettingsPressed,
         onLanguageChanged: onLanguageChanged,
