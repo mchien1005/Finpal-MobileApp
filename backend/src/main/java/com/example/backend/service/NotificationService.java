@@ -518,7 +518,8 @@ public class NotificationService {
             notification.setCreatedAt(LocalDateTime.now());
             notification.setIsRead(false);
             notification.setPriority(Notification.NotificationPriority.HIGH);
-            notification.setTransactionId(transaction.getId());
+            // Link đến transaction bị đánh dấu bất thường
+            notification.setActionUrl("/transactions/" + transaction.getId());
 
             Notification savedNotification = notificationRepository.save(notification);
             
