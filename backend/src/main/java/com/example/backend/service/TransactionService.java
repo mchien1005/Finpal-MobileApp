@@ -25,7 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 /**
  * Service quản lý Giao dịch (Transaction)
  * Chức năng: CRUD giao dịch, lọc/phân trang, tự động phân loại category bằng AI
- * hoặc rule-based
+ * hoặc rule-based, phát hiện giao dịch bất thường realtime
  */
 @Service
 @Slf4j
@@ -37,6 +37,8 @@ public class TransactionService {
     private final CategoryRepository categoryRepository;
     private final CategoryRuleService categoryRuleService;
     private final AICategorizationService aiCategorizationService;
+    private final AIInsightsService aiInsightsService;
+    private final NotificationService notificationService;
     private final EntityManager entityManager;
     private final EncryptionUtil encryptionUtil;
 
@@ -107,6 +109,49 @@ public class TransactionService {
         }
 
         Transaction saved = transactionRepository.save(transaction);
+        
+        // ========================================
+        // REALTIME ANOMALY DETECTION
+        // Kiểm tra giao dịch bất thường sau khi lưu
+        // ========================================
+        if (Transaction.TransactionType.EXPENSE.name().equals(request.getType())) {
+            try {
+                String categoryName = saved.getCategory() != null ? 
+                        saved.getCategory().getName() : "Khác";
+                
+                com.example.backend.dto.AnomalyDetectionResult anomalyResult = 
+                        aiInsightsService.checkAnomaly(
+                            user.getId(),
+                            request.getAmount().doubleValue(),
+                            request.getDescription(),
+                            categoryName
+                        );
+                
+                if (anomalyResult != null && Boolean.TRUE.equals(anomalyResult.getIsAnomaly())) {
+                    // Đánh dấu giao dịch là bất thường
+                    saved.setIsAnomaly(true);
+                    transactionRepository.save(saved);
+                    
+                    // Push notification cho user
+                    notificationService.sendAnomalyWarning(
+                            user,
+                            anomalyResult.getMessage() != null ? 
+                                anomalyResult.getMessage() : anomalyResult.getReason(),
+                            saved
+                    );
+                    
+                    log.warn("🚨 Anomaly detected for transaction {}: {} (score: {})", 
+                            saved.getId(), 
+                            anomalyResult.getReason(), 
+                            anomalyResult.getAnomalyScore());
+                }
+            } catch (Exception e) {
+                log.warn("Failed to check anomaly for transaction {}: {}", 
+                        saved.getId(), e.getMessage());
+                // Không throw exception - anomaly check là optional
+            }
+        }
+        
         return TransactionResponse.fromEntity(saved);
     }
 

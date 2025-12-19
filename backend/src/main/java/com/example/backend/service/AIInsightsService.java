@@ -177,5 +177,62 @@ public class AIInsightsService {
             return null;
         }
     }
+
+    /**
+     * Kiểm tra giao dịch có bất thường không (realtime anomaly detection)
+     * Gọi khi user tạo giao dịch mới để cảnh báo ngay lập tức
+     * 
+     * @param userId ID của user
+     * @param amount Số tiền giao dịch
+     * @param merchant Tên merchant/mô tả
+     * @param category Danh mục giao dịch
+     * @return AnomalyDetectionResult hoặc null nếu có lỗi
+     */
+    public com.example.backend.dto.AnomalyDetectionResult checkAnomaly(
+            Long userId, 
+            Double amount, 
+            String merchant, 
+            String category) {
+        
+        if (!aiEnabled) {
+            return null;
+        }
+
+        try {
+            String url = aiBackendUrl + "/api/anomaly/detect";
+
+            log.debug("Checking anomaly for user {} - amount: {}, category: {}", 
+                    userId, amount, category);
+            
+            // Tạo request body
+            com.example.backend.dto.AnomalyDetectionRequest request = 
+                com.example.backend.dto.AnomalyDetectionRequest.builder()
+                    .userId(userId)
+                    .amount(amount)
+                    .merchant(merchant != null ? merchant : "Unknown")
+                    .category(category != null ? category : "Khác")
+                    .timestamp(java.time.LocalDateTime.now())
+                    .build();
+            
+            ResponseEntity<com.example.backend.dto.AnomalyDetectionResult> response = 
+                restTemplate.postForEntity(
+                    url,
+                    request,
+                    com.example.backend.dto.AnomalyDetectionResult.class);
+
+            com.example.backend.dto.AnomalyDetectionResult result = response.getBody();
+
+            if (result != null && Boolean.TRUE.equals(result.getIsAnomaly())) {
+                log.warn("🚨 Anomaly detected for user {}: {} - score: {}", 
+                        userId, result.getReason(), result.getAnomalyScore());
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            log.warn("Failed to check anomaly: {}", e.getMessage());
+            return null;
+        }
+    }
 }
 

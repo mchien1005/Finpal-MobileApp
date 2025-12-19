@@ -6,6 +6,7 @@ import com.example.backend.dto.SpendingInsight;
 import com.example.backend.model.Budget;
 import com.example.backend.model.Notification;
 import com.example.backend.model.SavingsGoal;
+import com.example.backend.model.Transaction;
 import com.example.backend.model.User;
 import com.example.backend.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class NotificationService {
     private final SavingsGoalRepository savingsGoalRepository;
     private final TransactionRepository transactionRepository;
     private final AIInsightsService aiInsightsService;
+    private final FcmService fcmService;
 
     /**
      * Lấy tất cả thông báo của user
@@ -489,6 +491,66 @@ public class NotificationService {
 
         } catch (Exception e) {
             log.error("Error sending notification to user {}", userId, e);
+        }
+    }
+
+    /**
+     * Gửi cảnh báo giao dịch bất thường (realtime anomaly warning)
+     * Được gọi khi user tạo giao dịch mới và AI phát hiện bất thường
+     * 
+     * Bao gồm:
+     * 1. Lưu notification vào database
+     * 2. Gửi FCM push notification đến điện thoại user
+     * 
+     * @param user User cần gửi cảnh báo
+     * @param message Nội dung cảnh báo (từ AI)
+     * @param transaction Giao dịch bị đánh dấu bất thường
+     */
+    @Transactional
+    public void sendAnomalyWarning(User user, String message, Transaction transaction) {
+        try {
+            // 1. Lưu notification vào database
+            Notification notification = new Notification();
+            notification.setUserId(user.getId());
+            notification.setType("ALERT");
+            notification.setTitle("🚨 Giao dịch Bất thường");
+            notification.setContent(message);
+            notification.setCreatedAt(LocalDateTime.now());
+            notification.setIsRead(false);
+            notification.setPriority(Notification.NotificationPriority.HIGH);
+            notification.setTransactionId(transaction.getId());
+
+            Notification savedNotification = notificationRepository.save(notification);
+            
+            log.warn("🚨 Anomaly warning saved for user {}: {} - Transaction ID: {}", 
+                    user.getUsername(), message, transaction.getId());
+
+            // 2. Gửi FCM push notification đến điện thoại user
+            try {
+                java.util.Map<String, String> data = new java.util.HashMap<>();
+                data.put("type", "ANOMALY_ALERT");
+                data.put("notificationId", String.valueOf(savedNotification.getId()));
+                data.put("transactionId", String.valueOf(transaction.getId()));
+                data.put("amount", String.valueOf(transaction.getAmount()));
+                data.put("category", transaction.getCategory() != null ? 
+                        transaction.getCategory().getName() : "Khác");
+                
+                fcmService.sendPushToUser(
+                        user.getId(),
+                        "🚨 Giao dịch Bất thường",
+                        message,
+                        data
+                );
+                
+                log.info("📱 FCM push notification sent to user {}", user.getUsername());
+                
+            } catch (Exception fcmError) {
+                // FCM thất bại không ảnh hưởng đến notification đã lưu
+                log.warn("Failed to send FCM push: {}", fcmError.getMessage());
+            }
+
+        } catch (Exception e) {
+            log.error("Error sending anomaly warning to user {}: {}", user.getId(), e.getMessage());
         }
     }
 }
