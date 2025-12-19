@@ -18,6 +18,9 @@ from app.models.spending_prediction import SpendingPredictor
 from app.services.database import get_database_service, PYMYSQL_AVAILABLE
 from app.constants.notification_templates import PREDICTION_MONTHLY, PREDICTION_CATEGORY
 from datetime import datetime
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LinearRegression
 import logging
 
 router = APIRouter()
@@ -128,41 +131,202 @@ async def predict_spending(input_data: SpendingPredictionInput):
     """
     Dự đoán chi tiêu tương lai - Predict future spending
     
+    Kết hợp:
+    - ML Model đã train (để học seasonality patterns)
+    - Statistics từ MySQL (dữ liệu thực của user)
+    
     Returns:
-        SpendingPredictionResult: Kết quả dự đoán bao gồm:
-            - predicted_amount: Số tiền dự đoán
-            - confidence: Độ tin cậy (0-1)
-            - trend: Xu hướng ("increasing", "decreasing", "stable")
-            - change_percentage: % thay đổi so với tháng trước
-            - recommendation: Gợi ý điều chỉnh ngân sách
-            - message: Thông báo chi tiết (từ template DB)
-            - predicted_at: Thời điểm dự đoán
+        SpendingPredictionResult: Kết quả dự đoán
     """
     
     try:
-        model = get_predictor()
+        user_id = input_data.user_id
+        month = input_data.month
+        category = input_data.category
         
-        # Gọi model để dự đoán chi tiêu
-        predicted_amount, confidence, trend, change_pct, recommendation = model.predict(
-            user_id=input_data.user_id,
-            month=input_data.month,
-            category=input_data.category
-        )
+        # Biến lưu kết quả
+        predicted_amount = 0.0
+        confidence = 0.0
+        trend = "stable"
+        change_pct = 0.0
+        recommendation = ""
+        average_amount = 0.0
+        data_source = "unknown"
         
-        # Lấy average amount nếu có category
-        average_amount = 0
-        if input_data.category and input_data.user_id in model.category_stats:
-            cat_stats = model.category_stats[input_data.user_id].get(input_data.category, {})
-            average_amount = cat_stats.get('mean', 0)
+        # ==========================================
+        # BƯỚC 1: Lấy statistics từ MySQL (realtime)
+        # ==========================================
+        user_stats = {}
         
-        # Tạo message từ template
+        if PYMYSQL_AVAILABLE:
+            try:
+                db = get_database_service()
+                df = db.get_user_expense_transactions(user_id=user_id, months=12)
+                
+                if len(df) > 0:
+                    data_source = "mysql"
+                    df['timestamp'] = pd.to_datetime(df['timestamp'])
+                    df['month_period'] = df['timestamp'].dt.to_period('M').astype(str)
+                    
+                    # Group by month và category
+                    monthly_spending = df.groupby(['month_period', 'category'])['amount'].sum().reset_index()
+                    
+                    # Tính statistics cho từng category
+                    for cat in df['category'].unique():
+                        cat_data = monthly_spending[monthly_spending['category'] == cat]
+                        if len(cat_data) > 0:
+                            # Tính trend
+                            trend_value = 0
+                            if len(cat_data) >= 2:
+                                X = np.arange(len(cat_data)).reshape(-1, 1)
+                                y = cat_data['amount'].values
+                                lr = LinearRegression()
+                                lr.fit(X, y)
+                                trend_value = float(lr.coef_[0])
+                            
+                            user_stats[cat] = {
+                                'mean': float(cat_data['amount'].mean()),
+                                'median': float(cat_data['amount'].median()),
+                                'recent_avg': float(cat_data.tail(3)['amount'].mean()),
+                                'trend': trend_value,
+                                'months_count': len(cat_data)
+                            }
+                    
+                    logger.info(f"✅ Loaded MySQL stats for user {user_id}: {len(user_stats)} categories")
+                    
+            except Exception as e:
+                logger.warning(f"Could not load MySQL stats: {e}")
+        
+        # Fallback: dùng model.category_stats
+        if not user_stats:
+            try:
+                model = get_predictor()
+                if user_id in model.category_stats:
+                    user_stats = model.category_stats[user_id]
+                    data_source = "model (fallback)"
+                    logger.info(f"Using model stats for user {user_id}")
+            except:
+                pass
+        
+        # ==========================================
+        # BƯỚC 2: Dự đoán
+        # ==========================================
+        
+        if not user_stats:
+            # Không có dữ liệu -> trả về message
+            return SpendingPredictionResult(
+                predicted_amount=0.0,
+                confidence=0.0,
+                trend="stable",
+                change_percentage=0.0,
+                recommendation="Chưa có đủ dữ liệu lịch sử để dự đoán. Hãy thêm giao dịch để nhận dự đoán chính xác hơn.",
+                message="📊 Chưa có dữ liệu chi tiêu. Hãy thêm giao dịch để nhận dự đoán thông minh từ FinPal AI!",
+                predicted_at=datetime.now()
+            )
+        
+        # Dự đoán cho category cụ thể
+        if category:
+            cat_stats = user_stats.get(category, {})
+            
+            if not cat_stats:
+                return SpendingPredictionResult(
+                    predicted_amount=0.0,
+                    confidence=0.0,
+                    trend="stable",
+                    change_percentage=0.0,
+                    recommendation=f"Chưa có dữ liệu lịch sử cho danh mục '{category}'.",
+                    message=f"📊 Chưa có dữ liệu chi tiêu cho '{category}'. Hãy thêm giao dịch vào danh mục này.",
+                    predicted_at=datetime.now()
+                )
+            
+            # Dự đoán dựa trên recent_avg + trend
+            recent_avg = cat_stats['recent_avg']
+            mean_amount = cat_stats['mean']
+            trend_value = cat_stats.get('trend', 0)
+            
+            # Dự đoán = recent_avg + trend adjustment
+            predicted_amount = recent_avg + (trend_value * 0.5)  # Trend smoothing
+            predicted_amount = max(0, predicted_amount)  # Không âm
+            
+            # Confidence dựa vào số tháng có data
+            months_count = cat_stats.get('months_count', 1)
+            confidence = min(0.95, 0.5 + months_count * 0.1)
+            
+            # Xác định trend
+            if trend_value > mean_amount * 0.05:
+                trend = "increasing"
+            elif trend_value < -mean_amount * 0.05:
+                trend = "decreasing"
+            else:
+                trend = "stable"
+            
+            # Calculate change percentage
+            change_pct = ((predicted_amount - recent_avg) / recent_avg * 100) if recent_avg > 0 else 0
+            average_amount = mean_amount
+            
+            # Generate recommendation
+            recommendation = f"Dự đoán chi tiêu '{category}': {predicted_amount:,.0f}đ. "
+            if trend == "increasing":
+                recommendation += f"Chi tiêu tăng {abs(change_pct):.1f}% so với trung bình. "
+                if predicted_amount > mean_amount * 1.2:
+                    recommendation += "⚠️ Cân nhắc giảm chi tiêu trong danh mục này."
+            elif trend == "decreasing":
+                recommendation += f"Chi tiêu giảm {abs(change_pct):.1f}%. ✅ Bạn đang tiết kiệm tốt!"
+            else:
+                recommendation += "Chi tiêu ổn định."
+        
+        # Dự đoán tổng chi tiêu (tất cả categories)
+        else:
+            total_predicted = 0.0
+            total_recent = 0.0
+            total_confidence = 0.0
+            cat_count = 0
+            
+            for cat, cat_stats in user_stats.items():
+                recent_avg = cat_stats['recent_avg']
+                trend_value = cat_stats.get('trend', 0)
+                
+                cat_predicted = recent_avg + (trend_value * 0.5)
+                cat_predicted = max(0, cat_predicted)
+                
+                total_predicted += cat_predicted
+                total_recent += recent_avg
+                
+                months_count = cat_stats.get('months_count', 1)
+                total_confidence += min(0.95, 0.5 + months_count * 0.1)
+                cat_count += 1
+            
+            predicted_amount = total_predicted
+            confidence = total_confidence / cat_count if cat_count > 0 else 0.5
+            
+            # Overall trend
+            change_pct = ((total_predicted - total_recent) / total_recent * 100) if total_recent > 0 else 0
+            
+            if change_pct > 5:
+                trend = "increasing"
+            elif change_pct < -5:
+                trend = "decreasing"
+            else:
+                trend = "stable"
+            
+            recommendation = f"Tổng chi tiêu dự kiến {predicted_amount:,.0f}đ. "
+            if trend == "increasing":
+                recommendation += f"Chi tiêu tăng {abs(change_pct):.1f}% so với trung bình gần đây."
+            elif trend == "decreasing":
+                recommendation += f"Chi tiêu giảm {abs(change_pct):.1f}%. Bạn đang tiết kiệm tốt!"
+            else:
+                recommendation += "Chi tiêu ổn định."
+        
+        # ==========================================
+        # BƯỚC 3: Tạo message từ template
+        # ==========================================
         message = create_prediction_message(
             predicted_amount=predicted_amount,
-            month=input_data.month,
+            month=month,
             trend=trend,
             change_pct=change_pct,
             recommendation=recommendation,
-            category=input_data.category,
+            category=category,
             average_amount=average_amount
         )
         
@@ -182,22 +346,120 @@ async def predict_spending(input_data: SpendingPredictionInput):
 
 
 @router.get("/categories/{user_id}")
-async def get_user_spending_categories(user_id: int):
+async def get_user_spending_categories(user_id: int, months: int = 6):
     """
-    Lấy thống kê chi tiêu theo category - Get spending statistics by category
+    Lấy thống kê chi tiêu theo category từ MySQL - Get spending statistics by category
     
-    Trả về thống kê chi tiêu của người dùng chia theo từng category,
-    bao gồm trung bình hàng tháng, xu hướng, và số tháng theo dõi.
+    Trả về thống kê chi tiêu THỰC TẾ của người dùng từ database,
+    không phải từ dữ liệu train model.
+    
+    Args:
+        user_id: ID người dùng
+        months: Số tháng lấy dữ liệu (mặc định 6 tháng)
     """
     
     try:
+        # Ưu tiên lấy từ MySQL
+        if PYMYSQL_AVAILABLE:
+            try:
+                db = get_database_service()
+                df = db.get_user_expense_transactions(user_id=user_id, months=months)
+                
+                if len(df) == 0:
+                    return {
+                        "user_id": user_id,
+                        "categories": [],
+                        "total_categories": 0,
+                        "data_source": "mysql",
+                        "message": "Người dùng chưa có giao dịch chi tiêu nào trong thời gian này."
+                    }
+                
+                # Tính thống kê từ dữ liệu thực
+                df['timestamp'] = pd.to_datetime(df['timestamp'])
+                df['month'] = df['timestamp'].dt.to_period('M').astype(str)
+                
+                # Group by month và category
+                monthly_spending = df.groupby(['month', 'category'])['amount'].sum().reset_index()
+                
+                category_info = []
+                for category in df['category'].unique():
+                    cat_data = monthly_spending[monthly_spending['category'] == category]
+                    
+                    if len(cat_data) == 0:
+                        continue
+                    
+                    # Tính statistics
+                    mean_amount = cat_data['amount'].mean()
+                    median_amount = cat_data['amount'].median()
+                    recent_avg = cat_data.tail(3)['amount'].mean()
+                    months_count = len(cat_data)
+                    
+                    # Tính trend
+                    trend_value = 0
+                    if len(cat_data) >= 2:
+                        X = np.arange(len(cat_data)).reshape(-1, 1)
+                        y = cat_data['amount'].values
+                        model = LinearRegression()
+                        model.fit(X, y)
+                        trend_value = float(model.coef_[0])
+                    
+                    if trend_value > mean_amount * 0.05:
+                        trend = "increasing"
+                    elif trend_value < -mean_amount * 0.05:
+                        trend = "decreasing"
+                    else:
+                        trend = "stable"
+                    
+                    trend_vi = {"increasing": "tăng", "decreasing": "giảm", "stable": "ổn định"}.get(trend, trend)
+                    
+                    # Tạo message
+                    message = get_message_from_template(
+                        PREDICTION_CATEGORY,
+                        category=category,
+                        month="tháng tới",
+                        predicted_amount=recent_avg,
+                        average=mean_amount,
+                        trend=trend_vi
+                    )
+                    
+                    if not message:
+                        message = f"📊 '{category}': Trung bình {mean_amount:,.0f}đ/tháng, xu hướng {trend_vi}."
+                    
+                    category_info.append({
+                        "category": category,
+                        "mean_monthly": float(mean_amount),
+                        "median_monthly": float(median_amount),
+                        "recent_avg": float(recent_avg),
+                        "trend": trend,
+                        "months_tracked": int(months_count),
+                        "message": message
+                    })
+                
+                # Sắp xếp theo trung bình chi tiêu (cao đến thấp)
+                category_info.sort(key=lambda x: x['mean_monthly'], reverse=True)
+                
+                return {
+                    "user_id": user_id,
+                    "categories": category_info,
+                    "total_categories": len(category_info),
+                    "data_source": "mysql",
+                    "analyzed_months": months
+                }
+                
+            except Exception as e:
+                logger.warning(f"Could not load from MySQL, falling back to model: {e}")
+        
+        # Fallback: dùng model.category_stats (dữ liệu train cũ)
         model = get_predictor()
         
         if user_id not in model.category_stats:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No spending data found for user {user_id}"
-            )
+            return {
+                "user_id": user_id,
+                "categories": [],
+                "total_categories": 0,
+                "data_source": "model (fallback)",
+                "message": f"Không tìm thấy dữ liệu chi tiêu cho người dùng {user_id}."
+            }
         
         stats = model.category_stats[user_id]
         
@@ -206,7 +468,6 @@ async def get_user_spending_categories(user_id: int):
             trend = "increasing" if cat_stats['trend'] > 0 else "decreasing" if cat_stats['trend'] < 0 else "stable"
             trend_vi = {"increasing": "tăng", "decreasing": "giảm", "stable": "ổn định"}.get(trend, trend)
             
-            # Tạo message cho từng category
             message = get_message_from_template(
                 PREDICTION_CATEGORY,
                 category=category,
@@ -229,16 +490,17 @@ async def get_user_spending_categories(user_id: int):
                 "message": message
             })
         
-        # Sắp xếp theo trung bình chi tiêu (cao đến thấp)
         category_info.sort(key=lambda x: x['mean_monthly'], reverse=True)
         
         return {
             "user_id": user_id,
             "categories": category_info,
-            "total_categories": len(category_info)
+            "total_categories": len(category_info),
+            "data_source": "model (fallback)"
         }
         
     except Exception as e:
         logger.error(f"Error in get_user_spending_categories: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
