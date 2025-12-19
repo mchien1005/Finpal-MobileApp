@@ -18,12 +18,14 @@ import org.springframework.web.bind.annotation.*;
 /**
  * Controller cho Smart Tips từ AI
  * Cung cấp các gợi ý/tips thông minh về quản lý tài chính
+ * 
+ * Endpoint: /api/smart-tips (tránh xung đột với /api/tips của TipController)
  */
 @RestController
-@RequestMapping("/api/tips")
+@RequestMapping("/api/smart-tips")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Smart Tips", description = "API gợi ý thông minh từ AI")
+@Tag(name = "Smart Tips AI", description = "API gợi ý thông minh từ AI")
 public class SmartTipsController {
 
     private final AIInsightsService aiInsightsService;
