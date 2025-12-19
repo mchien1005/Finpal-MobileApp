@@ -418,6 +418,9 @@ async def get_spending_patterns(user_id: int):
 async def get_proactive_insights(user_id: int):
     """
     Generate proactive insights and warnings for user
+    
+    Sử dụng dữ liệu THỰC TẾ từ MySQL để phân tích và đưa ra gợi ý.
+    impact_score được tính động dựa trên mức độ thay đổi.
     """
     
     try:
@@ -434,7 +437,6 @@ async def get_proactive_insights(user_id: int):
             ))
             return insights
 
-        model = get_predictor()
         current_month = datetime.now().strftime("%Y-%m")
         
         # Get current month spending
@@ -442,7 +444,6 @@ async def get_proactive_insights(user_id: int):
         current_month_df = df[df['month'] == current_month]
         
         if len(current_month_df) == 0:
-            # No spending this month yet
             insights.append(SpendingInsight(
                 insight_type="tip",
                 message="Chưa có giao dịch nào trong tháng này. Hãy bắt đầu theo dõi chi tiêu của bạn!",
@@ -451,29 +452,64 @@ async def get_proactive_insights(user_id: int):
             ))
             return insights
         
-        # Check if user stats exist
-        user_stats = model.category_stats.get(user_id, {})
+        # ==========================================
+        # Tính statistics từ dữ liệu MySQL realtime
+        # ==========================================
+        
+        # Group by month và category để tính statistics
+        monthly_spending = df.groupby(['month', 'category'])['amount'].sum().reset_index()
+        
+        # Tính user stats cho từng category
+        user_stats = {}
+        for category in df['category'].unique():
+            cat_data = monthly_spending[monthly_spending['category'] == category]
+            if len(cat_data) > 0:
+                # Tính trend
+                trend_value = 0
+                if len(cat_data) >= 2:
+                    X = np.arange(len(cat_data)).reshape(-1, 1)
+                    y = cat_data['amount'].values
+                    from sklearn.linear_model import LinearRegression
+                    lr = LinearRegression()
+                    lr.fit(X, y)
+                    trend_value = float(lr.coef_[0])
+                
+                user_stats[category] = {
+                    'mean': float(cat_data['amount'].mean()),
+                    'std': float(cat_data['amount'].std()) if len(cat_data) > 1 else 0,
+                    'trend': trend_value,
+                    'recent_avg': float(cat_data.tail(3)['amount'].mean())
+                }
         
         if not user_stats:
-            # Stats not calculated yet, usually means training needed or first run
-             insights.append(SpendingInsight(
+            insights.append(SpendingInsight(
                 insight_type="tip",
-                message="Hệ thống đang học thói quen chi tiêu của bạn. Hãy quay lại sau!",
+                message="Cần thêm dữ liệu chi tiêu để phân tích chính xác hơn.",
                 actionable=False,
                 impact_score=0.2
             ))
-             return insights
+            return insights
         
+        # ==========================================
         # 1. Check each category vs average
+        # ==========================================
         for category, stats in user_stats.items():
             cat_current = current_month_df[current_month_df['category'] == category]['amount'].sum()
             cat_avg = stats['mean']
             
-            if cat_current > cat_avg * 1.3:
-                # Tính % tăng so với trung bình
-                increase_percent = ((cat_current / cat_avg) - 1) * 100
+            if cat_avg <= 0:
+                continue
+            
+            ratio = cat_current / cat_avg
+            
+            # CẢNH BÁO: Chi tiêu tăng > 30%
+            if ratio > 1.3:
+                increase_percent = (ratio - 1) * 100
                 
-                # Lấy message từ template
+                # Impact score động: 0.7 -> 0.95 dựa trên mức tăng
+                # ratio 1.3 -> 0.7, ratio 2.0+ -> 0.95
+                impact = min(0.95, 0.7 + (ratio - 1.3) * 0.35)
+                
                 message = get_message_from_template(
                     ANOMALY_DETECTED,
                     category=category,
@@ -487,11 +523,16 @@ async def get_proactive_insights(user_id: int):
                     category=category,
                     message=message,
                     actionable=True,
-                    impact_score=0.8
+                    impact_score=round(impact, 2)
                 ))
-            elif cat_current < cat_avg * 0.7:
-                # Tính % tiết kiệm được
-                save_percent = (1 - (cat_current / cat_avg)) * 100
+            
+            # THÀNH TÍCH: Chi tiêu giảm > 30%
+            elif ratio < 0.7:
+                save_percent = (1 - ratio) * 100
+                
+                # Impact score động: 0.5 -> 0.8 dựa trên mức tiết kiệm
+                # ratio 0.7 -> 0.5, ratio 0.3 -> 0.8
+                impact = min(0.8, 0.5 + (0.7 - ratio) * 0.75)
                 
                 message = get_message_from_template(
                     SPENDING_ACHIEVEMENT,
@@ -504,37 +545,56 @@ async def get_proactive_insights(user_id: int):
                     category=category,
                     message=message,
                     actionable=False,
-                    impact_score=0.6
+                    impact_score=round(impact, 2)
                 ))
         
+        # ==========================================
         # 2. Check total spending trend
+        # ==========================================
         total_current = current_month_df['amount'].sum()
         all_months = df.groupby('month')['amount'].sum()
         
         if len(all_months) > 1:
-            avg_monthly = all_months[:-1].mean()  # Exclude current month
-            
-            if total_current > avg_monthly * 1.2:
-                increase_percent = ((total_current / avg_monthly) - 1) * 100
+            # Trung bình các tháng trước (không tính tháng hiện tại)
+            previous_months = all_months[all_months.index != current_month]
+            if len(previous_months) > 0:
+                avg_monthly = previous_months.mean()
                 
-                message = get_message_from_template(
-                    ANOMALY_DETECTED,
-                    category='Tổng chi tiêu',
-                    current_amount=total_current,
-                    increase_percent=increase_percent,
-                    average_amount=avg_monthly
-                )
-                
-                insights.append(SpendingInsight(
-                    insight_type="warning",
-                    message=message,
-                    actionable=True,
-                    impact_score=0.9
-                ))
+                if avg_monthly > 0:
+                    ratio = total_current / avg_monthly
+                    
+                    if ratio > 1.2:
+                        increase_percent = (ratio - 1) * 100
+                        
+                        # Impact cao hơn cho tổng chi tiêu
+                        impact = min(0.98, 0.85 + (ratio - 1.2) * 0.2)
+                        
+                        message = get_message_from_template(
+                            ANOMALY_DETECTED,
+                            category='Tổng chi tiêu',
+                            current_amount=total_current,
+                            increase_percent=increase_percent,
+                            average_amount=avg_monthly
+                        )
+                        
+                        insights.append(SpendingInsight(
+                            insight_type="warning",
+                            message=message,
+                            actionable=True,
+                            impact_score=round(impact, 2)
+                        ))
         
+        # ==========================================
         # 3. Find categories with increasing trend
+        # ==========================================
         for category, stats in user_stats.items():
-            if stats['trend'] > stats['mean'] * 0.1:  # Significant upward trend
+            if stats['mean'] > 0 and stats['trend'] > stats['mean'] * 0.1:
+                # Trend tăng > 10% của mean
+                trend_percent = (stats['trend'] / stats['mean']) * 100
+                
+                # Impact dựa trên trend
+                impact = min(0.75, 0.5 + trend_percent * 0.005)
+                
                 message = get_message_from_template(
                     SPENDING_TIP,
                     category=category
@@ -545,7 +605,7 @@ async def get_proactive_insights(user_id: int):
                     category=category,
                     message=message,
                     actionable=True,
-                    impact_score=0.7
+                    impact_score=round(impact, 2)
                 ))
         
         # Sort by impact score (most important first)
@@ -557,3 +617,4 @@ async def get_proactive_insights(user_id: int):
     except Exception as e:
         logger.error(f"Error in get_proactive_insights: {e}")
         return []
+
