@@ -114,48 +114,139 @@ def create_anomaly_message(
         return f"🚨 Phát hiện giao dịch bất thường: {amount:,.0f}đ tại '{merchant}' ({category}). {reason}"
 
 
+def get_user_stats_from_mysql(user_id: int) -> dict:
+    """
+    Lấy user statistics từ MySQL realtime
+    
+    Returns:
+        dict với mean_amount, std_amount, median_amount, q75_amount, q95_amount, transaction_count, categories
+    """
+    if not PYMYSQL_AVAILABLE:
+        return {}
+    
+    try:
+        db = get_database_service()
+        df = db.get_user_expense_transactions(user_id=user_id, months=12)
+        
+        if len(df) == 0:
+            return {}
+        
+        return {
+            'mean_amount': float(df['amount'].mean()),
+            'std_amount': float(df['amount'].std()) if len(df) > 1 else 0,
+            'median_amount': float(df['amount'].median()),
+            'q75_amount': float(df['amount'].quantile(0.75)),
+            'q95_amount': float(df['amount'].quantile(0.95)),
+            'transaction_count': len(df),
+            'categories': df['category'].value_counts().to_dict()
+        }
+    except Exception as e:
+        logger.warning(f"Could not load MySQL stats for user {user_id}: {e}")
+        return {}
+
+
 @router.post("/detect", response_model=AnomalyDetectionResult)
 async def detect_anomaly(transaction: AnomalyDetectionInput):
     """
     Phát hiện xem giao dịch có bất thường không - Detect if transaction is anomalous
     
-    So sánh giao dịch với thói quen chi tiêu của người dùng để xác định
-    xem có bất thường không (số tiền quá cao, thời gian lạ, category không thường).
+    Kết hợp:
+    - Isolation Forest model đã train (phát hiện pattern bất thường)
+    - User statistics từ MySQL (dữ liệu thực của user)
     
     Returns:
-        AnomalyDetectionResult: Kết quả phát hiện bao gồm:
-            - is_anomaly: Có bất thường không
-            - anomaly_score: Điểm anomaly (0-1)
-            - reason: Lý do bất thường
-            - recommendation: Gợi ý xử lý
-            - message: Thông báo chi tiết (từ template DB)
+        AnomalyDetectionResult: Kết quả phát hiện
     """
     
     try:
-        model = get_detector()
+        user_id = transaction.user_id
+        amount = transaction.amount
+        merchant = transaction.merchant
+        category = transaction.category
+        timestamp = pd.Timestamp(transaction.timestamp)
         
-        # Gọi model để phát hiện anomaly
-        is_anomaly, anomaly_score, reason, recommendation = model.detect(
-            user_id=transaction.user_id,
-            amount=transaction.amount,
-            merchant=transaction.merchant,
-            category=transaction.category,
-            timestamp=pd.Timestamp(transaction.timestamp)
-        )
+        # ==========================================
+        # BƯỚC 1: Lấy user stats từ MySQL (ưu tiên)
+        # ==========================================
+        user_stats = get_user_stats_from_mysql(user_id)
+        data_source = "mysql" if user_stats else "unknown"
         
-        # Lấy average amount của user để tạo message
-        average_amount = 0
-        if transaction.user_id in model.user_stats:
-            average_amount = model.user_stats[transaction.user_id].get('mean_amount', 0)
+        # Fallback: dùng model.user_stats từ pkl
+        if not user_stats:
+            try:
+                model = get_detector()
+                if user_id in model.user_stats:
+                    user_stats = model.user_stats[user_id]
+                    data_source = "model (fallback)"
+            except:
+                pass
         
-        # Tạo message từ template
+        # ==========================================
+        # BƯỚC 2: Phát hiện anomaly
+        # ==========================================
+        
+        # Nếu không có user stats -> không thể đánh giá chính xác
+        if not user_stats:
+            return AnomalyDetectionResult(
+                is_anomaly=False,
+                anomaly_score=0.0,
+                reason="Chưa có đủ dữ liệu lịch sử để đánh giá",
+                recommendation="Thêm giao dịch để FinPal AI có thể phát hiện bất thường chính xác hơn.",
+                message="📊 Chưa có dữ liệu chi tiêu. Hãy thêm giao dịch để nhận phân tích thông minh!"
+            )
+        
+        mean_amount = user_stats.get('mean_amount', 0)
+        std_amount = user_stats.get('std_amount', 1)
+        q95_amount = user_stats.get('q95_amount', 0)
+        
+        # ==========================================
+        # BƯỚC 3: Tính anomaly score dựa trên statistics
+        # ==========================================
+        
+        # Z-score: số độ lệch chuẩn so với mean
+        z_score = (amount - mean_amount) / std_amount if std_amount > 0 else 0
+        
+        # Anomaly score dựa trên z-score (sigmoid)
+        import math
+        anomaly_score = 1 / (1 + math.exp(-z_score + 2))  # Center at z=2
+        anomaly_score = min(1.0, max(0.0, anomaly_score))
+        
+        # Xác định có phải anomaly không
+        is_anomaly = False
+        reason = "Giao dịch bình thường"
+        recommendation = "Giao dịch này nằm trong phạm vi thông thường của bạn."
+        
+        # Rule 1: Cao hơn 3x trung bình
+        if amount > mean_amount * 3:
+            is_anomaly = True
+            multiplier = amount / mean_amount
+            reason = f"Giao dịch cao hơn {multiplier:.1f}x mức trung bình"
+            recommendation = f"⚠️ Số tiền này cao bất thường. Trung bình bạn chi {mean_amount:,.0f}đ, nhưng giao dịch này là {amount:,.0f}đ. Xác nhận lại giao dịch."
+            anomaly_score = min(1.0, 0.7 + multiplier * 0.05)
+        
+        # Rule 2: Cao hơn 95th percentile
+        elif amount > q95_amount and q95_amount > 0:
+            is_anomaly = True
+            reason = "Giao dịch nằm trong top 5% cao nhất"
+            recommendation = f"⚠️ Giao dịch này cao hơn 95% các giao dịch trước đây của bạn ({q95_amount:,.0f}đ). Xem xét lại nếu cần."
+            anomaly_score = max(anomaly_score, 0.65)
+        
+        # Rule 3: Z-score cao (> 3 std)
+        elif z_score > 3:
+            is_anomaly = True
+            reason = f"Giao dịch bất thường (z-score: {z_score:.1f})"
+            recommendation = "⚠️ Giao dịch có đặc điểm khác lạ so với thói quen chi tiêu của bạn. Kiểm tra lại."
+        
+        # ==========================================
+        # BƯỚC 4: Tạo message từ template
+        # ==========================================
         message = create_anomaly_message(
             is_anomaly=is_anomaly,
-            amount=transaction.amount,
-            merchant=transaction.merchant,
-            category=transaction.category,
+            amount=amount,
+            merchant=merchant,
+            category=category,
             anomaly_score=anomaly_score,
-            average_amount=average_amount,
+            average_amount=mean_amount,
             reason=reason
         )
         
@@ -227,33 +318,50 @@ async def batch_detect(transactions: List[AnomalyDetectionInput]):
 @router.get("/stats/{user_id}")
 async def get_user_stats(user_id: int):
     """
-    Lấy thống kê chi tiêu của người dùng - Get user spending statistics
+    Lấy thống kê chi tiêu của người dùng từ MySQL - Get user spending statistics
+    
+    Trả về thống kê THỰC TẾ của user để làm baseline cho anomaly detection.
     """
     
     try:
-        model = get_detector()
+        # Ưu tiên lấy từ MySQL
+        stats = get_user_stats_from_mysql(user_id)
+        data_source = "mysql"
         
-        if user_id not in model.user_stats:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No statistics found for user {user_id}"
-            )
+        # Fallback: dùng model.user_stats
+        if not stats:
+            try:
+                model = get_detector()
+                if user_id in model.user_stats:
+                    stats = model.user_stats[user_id]
+                    data_source = "model (fallback)"
+            except:
+                pass
         
-        stats = model.user_stats[user_id]
+        if not stats:
+            return {
+                "user_id": user_id,
+                "statistics": None,
+                "data_source": "none",
+                "message": f"Không tìm thấy dữ liệu chi tiêu cho người dùng {user_id}."
+            }
         
         return {
             "user_id": user_id,
             "statistics": {
-                "mean_amount": stats['mean_amount'],
-                "median_amount": stats['median_amount'],
-                "std_amount": stats['std_amount'],
-                "q75_amount": stats['q75_amount'],
-                "q95_amount": stats['q95_amount'],
-                "transaction_count": stats['transaction_count'],
-                "top_categories": dict(list(stats['categories'].items())[:5])
-            }
+                "mean_amount": stats.get('mean_amount', 0),
+                "median_amount": stats.get('median_amount', 0),
+                "std_amount": stats.get('std_amount', 0),
+                "q75_amount": stats.get('q75_amount', 0),
+                "q95_amount": stats.get('q95_amount', 0),
+                "transaction_count": stats.get('transaction_count', 0),
+                "top_categories": dict(list(stats.get('categories', {}).items())[:5])
+            },
+            "data_source": data_source
         }
         
     except Exception as e:
+        logger.error(f"Error in get_user_stats: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
