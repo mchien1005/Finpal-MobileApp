@@ -53,6 +53,30 @@ GOAL_COMPLETED = "NOT014"
 # Placeholders: {month}, {total_income}, {total_expense}, {savings}, {savings_percent}
 MONTHLY_SUMMARY = "NOT015"
 
+# Tổng kết tuần - Weekly summary
+# Placeholders: {total_income}, {total_expense}, {savings}, {savings_percent}
+WEEKLY_SUMMARY = "NOT016"
+
+# =====================================================
+# Anomaly Detection & Prediction Templates (NOT017 - NOT020)
+# =====================================================
+
+# Giao dịch bất thường - Anomaly transaction detected
+# Placeholders: {amount}, {merchant}, {category}, {times}, {average}
+ANOMALY_TRANSACTION = "NOT017"
+
+# Thời gian giao dịch lạ - Unusual transaction time
+# Placeholders: {amount}, {merchant}, {time}
+ANOMALY_TIME = "NOT018"
+
+# Dự đoán chi tiêu tháng tới - Monthly spending prediction
+# Placeholders: {month}, {predicted_amount}, {trend}, {change_percent}, {recommendation}
+PREDICTION_MONTHLY = "NOT019"
+
+# Dự đoán chi tiêu theo danh mục - Category spending prediction
+# Placeholders: {category}, {month}, {predicted_amount}, {average}, {trend}
+PREDICTION_CATEGORY = "NOT020"
+
 
 # =====================================================
 # Legacy Templates (NOT001 - NOT005)

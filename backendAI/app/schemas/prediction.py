@@ -44,12 +44,14 @@ class SpendingPredictionResult(BaseModel):
     - Xu hướng (tăng/giảm/ổn định)
     - % thay đổi so với tháng trước
     - Gợi ý điều chỉnh ngân sách
+    - Message thông báo (từ template DB)
     """
     predicted_amount: float = Field(..., description="Số tiền chi tiêu dự đoán (VNĐ)")
     confidence: float = Field(..., ge=0, le=1, description="Độ tin cậy 0-1 (0.85 = 85% tin cậy)")
     trend: str = Field(..., description="Xu hướng: 'increasing'(tăng)/'decreasing'(giảm)/'stable'(ổn định)")
     change_percentage: float = Field(..., description="% thay đổi so với tháng trước (15.5 = tăng 15.5%)")
     recommendation: str = Field(..., description="Gợi ý cho người dùng (ví dụ: 'Nên tăng ngân sách 500k')")
+    message: Optional[str] = Field(None, description="Thông báo chi tiết (từ template mau_thong_bao)")
     predicted_at: datetime = Field(default_factory=datetime.now, description="Thời điểm thực hiện dự đoán")
     
     class Config:
@@ -60,6 +62,8 @@ class SpendingPredictionResult(BaseModel):
                 "trend": "increasing",
                 "change_percentage": 15.5,
                 "recommendation": "Chi tiêu dự kiến tăng 15.5% so với tháng trước",
+                "message": "📈 Dự đoán chi tiêu tháng 2025-12: 3,200,000đ. Xu hướng: tăng (+15.5% so với tháng trước).",
                 "predicted_at": "2025-11-20T10:30:00"
             }
         }
+

@@ -11,41 +11,107 @@ Giúp người dùng phát hiện gian lận, lạm dụng thẻ, hoặc lỗi k
 """
 
 from fastapi import APIRouter, HTTPException
-from typing import List
+from typing import List, Optional
 from app.schemas.transaction import AnomalyDetectionInput, AnomalyDetectionResult
 from app.models.anomaly_detection import AnomalyDetector
+from app.services.database import get_database_service, PYMYSQL_AVAILABLE
+from app.constants.notification_templates import ANOMALY_TRANSACTION, ANOMALY_TIME
 import pandas as pd
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # Khởi tạo model (lazy loading)
 detector = None
+
+# Flag sử dụng templates từ DB
+USE_DB_TEMPLATES = True
 
 
 def get_detector():
     """
     Lấy hoặc khởi tạo anomaly detector model
-    
-    Lazy loading: chỉ load model khi lần đầu gọi API.
-    Model Isolation Forest và user statistics được giữ trong memory.
-    
-    Returns:
-        AnomalyDetector: Instance của model phát hiện anomaly
-    
-    Raises:
-        HTTPException: Nếu model chưa được train
     """
     global detector
     if detector is None:
         detector = AnomalyDetector()
         try:
-            detector.load()  # Load trained model từ disk
+            detector.load()
         except FileNotFoundError:
             raise HTTPException(
                 status_code=503,
                 detail="Model not trained yet. Please train the model first."
             )
     return detector
+
+
+def get_message_from_template(template_code: str, **kwargs) -> Optional[str]:
+    """
+    Lấy message từ template trong database
+    
+    Args:
+        template_code: Mã template (NOT017, NOT018, ...)
+        **kwargs: Các giá trị để thay thế placeholder
+        
+    Returns:
+        str: Message đã render hoặc None nếu không tìm thấy
+    """
+    if not USE_DB_TEMPLATES or not PYMYSQL_AVAILABLE:
+        return None
+    
+    try:
+        db = get_database_service()
+        result = db.render_notification_template(template_code, **kwargs)
+        if result:
+            return result['content']
+    except Exception as e:
+        logger.warning(f"Could not load template {template_code}: {e}")
+    
+    return None
+
+
+def create_anomaly_message(
+    is_anomaly: bool,
+    amount: float,
+    merchant: str,
+    category: str,
+    anomaly_score: float,
+    average_amount: float = 0,
+    reason: str = ""
+) -> str:
+    """
+    Tạo message cho kết quả phát hiện bất thường
+    
+    Ưu tiên lấy từ template DB, fallback sang message mặc định
+    """
+    if not is_anomaly:
+        return "✅ Giao dịch bình thường, không phát hiện bất thường."
+    
+    # Tính số lần cao hơn trung bình
+    times = round(amount / average_amount, 1) if average_amount > 0 else 0
+    
+    # Thử lấy từ DB template
+    message = get_message_from_template(
+        ANOMALY_TRANSACTION,
+        amount=amount,
+        merchant=merchant,
+        category=category,
+        times=times,
+        average=average_amount
+    )
+    
+    if message:
+        return message
+    
+    # Fallback message
+    if average_amount > 0:
+        return (
+            f"🚨 Phát hiện giao dịch bất thường: {amount:,.0f}đ tại '{merchant}' ({category}). "
+            f"Số tiền này cao hơn {times}x so với trung bình của bạn ({average_amount:,.0f}đ)."
+        )
+    else:
+        return f"🚨 Phát hiện giao dịch bất thường: {amount:,.0f}đ tại '{merchant}' ({category}). {reason}"
 
 
 @router.post("/detect", response_model=AnomalyDetectionResult)
@@ -56,24 +122,13 @@ async def detect_anomaly(transaction: AnomalyDetectionInput):
     So sánh giao dịch với thói quen chi tiêu của người dùng để xác định
     xem có bất thường không (số tiền quá cao, thời gian lạ, category không thường).
     
-    Args:
-        transaction: Thông tin giao dịch cần kiểm tra
-            - **user_id**: ID người dùng (bắt buộc)
-            - **amount**: Số tiền (bắt buộc)
-            - **merchant**: Tên merchant (bắt buộc)
-            - **category**: Danh mục (bắt buộc)
-            - **timestamp**: Thời gian giao dịch (tùy chọn)
-    
     Returns:
         AnomalyDetectionResult: Kết quả phát hiện bao gồm:
-            - is_anomaly: Có bất thường không (true/false)
-            - anomaly_score: Điểm anomaly (0-1, cao = bất thường hơn)
-            - reason: Lý do bất thường (ví dụ: "Cao hơn 3x trung bình")
+            - is_anomaly: Có bất thường không
+            - anomaly_score: Điểm anomaly (0-1)
+            - reason: Lý do bất thường
             - recommendation: Gợi ý xử lý
-    
-    Example:
-        Input: {"user_id": 1, "amount": 5000000, "merchant": "SHOPEE", "category": "Mua sắm"}
-        Output: {"is_anomaly": true, "anomaly_score": 0.87, "reason": "Số tiền cao bất thường", ...}
+            - message: Thông báo chi tiết (từ template DB)
     """
     
     try:
@@ -88,14 +143,32 @@ async def detect_anomaly(transaction: AnomalyDetectionInput):
             timestamp=pd.Timestamp(transaction.timestamp)
         )
         
+        # Lấy average amount của user để tạo message
+        average_amount = 0
+        if transaction.user_id in model.user_stats:
+            average_amount = model.user_stats[transaction.user_id].get('mean_amount', 0)
+        
+        # Tạo message từ template
+        message = create_anomaly_message(
+            is_anomaly=is_anomaly,
+            amount=transaction.amount,
+            merchant=transaction.merchant,
+            category=transaction.category,
+            anomaly_score=anomaly_score,
+            average_amount=average_amount,
+            reason=reason
+        )
+        
         return AnomalyDetectionResult(
             is_anomaly=is_anomaly,
             anomaly_score=anomaly_score,
             reason=reason,
-            recommendation=recommendation
+            recommendation=recommendation,
+            message=message
         )
         
     except Exception as e:
+        logger.error(f"Error in detect_anomaly: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -103,25 +176,12 @@ async def detect_anomaly(transaction: AnomalyDetectionInput):
 async def batch_detect(transactions: List[AnomalyDetectionInput]):
     """
     Phát hiện anomaly cho nhiều giao dịch - Batch anomaly detection
-    
-    Kiểm tra nhiều giao dịch cùng lúc, hữu ích khi:
-    - Import giao dịch từ bank statement
-    - Kiểm tra lại toàn bộ giao dịch cũ
-    - Audit hàng loạt giao dịch
-    
-    Args:
-        transactions: Danh sách các giao dịch cần kiểm tra
-    
-    Returns:
-        dict: Kết quả phát hiện cho từng giao dịch
-            - detections: List kết quả (merchant, amount, is_anomaly, score, reason, recommendation)
     """
     
     try:
         model = get_detector()
         results = []
         
-        # Kiểm tra từng giao dịch
         for transaction in transactions:
             is_anomaly, anomaly_score, reason, recommendation = model.detect(
                 user_id=transaction.user_id,
@@ -131,18 +191,36 @@ async def batch_detect(transactions: List[AnomalyDetectionInput]):
                 timestamp=pd.Timestamp(transaction.timestamp)
             )
             
+            # Lấy average amount
+            average_amount = 0
+            if transaction.user_id in model.user_stats:
+                average_amount = model.user_stats[transaction.user_id].get('mean_amount', 0)
+            
+            # Tạo message
+            message = create_anomaly_message(
+                is_anomaly=is_anomaly,
+                amount=transaction.amount,
+                merchant=transaction.merchant,
+                category=transaction.category,
+                anomaly_score=anomaly_score,
+                average_amount=average_amount,
+                reason=reason
+            )
+            
             results.append({
                 "merchant": transaction.merchant,
                 "amount": float(transaction.amount),
                 "is_anomaly": bool(is_anomaly),
                 "anomaly_score": float(anomaly_score),
                 "reason": str(reason),
-                "recommendation": str(recommendation)
+                "recommendation": str(recommendation),
+                "message": message
             })
         
         return {"detections": results}
         
     except Exception as e:
+        logger.error(f"Error in batch_detect: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -150,25 +228,6 @@ async def batch_detect(transactions: List[AnomalyDetectionInput]):
 async def get_user_stats(user_id: int):
     """
     Lấy thống kê chi tiêu của người dùng - Get user spending statistics
-    
-    Trả về thống kê chi tiêu lịch sử của người dùng, dùng làm baseline
-    để so sánh và phát hiện anomaly.
-    
-    Args:
-        user_id: ID người dùng
-    
-    Returns:
-        dict: Thống kê chi tiêu bao gồm:
-            - mean_amount: Trung bình số tiền giao dịch
-            - median_amount: Trung vị (giá trị giữa)
-            - std_amount: Độ lệch chuẩn
-            - q75_amount: Ngưỡng 75% (75% giao dịch thấp hơn)
-            - q95_amount: Ngưỡng 95% (chỉ 5% giao dịch cao hơn)
-            - transaction_count: Tổng số giao dịch
-            - top_categories: Top 5 category thường chi tiêu
-    
-    Example:
-        {"user_id": 1, "statistics": {"mean_amount": 150000, "median_amount": 50000, ...}}
     """
     
     try:
@@ -197,3 +256,4 @@ async def get_user_stats(user_id: int):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+

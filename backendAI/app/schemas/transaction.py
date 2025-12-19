@@ -112,11 +112,13 @@ class AnomalyDetectionResult(BaseModel):
     - Điểm anomaly (càng cao càng bất thường)
     - Lý do cụ thể
     - Gợi ý xử lý
+    - Message thông báo (từ template DB)
     """
     is_anomaly: bool = Field(..., description="Giao dịch có bất thường không (true = có)")
     anomaly_score: float = Field(..., ge=0, le=1, description="Điểm anomaly 0-1 (càng cao càng bất thường)")
     reason: str = Field(..., description="Lý do bất thường (ví dụ: 'Số tiền cao hơn 3x trung bình')")
     recommendation: str = Field(..., description="Gợi ý cho người dùng (ví dụ: 'Kiểm tra lại giao dịch')")
+    message: Optional[str] = Field(None, description="Thông báo chi tiết (từ template mau_thong_bao)")
     
     class Config:
         json_schema_extra = {
@@ -124,6 +126,8 @@ class AnomalyDetectionResult(BaseModel):
                 "is_anomaly": True,
                 "anomaly_score": 0.87,
                 "reason": "Giao dịch cao hơn 3.5x trung bình",
-                "recommendation": "Xem xét lại giao dịch này"
+                "recommendation": "Xem xét lại giao dịch này",
+                "message": "🚨 Phát hiện giao dịch bất thường: 5,000,000đ tại 'SHOPEE' (Mua sắm). Số tiền này cao hơn 3.5x so với trung bình của bạn."
             }
         }
+

@@ -149,7 +149,43 @@ VALUES
         'INFO',
         'ACTIVE',
         0
+    ),
+    -- =====================================================
+    -- NOT017-NOT020: Templates cho Anomaly & Prediction
+    -- =====================================================
+    (
+        'NOT017',
+        '🚨 Giao dịch Bất thường',
+        'Phát hiện giao dịch bất thường: {amount} tại ''{merchant}'' ({category}). Số tiền này cao hơn {times}x so với trung bình của bạn ({average}).',
+        'ALERT',
+        'ACTIVE',
+        0
+    ),
+    (
+        'NOT018',
+        '⚠️ Thời gian Giao dịch Lạ',
+        'Giao dịch {amount} tại ''{merchant}'' vào {time} - thời điểm không thường thấy trong thói quen chi tiêu của bạn.',
+        'WARNING',
+        'ACTIVE',
+        0
+    ),
+    (
+        'NOT019',
+        '📈 Dự đoán Chi tiêu Tháng tới',
+        'Dự đoán chi tiêu tháng {month}: {predicted_amount}. Xu hướng: {trend} ({change_percent} so với tháng trước). {recommendation}',
+        'INFO',
+        'ACTIVE',
+        0
+    ),
+    (
+        'NOT020',
+        '📊 Dự đoán Chi tiêu theo Danh mục',
+        'Dự đoán ''{category}'' tháng {month}: {predicted_amount}. Trung bình hiện tại: {average}. Xu hướng: {trend}.',
+        'INFO',
+        'ACTIVE',
+        0
     );
 
 -- Kiểm tra kết quả
 SELECT ma_mau, tieu_de, loai, trang_thai FROM mau_thong_bao ORDER BY ma_mau;
+
