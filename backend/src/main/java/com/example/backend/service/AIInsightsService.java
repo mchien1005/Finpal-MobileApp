@@ -204,14 +204,14 @@ public class AIInsightsService {
             log.debug("Checking anomaly for user {} - amount: {}, category: {}", 
                     userId, amount, category);
             
-            // Tạo request body
+            // Tạo request body (không gửi timestamp để tránh lỗi format)
             com.example.backend.dto.AnomalyDetectionRequest request = 
                 com.example.backend.dto.AnomalyDetectionRequest.builder()
                     .userId(userId)
                     .amount(amount)
                     .merchant(merchant != null ? merchant : "Unknown")
                     .category(category != null ? category : "Khác")
-                    .timestamp(java.time.LocalDateTime.now())
+                    // .timestamp(java.time.LocalDateTime.now())
                     .build();
             
             ResponseEntity<com.example.backend.dto.AnomalyDetectionResult> response = 

@@ -163,7 +163,8 @@ async def detect_anomaly(transaction: AnomalyDetectionInput):
         amount = transaction.amount
         merchant = transaction.merchant
         category = transaction.category
-        timestamp = pd.Timestamp(transaction.timestamp)
+        # Handle timestamp None
+        timestamp = pd.Timestamp(transaction.timestamp) if transaction.timestamp else pd.Timestamp.now()
         
         # ==========================================
         # BƯỚC 1: Lấy user stats từ MySQL (ưu tiên)

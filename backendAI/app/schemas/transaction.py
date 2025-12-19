@@ -89,7 +89,7 @@ class AnomalyDetectionInput(BaseModel):
     amount: float = Field(..., gt=0, description="Số tiền giao dịch (phải > 0)")
     merchant: str = Field(..., description="Tên merchant")
     category: str = Field(..., description="Danh mục giao dịch")
-    timestamp: datetime = Field(default_factory=datetime.now, description="Thời gian giao dịch")
+    timestamp: Optional[datetime] = Field(default=None, description="Thời gian giao dịch (optional)")
     
     class Config:
         json_schema_extra = {
