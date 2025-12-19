@@ -137,19 +137,18 @@ class DatabaseService:
         Returns:
             DataFrame chứa transactions với columns:
             - id, user_id, amount, category, category_id, transaction_type
-            - description, timestamp, merchant_name
+            - description, timestamp
         """
         query = """
             SELECT 
                 gd.id,
                 gd.id_nguoi_dung as user_id,
                 gd.so_tien as amount,
-                dm.ten_danh_muc as category,
+                COALESCE(dm.ten_danh_muc, 'Khác') as category,
                 gd.id_danh_muc as category_id,
                 gd.loai as transaction_type,
                 gd.mo_ta as description,
-                gd.ngay_giao_dich as timestamp,
-                gd.don_vi_chap_nhan as merchant_name
+                gd.ngay_giao_dich as timestamp
             FROM giao_dich gd
             LEFT JOIN danh_muc dm ON gd.id_danh_muc = dm.id
             WHERE gd.id_nguoi_dung = :user_id
@@ -171,15 +170,23 @@ class DatabaseService:
             
         query += " ORDER BY gd.ngay_giao_dich DESC"
         
+        logger.debug(f"Query params: user_id={user_id}, start_date={start_date}, transaction_type={transaction_type}")
+        
         try:
             with self._engine.connect() as conn:
                 df = pd.read_sql(text(query), conn, params=params)
                 
-            logger.info(f"Loaded {len(df)} transactions for user {user_id}")
+            logger.info(f"✅ Loaded {len(df)} transactions for user {user_id} (type={transaction_type})")
+            
+            # Debug: Log transaction types found
+            if len(df) > 0 and 'transaction_type' in df.columns:
+                types_found = df['transaction_type'].unique().tolist()
+                logger.debug(f"Transaction types in result: {types_found}")
+            
             return df
             
         except Exception as e:
-            logger.error(f"Error loading transactions for user {user_id}: {str(e)}")
+            logger.error(f"❌ Error loading transactions for user {user_id}: {str(e)}")
             return pd.DataFrame()
     
     def get_user_expense_transactions(

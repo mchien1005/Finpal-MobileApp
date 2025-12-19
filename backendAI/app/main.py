@@ -167,6 +167,67 @@ async def database_health_check():
     return result
 
 
+@app.get("/health/debug/{user_id}")
+async def debug_user_data(user_id: int):
+    """
+    Debug endpoint - Kiểm tra dữ liệu của user trong database
+    
+    Trả về:
+    - Số lượng transactions theo loại (INCOME/EXPENSE)
+    - Sample transactions
+    - Thông tin kết nối
+    """
+    from app.services.database import get_database_service, PYMYSQL_AVAILABLE
+    
+    result = {
+        "user_id": user_id,
+        "pymysql_available": PYMYSQL_AVAILABLE,
+        "transactions": {
+            "total": 0,
+            "expense": 0,
+            "income": 0,
+            "types_found": [],
+            "sample": []
+        },
+        "error": None
+    }
+    
+    if not PYMYSQL_AVAILABLE:
+        result["error"] = "pymysql not installed"
+        return result
+    
+    try:
+        db = get_database_service()
+        
+        # Lấy TẤT CẢ transactions (không lọc theo type)
+        all_transactions = db.get_user_transactions(user_id=user_id)
+        result["transactions"]["total"] = len(all_transactions)
+        
+        if len(all_transactions) > 0:
+            # Đếm theo loại
+            types_count = all_transactions['transaction_type'].value_counts().to_dict()
+            result["transactions"]["types_found"] = list(types_count.keys())
+            result["transactions"]["expense"] = types_count.get('EXPENSE', 0)
+            result["transactions"]["income"] = types_count.get('INCOME', 0)
+            
+            # Sample 5 giao dịch gần nhất
+            sample = all_transactions.head(5).to_dict('records')
+            # Convert datetime to string for JSON
+            for s in sample:
+                if 'timestamp' in s and s['timestamp'] is not None:
+                    s['timestamp'] = str(s['timestamp'])
+            result["transactions"]["sample"] = sample
+        
+        # Lấy EXPENSE transactions (như insights API sử dụng)
+        expense_transactions = db.get_user_expense_transactions(user_id=user_id, months=12)
+        result["expense_query_result"] = len(expense_transactions)
+        
+    except Exception as e:
+        result["error"] = str(e)
+    
+    return result
+
+
 if __name__ == "__main__":
     # Chạy server khi file được execute trực tiếp
     # Run the application using Uvicorn ASGI server
