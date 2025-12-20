@@ -324,6 +324,7 @@ public class NotificationService {
 
     /**
      * Generate savings suggestions using AI (called by scheduler)
+     * Tạo gợi ý tiết kiệm và gửi push notification qua FCM đến điện thoại user
      */
     @Transactional
     public void generateSavingsSuggestions() {
@@ -341,31 +342,58 @@ public class NotificationService {
                     // Create notification with top suggestion
                     SavingsSuggestionsResponse.SavingsSuggestion topSuggestion = suggestions.getSuggestions().get(0);
 
+                    String title = "💡 Gợi ý Tiết kiệm Thông minh";
+                    String content = String.format(
+                            "%s\n\n✨ Tổng tiềm năng tiết kiệm: %,.0f VND/tháng",
+                            topSuggestion.getMessage(),
+                            suggestions.getTotalPotentialSavings());
+
                     Notification notification = new Notification();
                     notification.setUserId(user.getId());
                     notification.setType("SAVINGS_SUGGESTION");
-                    notification.setTitle("💡 Gợi ý Tiết kiệm Thông minh");
-                    notification.setContent(String.format(
-                            "%s\\n\\n✨ Tổng tiềm năng tiết kiệm: %,.0f VND/tháng",
-                            topSuggestion.getMessage(),
-                            suggestions.getTotalPotentialSavings()));
+                    notification.setTitle(title);
+                    notification.setContent(content);
                     notification.setActionUrl("/dashboard/insights");
                     notification.setIsRead(false);
                     notification.setPriority(Notification.NotificationPriority.MEDIUM);
 
-                    notificationRepository.save(notification);
+                    Notification savedNotification = notificationRepository.save(notification);
                     suggestionCount++;
+                    
+                    // ========================================
+                    // GỬI FCM PUSH NOTIFICATION ĐẾN ĐIỆN THOẠI
+                    // ========================================
+                    try {
+                        java.util.Map<String, String> data = new java.util.HashMap<>();
+                        data.put("type", "SAVINGS_SUGGESTION");
+                        data.put("notificationId", String.valueOf(savedNotification.getId()));
+                        data.put("category", topSuggestion.getCategory() != null ? topSuggestion.getCategory() : "");
+                        data.put("potentialSavings", String.valueOf(suggestions.getTotalPotentialSavings()));
+                        
+                        fcmService.sendPushToUser(
+                                user.getId(),
+                                title,
+                                topSuggestion.getMessage(),
+                                data
+                        );
+                        
+                        log.debug("📱 FCM push sent for savings suggestion to user {}", user.getId());
+                        
+                    } catch (Exception fcmError) {
+                        log.warn("Failed to send FCM for savings suggestion: {}", fcmError.getMessage());
+                    }
                 }
             } catch (Exception e) {
                 log.error("Error generating savings suggestions for user {}: {}", user.getId(), e.getMessage());
             }
         }
 
-        log.info("Savings suggestions generated for {} users", suggestionCount);
+        log.info("Savings suggestions generated for {} users and pushed via FCM", suggestionCount);
     }
 
     /**
      * Generate proactive spending insights using AI (called by scheduler)
+     * Tạo insights và gửi push notification qua FCM đến điện thoại user
      */
     @Transactional
     public void generateProactiveInsights() {
@@ -407,8 +435,34 @@ public class NotificationService {
                                             ? Notification.NotificationPriority.HIGH
                                             : Notification.NotificationPriority.MEDIUM);
 
-                            notificationRepository.save(notification);
+                            Notification savedNotification = notificationRepository.save(notification);
                             insightCount++;
+                            
+                            // ========================================
+                            // GỬI FCM PUSH NOTIFICATION ĐẾN ĐIỆN THOẠI
+                            // ========================================
+                            try {
+                                java.util.Map<String, String> data = new java.util.HashMap<>();
+                                data.put("type", "SPENDING_INSIGHT");
+                                data.put("insightType", insight.getInsightType());
+                                data.put("notificationId", String.valueOf(savedNotification.getId()));
+                                if (insight.getCategory() != null) {
+                                    data.put("category", insight.getCategory());
+                                }
+                                data.put("impactScore", String.valueOf(insight.getImpactScore()));
+                                
+                                fcmService.sendPushToUser(
+                                        user.getId(),
+                                        title,
+                                        insight.getMessage(),
+                                        data
+                                );
+                                
+                                log.debug("📱 FCM push sent for insight to user {}", user.getId());
+                                
+                            } catch (Exception fcmError) {
+                                log.warn("Failed to send FCM for insight: {}", fcmError.getMessage());
+                            }
                         }
                     }
                 }
@@ -417,7 +471,7 @@ public class NotificationService {
             }
         }
 
-        log.info("Proactive insights generated: {} notifications created", insightCount);
+        log.info("Proactive insights generated: {} notifications created and pushed via FCM", insightCount);
     }
 
     /**
