@@ -490,6 +490,73 @@ public class NotificationService {
     }
 
     /**
+     * Generate Smart Tips from BackendAI and send via FCM (called by scheduler)
+     * Gọi BackendAI để lấy smart tips và gửi push notification đến điện thoại user
+     */
+    @Transactional
+    public void generateSmartTips() {
+        log.info("💡 Generating Smart Tips from AI for all users...");
+
+        List<User> allUsers = userRepository.findAll();
+        int tipCount = 0;
+
+        for (User user : allUsers) {
+            try {
+                // Gọi BackendAI để lấy smart tips
+                com.example.backend.dto.SmartTipsResponse tips = aiInsightsService.getSmartTips(user.getId(), 3);
+
+                if (tips != null && tips.getTips() != null && !tips.getTips().isEmpty()) {
+                    // Lấy tip đầu tiên (quan trọng nhất)
+                    com.example.backend.dto.SmartTip topTip = tips.getTips().get(0);
+
+                    String title = "💡 " + (topTip.getTitle() != null ? topTip.getTitle() : "Gợi ý Thông minh");
+                    String content = topTip.getContent() != null ? topTip.getContent() : "Xem gợi ý mới từ FinPal AI";
+
+                    // Tạo notification trong database
+                    Notification notification = new Notification();
+                    notification.setUserId(user.getId());
+                    notification.setType("SMART_TIP");
+                    notification.setTitle(title);
+                    notification.setContent(content);
+                    notification.setActionUrl(topTip.getActionUrl() != null ? topTip.getActionUrl() : "/dashboard");
+                    notification.setIsRead(false);
+                    notification.setPriority(Notification.NotificationPriority.LOW);
+
+                    Notification savedNotification = notificationRepository.save(notification);
+                    tipCount++;
+
+                    // Gửi FCM push notification đến điện thoại
+                    try {
+                        java.util.Map<String, String> data = new java.util.HashMap<>();
+                        data.put("type", "SMART_TIP");
+                        data.put("tipType", topTip.getTipType() != null ? topTip.getTipType() : "general");
+                        data.put("notificationId", String.valueOf(savedNotification.getId()));
+                        if (topTip.getCategory() != null) {
+                            data.put("category", topTip.getCategory());
+                        }
+
+                        fcmService.sendPushToUser(
+                                user.getId(),
+                                title,
+                                content,
+                                data
+                        );
+
+                        log.debug("📱 FCM push sent for smart tip to user {}", user.getId());
+
+                    } catch (Exception fcmError) {
+                        log.warn("Failed to send FCM for smart tip: {}", fcmError.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error generating smart tips for user {}: {}", user.getId(), e.getMessage());
+            }
+        }
+
+        log.info("✅ Smart Tips generated: {} notifications created and pushed via FCM", tipCount);
+    }
+
+    /**
      * Gửi notification cho tất cả admin users
      */
     @Transactional

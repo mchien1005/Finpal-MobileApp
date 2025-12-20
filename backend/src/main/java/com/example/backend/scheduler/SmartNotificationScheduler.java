@@ -48,8 +48,12 @@ import java.util.List;
  * 4. GOAL REMINDERS (Nhắc nhở Mục tiêu) - Chạy mỗi ngày 8:00 AM
  *    - "Mục tiêu 'Mua iPhone' còn 7 ngày! Tiến độ: 60%"
  * 
- * 5. PROACTIVE INSIGHTS (Phân tích Chi tiêu Proactive) - Chạy mỗi ngày 7:00 PM
+ * 5. PROACTIVE INSIGHTS (Phân tích Chi tiêu Proactive) - Chạy mỗi ngày 7:30 PM
  *    - "Chi tiêu 'Ăn ngoài' đang có xu hướng tăng 20% so với tháng trước"
+ * 
+ * 6. SMART TIPS (Gợi ý Thông minh từ BackendAI) - Chạy mỗi ngày 9:20 AM
+ *    - "Quy tắc 50/30/20: 50% thu nhập cho nhu cầu thiết yếu..."
+ *    - Tips cá nhân hóa dựa trên chi tiêu của user
  */
 @Component
 @Slf4j
@@ -724,6 +728,30 @@ public class SmartNotificationScheduler {
 
         } catch (Exception e) {
             log.error("❌ Error in weekly summary scheduler: {}", e.getMessage());
+        }
+    }
+
+    // ======================== SMART TIPS ========================
+
+    /**
+     * Gửi Smart Tips từ BackendAI qua FCM
+     * Chạy mỗi ngày lúc 9:20 AM
+     * 
+     * - Gọi BackendAI để lấy tips cá nhân hóa
+     * - Gửi push notification đến điện thoại user
+     */
+    @Scheduled(cron = "${scheduler.smart-notifications.smart-tips.cron:0 20 9 * * *}")
+    public void sendSmartTips() {
+        log.info("💡 Starting Smart Tips generation from BackendAI...");
+
+        try {
+            // Delegate sang NotificationService để gọi BackendAI và gửi FCM
+            notificationService.generateSmartTips();
+
+            log.info("✅ Smart Tips scheduler completed");
+
+        } catch (Exception e) {
+            log.error("❌ Error in smart tips scheduler: {}", e.getMessage());
         }
     }
 
