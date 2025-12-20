@@ -93,13 +93,12 @@ def create_anomaly_message(
     average_int = int(average_amount) if average_amount > 0 else 0
     
     # Tạo message dựa trên loại anomaly
-    if "cao hơn" in reason.lower() and "trung bình" in reason.lower():
-        # Rule 1: Cao hơn 3x trung bình
-        times = round(amount / average_amount, 1) if average_amount > 0 else 0
+    if "ai" in reason.lower() or "pattern" in reason.lower():
+        # Rule 4: Isolation Forest / AI detection
         return (
-            f"🚨 Chi tiêu lớn: {amount_int:,}đ tại '{merchant}' ({category}). "
-            f"Khoản này gấp {times}x mức chi thường ngày của bạn ({average_int:,}đ). "
-            f"Hãy kiểm tra lại giao dịch này!"
+            f"🤖 AI phát hiện bất thường: {amount_int:,}đ tại '{merchant}' ({category}). "
+            f"Mô hình AI nhận thấy giao dịch này có đặc điểm khác với thói quen chi tiêu của bạn. "
+            f"Hãy kiểm tra lại giao dịch này."
         )
     
     elif "top 5%" in reason.lower() or "95%" in reason.lower():
@@ -118,12 +117,13 @@ def create_anomaly_message(
             f"Hãy kiểm tra lại giao dịch này."
         )
     
-    elif "ai" in reason.lower() or "pattern" in reason.lower():
-        # Rule 4: Isolation Forest / AI detection
+    elif "cao hơn" in reason.lower() and "trung bình" in reason.lower():
+        # Rule 1: Cao hơn 3x trung bình
+        times = round(amount / average_amount, 1) if average_amount > 0 else 0
         return (
-            f"🤖 AI phát hiện bất thường: {amount_int:,}đ tại '{merchant}' ({category}). "
-            f"Mô hình AI nhận thấy giao dịch này có đặc điểm khác với thói quen chi tiêu của bạn. "
-            f"Hãy kiểm tra lại giao dịch này."
+            f"🚨 Chi tiêu lớn: {amount_int:,}đ tại '{merchant}' ({category}). "
+            f"Khoản này gấp {times}x mức chi thường ngày của bạn ({average_int:,}đ). "
+            f"Hãy kiểm tra lại giao dịch này!"
         )
     
     else:
