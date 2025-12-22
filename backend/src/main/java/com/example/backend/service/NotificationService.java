@@ -1,29 +1,34 @@
 package com.example.backend.service;
 
 import com.example.backend.dto.NotificationResponse;
-import com.example.backend.dto.SavingsSuggestionsResponse;
-import com.example.backend.dto.SpendingInsight;
-import com.example.backend.model.Budget;
+import com.example.backend.dto.SmartTip;
+import com.example.backend.dto.SmartTipsResponse;
 import com.example.backend.model.Notification;
-import com.example.backend.model.SavingsGoal;
 import com.example.backend.model.Transaction;
 import com.example.backend.model.User;
-import com.example.backend.repository.*;
+import com.example.backend.repository.NotificationRepository;
+import com.example.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * Service quản lý Hệ thống Thông báo (Notification System) - FR3.1
- * Chức năng: Thông báo ngân sách vượt quá, nhắc nhở mục tiêu, gợi ý tiết kiệm
- * AI, cảnh báo chi tiêu
+ * 
+ * Chức năng chính:
+ * - CRUD thông báo (lấy, đánh dấu đã đọc, xóa)
+ * - Tạo thông báo cho user/admin
+ * - Gửi cảnh báo giao dịch bất thường
+ * - Gửi Smart Tips từ AI
+ * - Dọn dẹp thông báo cũ
+ * 
+ * Lưu ý: Các scheduled notifications (budget alerts, goal reminders, insights)
+ * được xử lý bởi SmartNotificationScheduler để tránh duplicate.
  */
 @Service
 @Slf4j
@@ -32,9 +37,6 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
-    private final BudgetRepository budgetRepository;
-    private final SavingsGoalRepository savingsGoalRepository;
-    private final TransactionRepository transactionRepository;
     private final AIInsightsService aiInsightsService;
     private final FcmService fcmService;
 
@@ -202,85 +204,6 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
-    /**
-     * Kiểm tra và tạo cảnh báo ngân sách tự động cho user
-     * - Vượt 100%: Cảnh báo HIGH
-     * - Vượt alertThreshold (ví dụ 80%): Cảnh báo MEDIUM
-     */
-    @Transactional
-    public void checkBudgetAlertsForUser(Long userId) {
-        LocalDate today = LocalDate.now();
-        List<Budget> activeBudgets = budgetRepository.findActiveBudgetsForDate(userId, today);
-
-        for (Budget budget : activeBudgets) {
-            // Tính số tiền đã chi trong ngân sách
-            java.math.BigDecimal spentAmount = transactionRepository.sumByUserIdAndCategoryIdAndTypeAndDateRange(
-                    userId,
-                    budget.getCategoryId(),
-                    com.example.backend.model.Transaction.TransactionType.EXPENSE,
-                    budget.getStartDate().atStartOfDay(),
-                    budget.getEndDate().atTime(23, 59, 59));
-
-            if (spentAmount != null && budget.getAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
-                double usagePercentage = spentAmount.divide(budget.getAmount(), 4, java.math.RoundingMode.HALF_UP)
-                        .multiply(java.math.BigDecimal.valueOf(100))
-                        .doubleValue();
-
-                // Kiểm tra có nên gửi cảnh báo không
-                if (usagePercentage >= 100) {
-                    // Kiểm tra đã có cảnh báo hôm nay chưa
-                    boolean alertExists = notificationRepository.existsByUserIdAndTypeAndActionUrl(
-                            userId, "BUDGET_ALERT", "/budgets/" + budget.getId());
-
-                    if (!alertExists) {
-                        createBudgetAlert(userId, budget.getId(),
-                                String.format("Ngân sách '%s' đã vượt quá! Đã chi %.0f%% (%.0f VND)",
-                                        budget.getName(), usagePercentage, spentAmount),
-                                "HIGH");
-                    }
-                } else if (usagePercentage >= budget.getAlertThreshold()) {
-                    boolean alertExists = notificationRepository.existsByUserIdAndTypeAndActionUrl(
-                            userId, "BUDGET_ALERT", "/budgets/" + budget.getId());
-
-                    if (!alertExists) {
-                        createBudgetAlert(userId, budget.getId(),
-                                String.format("Ngân sách '%s' sắp hết! Đã chi %.0f%% (%.0f VND)",
-                                        budget.getName(), usagePercentage, spentAmount),
-                                "MEDIUM");
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Kiểm tra và tạo savings goal reminders tự động
-     */
-    @Transactional
-    public void checkSavingsGoalReminders(Long userId) {
-        List<SavingsGoal> activeGoals = savingsGoalRepository.findByUserIdAndStatus(
-                userId, SavingsGoal.GoalStatus.ACTIVE);
-
-        for (SavingsGoal goal : activeGoals) {
-            if (goal.getDeadline() != null) {
-                long daysUntilDeadline = ChronoUnit.DAYS.between(LocalDate.now(), goal.getDeadline());
-
-                // Remind 7 days before deadline
-                if (daysUntilDeadline == 7) {
-                    createSavingsGoalReminder(userId, goal.getId(),
-                            String.format("Mục tiêu '%s' còn 7 ngày! Hiện tại: %.0f/%.0f VND",
-                                    goal.getName(), goal.getCurrentAmount(), goal.getTargetAmount()));
-                }
-
-                // Remind on deadline day
-                if (daysUntilDeadline == 0) {
-                    createSavingsGoalReminder(userId, goal.getId(),
-                            String.format("Hôm nay là deadline của mục tiêu '%s'! Hiện tại: %.0f/%.0f VND",
-                                    goal.getName(), goal.getCurrentAmount(), goal.getTargetAmount()));
-                }
-            }
-        }
-    }
 
     /**
      * Convert Notification to Response DTO
@@ -300,179 +223,6 @@ public class NotificationService {
                 .build();
     }
 
-    /**
-     * Generate budget alerts for all users (called by scheduler)
-     */
-    @Transactional
-    public void generateBudgetAlerts() {
-        log.info("Generating budget alerts for all users...");
-
-        List<User> allUsers = userRepository.findAll();
-        int alertCount = 0;
-
-        for (User user : allUsers) {
-            try {
-                checkBudgetAlertsForUser(user.getId());
-                alertCount++;
-            } catch (Exception e) {
-                log.error("Error checking budget alerts for user {}: {}", user.getId(), e.getMessage());
-            }
-        }
-
-        log.info("Budget alerts generated for {} users", alertCount);
-    }
-
-    /**
-     * Generate savings suggestions using AI (called by scheduler)
-     * Tạo gợi ý tiết kiệm và gửi push notification qua FCM đến điện thoại user
-     */
-    @Transactional
-    public void generateSavingsSuggestions() {
-        log.info("Generating AI-powered savings suggestions for all users...");
-
-        List<User> allUsers = userRepository.findAll();
-        int suggestionCount = 0;
-
-        for (User user : allUsers) {
-            try {
-                // Get AI suggestions
-                SavingsSuggestionsResponse suggestions = aiInsightsService.getSavingsSuggestions(user.getId());
-
-                if (suggestions != null && !suggestions.getSuggestions().isEmpty()) {
-                    // Create notification with top suggestion
-                    SavingsSuggestionsResponse.SavingsSuggestion topSuggestion = suggestions.getSuggestions().get(0);
-
-                    String title = "💡 Gợi ý Tiết kiệm Thông minh";
-                    String content = String.format(
-                            "%s\n\n✨ Tổng tiềm năng tiết kiệm: %,.0f VND/tháng",
-                            topSuggestion.getMessage(),
-                            suggestions.getTotalPotentialSavings());
-
-                    Notification notification = new Notification();
-                    notification.setUserId(user.getId());
-                    notification.setType("SAVINGS_SUGGESTION");
-                    notification.setTitle(title);
-                    notification.setContent(content);
-                    notification.setActionUrl("/dashboard/insights");
-                    notification.setIsRead(false);
-                    notification.setPriority(Notification.NotificationPriority.MEDIUM);
-
-                    Notification savedNotification = notificationRepository.save(notification);
-                    suggestionCount++;
-                    
-                    // ========================================
-                    // GỬI FCM PUSH NOTIFICATION ĐẾN ĐIỆN THOẠI
-                    // ========================================
-                    try {
-                        java.util.Map<String, String> data = new java.util.HashMap<>();
-                        data.put("type", "SAVINGS_SUGGESTION");
-                        data.put("notificationId", String.valueOf(savedNotification.getId()));
-                        data.put("category", topSuggestion.getCategory() != null ? topSuggestion.getCategory() : "");
-                        data.put("potentialSavings", String.valueOf(suggestions.getTotalPotentialSavings()));
-                        
-                        fcmService.sendPushToUser(
-                                user.getId(),
-                                title,
-                                topSuggestion.getMessage(),
-                                data
-                        );
-                        
-                        log.debug("📱 FCM push sent for savings suggestion to user {}", user.getId());
-                        
-                    } catch (Exception fcmError) {
-                        log.warn("Failed to send FCM for savings suggestion: {}", fcmError.getMessage());
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Error generating savings suggestions for user {}: {}", user.getId(), e.getMessage());
-            }
-        }
-
-        log.info("Savings suggestions generated for {} users and pushed via FCM", suggestionCount);
-    }
-
-    /**
-     * Generate proactive spending insights using AI (called by scheduler)
-     * Tạo insights và gửi push notification qua FCM đến điện thoại user
-     */
-    @Transactional
-    public void generateProactiveInsights() {
-        log.info("Generating AI-powered proactive insights for all users...");
-
-        List<User> allUsers = userRepository.findAll();
-        int insightCount = 0;
-
-        for (User user : allUsers) {
-            try {
-                // Get AI insights
-                List<SpendingInsight> insights = aiInsightsService.getProactiveInsights(user.getId());
-
-                if (insights != null && !insights.isEmpty()) {
-                    // Create notifications for high-impact insights
-                    for (SpendingInsight insight : insights) {
-                        // Only create notification for high-impact or warnings
-                        if (insight.getImpactScore() >= 0.7 || "warning".equals(insight.getInsightType())) {
-
-                            String title = switch (insight.getInsightType()) {
-                                case "warning" -> "⚠️ Cảnh báo Chi tiêu";
-                                case "achievement" -> "🎉 Thành tích Tiết kiệm";
-                                case "tip" -> "💡 Mẹo Quản lý Chi tiêu";
-                                default -> "📊 Phân tích Chi tiêu";
-                            };
-
-                            Notification notification = new Notification();
-                            notification.setUserId(user.getId());
-                            notification.setType("SPENDING_INSIGHT");
-                            notification.setTitle(title);
-                            notification.setContent(insight.getMessage());
-                            notification.setActionUrl(
-                                    insight.getCategory() != null
-                                            ? "/transactions?category=" + insight.getCategory()
-                                            : "/dashboard/analytics");
-                            notification.setIsRead(false);
-                            notification.setPriority(
-                                    "warning".equals(insight.getInsightType())
-                                            ? Notification.NotificationPriority.HIGH
-                                            : Notification.NotificationPriority.MEDIUM);
-
-                            Notification savedNotification = notificationRepository.save(notification);
-                            insightCount++;
-                            
-                            // ========================================
-                            // GỬI FCM PUSH NOTIFICATION ĐẾN ĐIỆN THOẠI
-                            // ========================================
-                            try {
-                                java.util.Map<String, String> data = new java.util.HashMap<>();
-                                data.put("type", "SPENDING_INSIGHT");
-                                data.put("insightType", insight.getInsightType());
-                                data.put("notificationId", String.valueOf(savedNotification.getId()));
-                                if (insight.getCategory() != null) {
-                                    data.put("category", insight.getCategory());
-                                }
-                                data.put("impactScore", String.valueOf(insight.getImpactScore()));
-                                
-                                fcmService.sendPushToUser(
-                                        user.getId(),
-                                        title,
-                                        insight.getMessage(),
-                                        data
-                                );
-                                
-                                log.debug("📱 FCM push sent for insight to user {}", user.getId());
-                                
-                            } catch (Exception fcmError) {
-                                log.warn("Failed to send FCM for insight: {}", fcmError.getMessage());
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Error generating proactive insights for user {}: {}", user.getId(), e.getMessage());
-            }
-        }
-
-        log.info("Proactive insights generated: {} notifications created and pushed via FCM", insightCount);
-    }
 
     /**
      * Cleanup old read notifications (called by scheduler)

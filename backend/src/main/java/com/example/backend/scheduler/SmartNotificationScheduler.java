@@ -178,7 +178,6 @@ public class SmartNotificationScheduler {
             createAndPushNotification(user, "BUDGET_ALERT", title,
                     message, Notification.NotificationPriority.HIGH, "/budgets/" + budget.getId());
 
-            // fcmService.sendBudgetAlert(user.getId(), budget.getName(), usagePercentage, spentAmount.doubleValue());
             return 1;
 
         } else if (usagePercentage >= budget.getAlertThreshold()) {
@@ -205,7 +204,6 @@ public class SmartNotificationScheduler {
             createAndPushNotification(user, "BUDGET_ALERT", title,
                     message, Notification.NotificationPriority.MEDIUM, "/budgets/" + budget.getId());
 
-            // fcmService.sendBudgetAlert(user.getId(), budget.getName(), usagePercentage, spentAmount.doubleValue());
             return 1;
         }
 
