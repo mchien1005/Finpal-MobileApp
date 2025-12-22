@@ -29,7 +29,7 @@ from app.constants.notification_templates import (
     SPENDING_ACHIEVEMENT,
     SPENDING_TIP,
 )
-from typing import List
+from typing import List, Dict
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -618,3 +618,283 @@ async def get_proactive_insights(user_id: int):
         logger.error(f"Error in get_proactive_insights: {e}")
         return []
 
+
+# =====================================================
+# WEEKLY SPENDING TREND API
+# =====================================================
+
+# Import thêm schemas mới
+from app.schemas.insights import (
+    WeeklySpendingTrendResponse,
+    DailySpending,
+    TopCategory,
+    WeeklyInsight
+)
+
+
+# Cache cho category icons từ database
+_category_icons_cache: Dict[str, str] = {}
+_cache_loaded = False
+
+
+def load_category_icons_from_db() -> Dict[str, str]:
+    """
+    Load mapping category_name -> icon từ bảng danh_muc trong database
+    
+    Cột icon trong database: bieu_tuong
+    
+    Returns:
+        Dict mapping category name -> icon string (ví dụ: "food", "car", ...)
+    """
+    global _category_icons_cache, _cache_loaded
+    
+    if _cache_loaded:
+        return _category_icons_cache
+    
+    try:
+        db = get_database_service()
+        query = """
+            SELECT ten_danh_muc as name, COALESCE(bieu_tuong, 'cash') as icon
+            FROM danh_muc
+        """
+        with db._engine.connect() as conn:
+            from sqlalchemy import text
+            import pandas as pd
+            df = pd.read_sql(text(query), conn)
+        
+        # Build cache
+        _category_icons_cache = dict(zip(df['name'], df['icon']))
+        _cache_loaded = True
+        
+        logger.info(f"✅ Loaded {len(_category_icons_cache)} category icons from database")
+        return _category_icons_cache
+        
+    except Exception as e:
+        logger.warning(f"⚠️ Could not load category icons from DB: {e}. Using fallback.")
+        return {}
+
+
+# Mapping fallback nếu không load được từ DB
+CATEGORY_ICONS_FALLBACK = {
+    "Ăn uống": "food",
+    "Cafe": "coffee",
+    "Trà sữa": "cup",
+    "Ăn ngoài": "food-fork-drink",
+    "Di chuyển": "car",
+    "Xăng": "gas-station",
+    "Mua sắm": "shopping",
+    "Giải trí": "movie-open",
+    "Điện nước": "lightning-bolt",
+    "Sức khỏe": "hospital",
+    "Học tập": "school",
+    "Khác": "dots-horizontal",
+}
+
+
+# Mapping ngày tiếng Việt
+DAY_OF_WEEK_VI = {
+    0: "T2",  # Monday
+    1: "T3",  # Tuesday
+    2: "T4",  # Wednesday
+    3: "T5",  # Thursday
+    4: "T6",  # Friday
+    5: "T7",  # Saturday
+    6: "CN",  # Sunday
+}
+
+
+def get_category_icon(category_name: str) -> str:
+    """
+    Lấy icon cho danh mục
+    
+    Ưu tiên lấy từ database (bảng danh_muc, cột bieu_tuong).
+    Fallback sang mapping cứng nếu không tìm thấy.
+    
+    Args:
+        category_name: Tên danh mục
+        
+    Returns:
+        Icon string (ví dụ: "food", "car", ...)
+    """
+    # Thử load từ database
+    db_icons = load_category_icons_from_db()
+    
+    # Tìm exact match trong DB
+    if category_name in db_icons:
+        icon = db_icons[category_name]
+        if icon:
+            return icon
+    
+    # Fallback: tìm trong mapping cứng
+    if category_name in CATEGORY_ICONS_FALLBACK:
+        return CATEGORY_ICONS_FALLBACK[category_name]
+    
+    # Partial match trong fallback
+    category_lower = category_name.lower()
+    for key, icon in CATEGORY_ICONS_FALLBACK.items():
+        if key.lower() in category_lower or category_lower in key.lower():
+            return icon
+    
+    return "cash"  # Default icon
+
+
+@router.get("/weekly-spending-trend/{user_id}", response_model=WeeklySpendingTrendResponse)
+async def get_weekly_spending_trend(user_id: int):
+    """
+    Lấy xu hướng chi tiêu tuần này
+    
+    Trả về chi tiêu theo từng ngày trong tuần hiện tại (T2-CN),
+    bao gồm danh mục chi tiêu nhiều nhất mỗi ngày và insight.
+    
+    Args:
+        user_id: ID người dùng
+        
+    Returns:
+        WeeklySpendingTrendResponse: Dữ liệu chi tiêu theo ngày trong tuần
+    """
+    try:
+        # Xác định tuần hiện tại (T2 - CN)
+        today = datetime.now()
+        # Lấy thứ 2 của tuần hiện tại
+        week_start = today - timedelta(days=today.weekday())
+        week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        # Chủ nhật của tuần
+        week_end = week_start + timedelta(days=6)
+        week_end = week_end.replace(hour=23, minute=59, second=59)
+        
+        logger.info(f"Fetching weekly spending trend for user {user_id}: {week_start.date()} to {week_end.date()}")
+        
+        # Load transactions
+        df = load_user_transactions(user_id)
+        
+        # Khởi tạo dữ liệu cho 7 ngày
+        daily_data = []
+        for i in range(7):
+            day_date = week_start + timedelta(days=i)
+            daily_data.append({
+                "day_of_week": DAY_OF_WEEK_VI[i],
+                "date": day_date.strftime("%Y-%m-%d"),
+                "total_amount": 0.0,
+                "top_category": None,
+                "categories": {}  # Để tính top category
+            })
+        
+        # Nếu có transactions, tính toán chi tiêu
+        if len(df) > 0:
+            # Filter giao dịch trong tuần
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            week_df = df[(df['timestamp'] >= week_start) & (df['timestamp'] <= week_end)].copy()
+            
+            if len(week_df) > 0:
+                # Tính chi tiêu theo ngày
+                week_df['day_index'] = week_df['timestamp'].dt.dayofweek
+                
+                for _, row in week_df.iterrows():
+                    day_idx = int(row['day_index'])
+                    if 0 <= day_idx <= 6:
+                        amount = float(row['amount'])
+                        category = row['category'] if 'category' in row else 'Khác'
+                        
+                        daily_data[day_idx]['total_amount'] += amount
+                        
+                        # Thêm vào categories để tính top
+                        if category not in daily_data[day_idx]['categories']:
+                            daily_data[day_idx]['categories'][category] = 0
+                        daily_data[day_idx]['categories'][category] += amount
+        
+        # Tìm ngày chi tiêu cao nhất
+        max_amount = max(d['total_amount'] for d in daily_data)
+        if max_amount == 0:
+            max_amount = 1  # Tránh chia cho 0
+        
+        # Tạo response
+        daily_spending = []
+        total_week = 0.0
+        max_day = "T2"
+        max_day_amount = 0.0
+        
+        for day in daily_data:
+            total_week += day['total_amount']
+            
+            # Track max day
+            if day['total_amount'] > max_day_amount:
+                max_day_amount = day['total_amount']
+                max_day = day['day_of_week']
+            
+            # Tìm top category cho ngày này
+            top_cat = None
+            if day['categories']:
+                top_cat_name = max(day['categories'], key=day['categories'].get)
+                top_cat = TopCategory(
+                    name=top_cat_name,
+                    icon=get_category_icon(top_cat_name),
+                    amount=day['categories'][top_cat_name]
+                )
+            
+            # Tính percentage
+            percentage = (day['total_amount'] / max_amount * 100) if max_amount > 0 else 0
+            
+            daily_spending.append(DailySpending(
+                day_of_week=day['day_of_week'],
+                date=day['date'],
+                total_amount=day['total_amount'],
+                top_category=top_cat,
+                percentage=round(percentage, 1)
+            ))
+        
+        # Tạo insight
+        if max_day_amount > 0:
+            insight_message = f"Bạn thường chi nhiều nhất vào {max_day}. Hãy lập kế hoạch chi tiêu cẩn thận hơn vào ngày này."
+        else:
+            insight_message = "Chưa có dữ liệu chi tiêu trong tuần này. Hãy ghi chép giao dịch để xem xu hướng!"
+        
+        insight = WeeklyInsight(
+            message=insight_message,
+            peak_day=max_day,
+            peak_amount=max_day_amount
+        )
+        
+        response = WeeklySpendingTrendResponse(
+            user_id=user_id,
+            week_start_date=week_start.strftime("%Y-%m-%d"),
+            week_end_date=week_end.strftime("%Y-%m-%d"),
+            daily_spending=daily_spending,
+            max_amount=max_day_amount,
+            max_day=max_day,
+            total_week=total_week,
+            insight=insight
+        )
+        
+        logger.info(f"Weekly spending trend for user {user_id}: total={total_week:,.0f}đ, peak={max_day}")
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error in get_weekly_spending_trend: {e}")
+        # Trả về response rỗng nếu lỗi
+        today = datetime.now()
+        week_start = today - timedelta(days=today.weekday())
+        week_end = week_start + timedelta(days=6)
+        
+        return WeeklySpendingTrendResponse(
+            user_id=user_id,
+            week_start_date=week_start.strftime("%Y-%m-%d"),
+            week_end_date=week_end.strftime("%Y-%m-%d"),
+            daily_spending=[
+                DailySpending(
+                    day_of_week=DAY_OF_WEEK_VI[i],
+                    date=(week_start + timedelta(days=i)).strftime("%Y-%m-%d"),
+                    total_amount=0.0,
+                    top_category=None,
+                    percentage=0.0
+                ) for i in range(7)
+            ],
+            max_amount=0.0,
+            max_day="T2",
+            total_week=0.0,
+            insight=WeeklyInsight(
+                message="Không thể tải dữ liệu. Vui lòng thử lại sau.",
+                peak_day="T2",
+                peak_amount=0.0
+            )
+        )

@@ -71,3 +71,54 @@ class SpendingInsight(BaseModel):
     message: str = Field(..., description="Thông điệp insight bằng tiếng Việt")
     actionable: bool = Field(..., description="User có thể hành động được không (true/false)")
     impact_score: float = Field(..., ge=0, le=1, description="Mức độ ảnh hưởng đến tài chính 0-1 (1 = ảnh hưởng lớn)")
+
+
+# =====================================================
+# WEEKLY SPENDING TREND SCHEMAS
+# =====================================================
+
+class TopCategory(BaseModel):
+    """
+    Danh mục chi tiêu cao nhất trong ngày
+    """
+    name: str = Field(..., description="Tên danh mục")
+    icon: str = Field(..., description="Icon MDI của danh mục (ví dụ: '<mdi:coffee>')")
+    amount: float = Field(..., description="Số tiền chi cho danh mục này trong ngày (VNĐ)")
+
+
+class DailySpending(BaseModel):
+    """
+    Chi tiêu theo từng ngày trong tuần
+    """
+    day_of_week: str = Field(..., description="Thứ trong tuần (T2, T3, T4, T5, T6, T7, CN)")
+    date: str = Field(..., description="Ngày cụ thể (yyyy-MM-dd)")
+    total_amount: float = Field(..., description="Tổng chi tiêu trong ngày (VNĐ)")
+    top_category: Optional[TopCategory] = Field(None, description="Danh mục chi tiêu nhiều nhất ngày đó")
+    percentage: float = Field(..., description="Phần trăm so với ngày chi tiêu cao nhất (0-100)")
+
+
+class WeeklyInsight(BaseModel):
+    """
+    Insight về xu hướng chi tiêu trong tuần
+    """
+    message: str = Field(..., description="Thông điệp insight bằng tiếng Việt")
+    peak_day: str = Field(..., description="Ngày chi tiêu nhiều nhất (T2-CN)")
+    peak_amount: float = Field(..., description="Số tiền chi tiêu cao nhất (VNĐ)")
+
+
+class WeeklySpendingTrendResponse(BaseModel):
+    """
+    Response cho API xu hướng chi tiêu tuần
+    
+    Cung cấp dữ liệu chi tiêu theo từng ngày trong tuần hiện tại,
+    bao gồm insight về ngày chi tiêu nhiều nhất.
+    """
+    user_id: int = Field(..., description="ID người dùng")
+    week_start_date: str = Field(..., description="Ngày bắt đầu tuần (yyyy-MM-dd)")
+    week_end_date: str = Field(..., description="Ngày kết thúc tuần (yyyy-MM-dd)")
+    daily_spending: List[DailySpending] = Field(..., description="Chi tiêu theo từng ngày")
+    max_amount: float = Field(..., description="Số tiền chi tiêu cao nhất trong tuần (VNĐ)")
+    max_day: str = Field(..., description="Ngày chi tiêu cao nhất (T2-CN)")
+    total_week: float = Field(..., description="Tổng chi tiêu cả tuần (VNĐ)")
+    insight: WeeklyInsight = Field(..., description="Insight về xu hướng chi tiêu")
+
