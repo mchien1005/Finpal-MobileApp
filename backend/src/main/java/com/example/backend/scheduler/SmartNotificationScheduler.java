@@ -34,26 +34,34 @@ import java.util.List;
  * 
  * Scheduler này tự động phân tích dữ liệu và gửi thông báo chủ động đến user:
  * 
- * 1. BUDGET ALERTS (Cảnh báo Ngân sách) - Chạy mỗi 4 giờ
- *    - "Bạn đã chi 70% hạn mức 'Ăn ngoài' của tháng này, chỉ còn 10 ngày nữa là hết tháng."
+ * 1. BUDGET ALERTS (Cảnh báo Ngân sách) - Chạy mỗi 2 giờ
+ *    - "Bạn đã chi 70% hạn mức 'Ăn ngoài' của tháng này"
  *    - "Ngân sách 'Mua sắm' đã vượt quá! Đã chi 120%"
  * 
- * 2. SAVINGS SUGGESTIONS (Gợi ý Tiết kiệm từ AI) - Chạy mỗi Chủ nhật 9:00 AM
- *    - "FinPal nhận thấy bạn chi trung bình 200.000đ cho 'Trà sữa' mỗi tuần. 
- *       Nếu bạn giảm còn 100.000đ, bạn sẽ tiết kiệm được 400.000đ/tháng."
+ * 2. SAVINGS SUGGESTIONS (Gợi ý Tiết kiệm từ AI) - Chạy Chủ nhật 9:30 AM
+ *    - "FinPal nhận thấy bạn chi trung bình 200.000đ cho 'Trà sữa' mỗi tuần."
  * 
  * 3. ANOMALY DETECTION (Phát hiện Bất thường) - Chạy mỗi ngày 7:00 PM
- *    - "Hóa đơn tiền điện tháng này (500.000đ) cao hơn 30% so với trung bình (350.000đ)."
+ *    - "Hóa đơn tiền điện tháng này cao hơn 30% so với trung bình"
  * 
- * 4. GOAL REMINDERS (Nhắc nhở Mục tiêu) - Chạy mỗi ngày 8:00 AM
+ * 4. GOAL REMINDERS (Nhắc nhở Mục tiêu) - Chạy mỗi ngày 10:00 AM
  *    - "Mục tiêu 'Mua iPhone' còn 7 ngày! Tiến độ: 60%"
  * 
- * 5. PROACTIVE INSIGHTS (Phân tích Chi tiêu Proactive) - Chạy mỗi ngày 7:30 PM
+ * 5. GOAL COMPLETIONS (Hoàn thành Mục tiêu) - Chạy mỗi giờ
+ *    - "Chúc mừng! Bạn đã hoàn thành mục tiêu 'Du lịch'!"
+ *    - Tự động chuyển status sang COMPLETED
+ * 
+ * 6. PROACTIVE INSIGHTS (Phân tích Chi tiêu) - Chạy mỗi ngày 7:00 PM
  *    - "Chi tiêu 'Ăn ngoài' đang có xu hướng tăng 20% so với tháng trước"
  * 
- * 6. SMART TIPS (Gợi ý Thông minh từ BackendAI) - Chạy mỗi ngày 9:20 AM
+ * 7. SMART TIPS (Gợi ý Thông minh từ AI) - Chạy mỗi ngày 9:20 AM
  *    - "Quy tắc 50/30/20: 50% thu nhập cho nhu cầu thiết yếu..."
- *    - Tips cá nhân hóa dựa trên chi tiêu của user
+ * 
+ * 8. MONTHLY SUMMARY (Tổng kết Tháng) - Chạy ngày 1 mỗi tháng 9:00 AM
+ *    - "Tháng 11: Thu 25tr - Chi 18tr = Tiết kiệm 7tr (28%)"
+ * 
+ * 9. WEEKLY SUMMARY (Tổng kết Tuần) - Chạy Chủ nhật 9:15 AM
+ *    - "Tuần vừa qua: Thu 6tr - Chi 4.5tr = Tiết kiệm 1.5tr"
  */
 @Component
 @Slf4j
@@ -150,9 +158,23 @@ public class SmartNotificationScheduler {
         // Tính số ngày còn lại
         long daysRemaining = ChronoUnit.DAYS.between(today, budget.getEndDate());
 
-        // Chỉ gửi cảnh báo nếu chưa có cảnh báo tương tự trong 24h
-        String alertKey = "budget_" + budget.getId() + "_" + (usagePercentage >= 100 ? "over" : "warning");
-        if (hasRecentNotification(user.getId(), "BUDGET_ALERT", alertKey, 24)) {
+        // ========================================
+        // LOGIC CHỐNG TRÙNG LẶP CẢI TIẾN
+        // ========================================
+        // Tạo unique key bao gồm: budget_id + loại cảnh báo + số tiền đã chi (làm tròn đến nghìn)
+        // Chỉ gửi thông báo mới khi:
+        // 1. Chưa có thông báo nào cho budget này trong 24h, HOẶC
+        // 2. Số tiền đã chi thay đổi (có giao dịch mới)
+        
+        String alertType = usagePercentage >= 100 ? "exceeded" : "warning";
+        // Làm tròn số tiền đến nghìn để tránh gửi lại khi chỉ có sai số nhỏ
+        long spentAmountRounded = spentAmount.divide(BigDecimal.valueOf(1000), 0, RoundingMode.HALF_UP).longValue();
+        String alertKey = String.format("budget_%d_%s_%d", budget.getId(), alertType, spentAmountRounded);
+        
+        // Check xem đã gửi thông báo với CÙNG SỐ TIỀN chưa (dùng actionUrl để lưu key)
+        if (hasSameBudgetNotification(user.getId(), budget.getId(), spentAmountRounded)) {
+            log.debug("Skipping duplicate budget alert for budget {} - amount unchanged: {}", 
+                    budget.getId(), spentAmount);
             return 0;
         }
 
@@ -175,9 +197,12 @@ public class SmartNotificationScheduler {
                     String.format("Ngân sách '%s' đã vượt quá! Đã chi %.0f%% (%,.0fđ/%,.0fđ)",
                             budget.getName(), usagePercentage, spentAmount.doubleValue(), budget.getAmount().doubleValue());
 
+            // Lưu actionUrl bao gồm spent_amount để check duplicate sau này
+            String actionUrl = String.format("/budgets/%d?spent=%d", budget.getId(), spentAmountRounded);
             createAndPushNotification(user, "BUDGET_ALERT", title,
-                    message, Notification.NotificationPriority.HIGH, "/budgets/" + budget.getId());
+                    message, Notification.NotificationPriority.HIGH, actionUrl);
 
+            log.info("📢 Budget EXCEEDED alert sent for '{}' - spent: {}", budget.getName(), spentAmount);
             return 1;
 
         } else if (usagePercentage >= budget.getAlertThreshold()) {
@@ -201,13 +226,33 @@ public class SmartNotificationScheduler {
                             spentAmount.doubleValue(), budget.getAmount().doubleValue(),
                             daysRemaining);
 
+            // Lưu actionUrl bao gồm spent_amount để check duplicate sau này
+            String actionUrl = String.format("/budgets/%d?spent=%d", budget.getId(), spentAmountRounded);
             createAndPushNotification(user, "BUDGET_ALERT", title,
-                    message, Notification.NotificationPriority.MEDIUM, "/budgets/" + budget.getId());
+                    message, Notification.NotificationPriority.MEDIUM, actionUrl);
 
+            log.info("📢 Budget WARNING alert sent for '{}' - spent: {}", budget.getName(), spentAmount);
             return 1;
         }
 
         return 0;
+    }
+
+    /**
+     * Kiểm tra đã có thông báo budget với cùng số tiền chưa
+     * Chỉ gửi thông báo mới khi số tiền thay đổi (có giao dịch mới)
+     */
+    private boolean hasSameBudgetNotification(Long userId, Long budgetId, long spentAmountRounded) {
+        // Tìm notification budget gần nhất (trong 7 ngày)
+        LocalDateTime since = LocalDateTime.now().minusDays(7);
+        List<Notification> recentBudgetAlerts = notificationRepository.findByUserIdAndTypeAndCreatedAtAfter(
+                userId, "BUDGET_ALERT", since);
+        
+        // Check xem có notification nào với cùng budgetId và spentAmount không
+        String pattern = String.format("/budgets/%d?spent=%d", budgetId, spentAmountRounded);
+        
+        return recentBudgetAlerts.stream().anyMatch(n -> 
+                n.getActionUrl() != null && n.getActionUrl().equals(pattern));
     }
 
     // ======================== AI SAVINGS SUGGESTIONS ========================
@@ -498,6 +543,105 @@ public class SmartNotificationScheduler {
         return 0;
     }
 
+    // ======================== GOAL COMPLETIONS ========================
+    
+    /**
+     * Kiểm tra và gửi thông báo hoàn thành mục tiêu
+     * Chạy mỗi giờ để phát hiện nhanh khi user đạt mục tiêu
+     * 
+     * Logic:
+     * - Check tất cả goals đang ACTIVE có currentAmount >= targetAmount
+     * - Gửi thông báo chúc mừng
+     * - Tự động chuyển status sang COMPLETED
+     * 
+     * Sử dụng template NOT014 (goal_completed)
+     */
+    @Scheduled(cron = "${scheduler.smart-notifications.goal-completions.cron:0 0 * * * *}")
+    @Transactional
+    public void checkGoalCompletions() {
+        log.info("🏆 Checking goal completions...");
+
+        try {
+            List<User> activeUsers = getActiveUsersWithNotifications();
+            int completionCount = 0;
+
+            for (User user : activeUsers) {
+                try {
+                    // Lấy tất cả goals ACTIVE của user
+                    List<SavingsGoal> activeGoals = savingsGoalRepository.findByUserIdAndStatus(
+                            user.getId(), SavingsGoal.GoalStatus.ACTIVE);
+
+                    for (SavingsGoal goal : activeGoals) {
+                        if (isGoalCompleted(goal)) {
+                            // Check xem đã gửi thông báo hoàn thành chưa (tránh duplicate)
+                            if (!hasRecentNotification(user.getId(), "GOAL_COMPLETED", 
+                                    "/savings-goals/" + goal.getId(), 24)) {
+                                
+                                sendGoalCompletedNotification(user, goal);
+                                
+                                // Tự động cập nhật status sang COMPLETED
+                                goal.setStatus(SavingsGoal.GoalStatus.COMPLETED);
+                                savingsGoalRepository.save(goal);
+                                
+                                completionCount++;
+                                log.info("🎉 Goal '{}' completed for user {}", goal.getName(), user.getId());
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Error checking goal completions for user {}: {}", user.getId(), e.getMessage());
+                }
+            }
+
+            log.info("✅ Goal completions check done. {} goals completed", completionCount);
+
+        } catch (Exception e) {
+            log.error("❌ Error in goal completions scheduler: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Kiểm tra goal đã hoàn thành chưa
+     */
+    private boolean isGoalCompleted(SavingsGoal goal) {
+        if (goal.getCurrentAmount() == null || goal.getTargetAmount() == null) {
+            return false;
+        }
+        return goal.getCurrentAmount().compareTo(goal.getTargetAmount()) >= 0;
+    }
+
+    /**
+     * Gửi thông báo chúc mừng hoàn thành mục tiêu
+     */
+    private void sendGoalCompletedNotification(User user, SavingsGoal goal) {
+        java.util.Map<String, Object> placeholders = new java.util.HashMap<>();
+        placeholders.put("goal_name", goal.getName() != null ? goal.getName() : "Mục tiêu");
+        placeholders.put("target_amount", goal.getTargetAmount().doubleValue());
+        placeholders.put("current_amount", goal.getCurrentAmount().doubleValue());
+        
+        // Tính số ngày đã tiết kiệm (từ ngày tạo đến nay)
+        long daysSaved = 0;
+        if (goal.getCreatedAt() != null) {
+            daysSaved = ChronoUnit.DAYS.between(goal.getCreatedAt().toLocalDate(), LocalDate.now());
+        }
+        placeholders.put("days_saved", daysSaved);
+
+        NotificationTemplateService.RenderedTemplate rendered = templateService.renderTemplate(
+            TPL_GOAL_COMPLETED,  // NOT014
+            placeholders
+        );
+
+        String title = rendered != null ? rendered.getTitle() : "🎉 Chúc mừng! Hoàn thành Mục tiêu!";
+        String message = rendered != null ? rendered.getContent() :
+                String.format("Tuyệt vời! Bạn đã hoàn thành mục tiêu '%s' với %,.0fđ! " +
+                        "Chỉ trong %d ngày! 🎊🏆", 
+                        goal.getName(), goal.getTargetAmount().doubleValue(), daysSaved);
+
+        createAndPushNotification(user, "GOAL_COMPLETED", title, message,
+                Notification.NotificationPriority.HIGH,
+                "/savings-goals/" + goal.getId());
+    }
+
     // ======================== PROACTIVE SPENDING INSIGHTS ========================
     
     /**
@@ -578,11 +722,11 @@ public class SmartNotificationScheduler {
 
     /**
      * Gửi tổng kết thu chi tháng trước
-     * Chạy vào ngày mùng 1 hàng tháng lúc 9:00 AM
+     * Chạy vào ngày mùng 1 hàng tháng lúc 9:15 AM
      * 
      * Sử dụng template NOT015
      */
-    @Scheduled(cron = "${scheduler.smart-notifications.monthly-summary.cron:0 0 9 1 * *}")
+    @Scheduled(cron = "${scheduler.smart-notifications.monthly-summary.cron:0 15 9 1 * *}")
     @Transactional
     public void sendMonthlySummary() {
         log.info("📅 Starting monthly summary generation...");
@@ -656,11 +800,11 @@ public class SmartNotificationScheduler {
 
     /**
      * Gửi tổng kết thu chi tuần trước
-     * Chạy vào Chủ nhật hàng tuần lúc 9:00 AM
+     * Chạy vào Chủ nhật hàng tuần lúc 9:15 AM
      * 
      * Sử dụng template NOT016
      */
-    @Scheduled(cron = "${scheduler.smart-notifications.weekly-summary.cron:0 0 9 * * SUN}")
+    @Scheduled(cron = "${scheduler.smart-notifications.weekly-summary.cron:0 15 9 * * SUN}")
     @Transactional
     public void sendWeeklySummary() {
         log.info("📅 Starting weekly summary generation...");
