@@ -8,7 +8,10 @@ import com.example.backend.scheduler.SmartNotificationScheduler;
 import com.example.backend.service.FcmService;
 import com.example.backend.service.NotificationService;
 import com.example.backend.service.NotificationTemplateService;
-import com.google.firebase.messaging.*;
+import com.google.firebase.messaging.AndroidConfig;
+import com.google.firebase.messaging.AndroidNotification;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -55,14 +58,16 @@ public class TestNotificationController {
         String body = "Message này có notification payload - Giống Firebase Console";
 
         try {
-            Notification notification = Notification.builder()
+            // Sử dụng fully qualified name để tránh xung đột với model Notification
+            com.google.firebase.messaging.Notification fcmNotification = 
+                com.google.firebase.messaging.Notification.builder()
                     .setTitle(title)
                     .setBody(body)
                     .build();
 
             Message.Builder messageBuilder = Message.builder()
                     .setToken(user.getFcmToken())
-                    .setNotification(notification);
+                    .setNotification(fcmNotification);
 
             Map<String, String> data = new HashMap<>();
             data.put("title", title);
