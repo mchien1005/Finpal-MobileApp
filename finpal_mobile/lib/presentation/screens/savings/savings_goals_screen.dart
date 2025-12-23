@@ -81,6 +81,7 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
         userName: 'Nguyễn Văn A',
         notificationCount: 3,
         backgroundColor: Colors.white,
+        customTitle: 'Theo dõi mục tiêu tiết kiệm',
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _errorMessage != null
