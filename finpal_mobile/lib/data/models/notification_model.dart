@@ -69,7 +69,17 @@ class NotificationModel {
   /// Lấy thời gian hiển thị đẹp (VD: "5 phút trước", "1 giờ trước")
   String get displayTime {
     try {
-      final dateTime = DateTime.parse(createdAt);
+      // Parse thời gian từ API
+      // API trả về UTC time nhưng không có 'Z', ví dụ: "2025-12-18T16:00:00"
+      // Cần thêm 'Z' để parse đúng là UTC
+      String dateString = createdAt;
+      if (!dateString.endsWith('Z') &&
+          !dateString.contains('+') &&
+          !dateString.contains('-', 10)) {
+        dateString = '${dateString}Z'; // Thêm Z để đánh dấu UTC
+      }
+
+      final dateTime = DateTime.parse(dateString).toLocal();
       final now = DateTime.now();
       final difference = now.difference(dateTime);
 
