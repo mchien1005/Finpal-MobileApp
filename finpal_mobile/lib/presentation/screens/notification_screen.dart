@@ -20,6 +20,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
   bool _isLoading = true;
   String? _error;
 
+  // Set lưu các notification id đang được mở rộng
+  final Set<int> _expandedNotifications = {};
+
   @override
   void initState() {
     super.initState();
@@ -655,121 +658,151 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Widget _buildNotificationCard(NotificationModel notification, bool isRead) {
     final style = _getNotificationStyle(notification);
+    final isExpanded = _expandedNotifications.contains(notification.id);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: isRead ? const Color(0xFFF9FAFB) : Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: isRead ? 3 : 6,
-            offset: Offset(0, isRead ? 1 : 4),
-          ),
-          if (!isRead)
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isExpanded) {
+            _expandedNotifications.remove(notification.id);
+          } else {
+            _expandedNotifications.add(notification.id);
+          }
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: isRead ? const Color(0xFFF9FAFB) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+              blurRadius: isRead ? 3 : 6,
+              offset: Offset(0, isRead ? 1 : 4),
             ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Icon
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: (style['iconBgColor'] as Color).withOpacity(
-                isRead ? 0.6 : 1,
+            if (!isRead)
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
               ),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Center(
-              child: IconTheme(
-                data: IconThemeData(
-                  color: style['iconColor'] as Color,
-                  size: 24,
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Icon
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: (style['iconBgColor'] as Color).withOpacity(
+                  isRead ? 0.6 : 1,
                 ),
-                child: style['icon'] as Widget,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Center(
+                child: IconTheme(
+                  data: IconThemeData(
+                    color: style['iconColor'] as Color,
+                    size: 24,
+                  ),
+                  child: style['icon'] as Widget,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          // Content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title and delete button
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        notification.title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: isRead
-                              ? FontWeight.normal
-                              : FontWeight.w500,
-                          color: isRead
-                              ? const Color(0xFF364153)
-                              : const Color(0xFF101828),
-                          fontFamily: 'Arimo',
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    InkWell(
-                      onTap: () =>
-                          _showNotificationOptions(notification, isRead),
-                      borderRadius: BorderRadius.circular(4),
-                      child: const Padding(
-                        padding: EdgeInsets.all(4),
-                        child: Icon(
-                          Icons.more_horiz,
-                          size: 16,
-                          color: Color(0xFF99A1AF),
+            const SizedBox(width: 12),
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title and delete button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          notification.title,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: isRead
+                                ? FontWeight.normal
+                                : FontWeight.w500,
+                            color: isRead
+                                ? const Color(0xFF364153)
+                                : const Color(0xFF101828),
+                            fontFamily: 'Arimo',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      InkWell(
+                        onTap: () =>
+                            _showNotificationOptions(notification, isRead),
+                        borderRadius: BorderRadius.circular(4),
+                        child: const Padding(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.more_horiz,
+                            size: 16,
+                            color: Color(0xFF99A1AF),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // Message
+                  AnimatedCrossFade(
+                    firstChild: Text(
+                      notification.content,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isRead
+                            ? const Color(0xFF6A7282)
+                            : const Color(0xFF4A5565),
+                        fontFamily: 'Arimo',
+                        height: 1.4,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                // Message
-                Text(
-                  notification.content,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isRead
-                        ? const Color(0xFF6A7282)
-                        : const Color(0xFF4A5565),
-                    fontFamily: 'Arimo',
-                    height: 1.4,
+                    secondChild: Text(
+                      notification.content,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isRead
+                            ? const Color(0xFF6A7282)
+                            : const Color(0xFF4A5565),
+                        fontFamily: 'Arimo',
+                        height: 1.4,
+                      ),
+                    ),
+                    crossFadeState: isExpanded
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
+                    duration: const Duration(milliseconds: 200),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                // Time
-                Text(
-                  notification.displayTime,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF99A1AF),
-                    fontFamily: 'Arimo',
+                  const SizedBox(height: 4),
+                  // Time
+                  Text(
+                    notification.displayTime,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF99A1AF),
+                      fontFamily: 'Arimo',
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
