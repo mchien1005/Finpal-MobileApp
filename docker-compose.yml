@@ -66,9 +66,11 @@ services:
       # PDF Export Configuration
       PDF_EXPORT_TEMP_DIRECTORY: /tmp/finpal-exports
       PDF_EXPORT_RETENTION_DAYS: 7
+      APP_UPLOAD_DIR: /app/uploads
     volumes:
       - ./backend/src/main/resources/firebase-service-account.json:/app/firebase-service-account.json
       - ./backend/src/main/resources/application.properties:/app/application.properties
+      - uploads_data:/app/uploads
     ports:
       - "8080:8080"
     depends_on:
@@ -143,4 +145,6 @@ volumes:
   ai_models:
     driver: local
   ai_data:
+    driver: local
+  uploads_data:
     driver: local

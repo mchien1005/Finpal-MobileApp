@@ -14,7 +14,7 @@ import java.util.UUID;
 @Service
 public class FileUploadService {
 
-    @Value("${app.upload.dir:uploads}")
+    @Value("${app.upload.dir:${APP_UPLOAD_DIR:uploads}}")
     private String uploadDir;
 
     @Value("${app.upload.avatar-dir:avatars}")
@@ -22,12 +22,19 @@ public class FileUploadService {
 
     /**
      * Get absolute upload path
+     * Hỗ trợ cả đường dẫn tuyệt đối (Docker: /app/uploads)
+     * và tương đối (local: uploads)
      */
     private Path getUploadPath() {
-        // Try to get the project root directory
+        Path uploadPath = Paths.get(uploadDir);
+
+        // Nếu đường dẫn đã là tuyệt đối (Docker: /app/uploads), sử dụng trực tiếp
+        if (uploadPath.isAbsolute()) {
+            return uploadPath;
+        }
+
+        // Nếu là đường dẫn tương đối, resolve từ thư mục hiện tại
         Path currentPath = Paths.get("").toAbsolutePath();
-        // If running from backend folder, use uploads inside backend
-        // Otherwise create uploads in the current working directory
         return currentPath.resolve(uploadDir);
     }
 
