@@ -226,10 +226,12 @@ public class BudgetService {
         response.setCreatedAt(budget.getCreatedAt());
         response.setUpdatedAt(budget.getUpdatedAt());
 
-        // Lấy thông tin category (nếu có)
+        // Lấy thông tin category (nếu có) - bao gồm tên, icon và màu sắc
         if (budget.getCategoryId() != null) {
             categoryRepository.findById(budget.getCategoryId()).ifPresent(category -> {
                 response.setCategoryName(category.getName());
+                response.setCategoryIcon(category.getIcon());
+                response.setCategoryColor(category.getColor());
             });
         }
 
