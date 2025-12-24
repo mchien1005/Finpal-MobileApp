@@ -10,16 +10,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -159,10 +156,16 @@ public class UserRequestService {
         UserRequest savedRequest = userRequestRepository.save(request);
         log.info("Request {} approved by admin: {}", requestId, adminUsername);
 
-        // Xử lý yêu cầu ngay sau khi duyệt (chạy async)
-        // Nếu muốn tách thành 2 bước (APPROVED -> COMPLETED), comment dòng dưới
-        // và để scheduler hoặc admin trigger manual
-        processApprovedRequest(savedRequest);
+        // Sau 3 giây sẽ tự động xử lý và chuyển sang COMPLETED
+        final Long finalRequestId = requestId;
+        CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS).execute(() -> {
+            try {
+                log.info("⏳ Processing request {} after 3s delay...", finalRequestId);
+                processApprovedRequestById(finalRequestId);
+            } catch (Exception e) {
+                log.error("Error processing request {} after delay: {}", finalRequestId, e.getMessage());
+            }
+        });
 
         return savedRequest;
     }
@@ -194,6 +197,24 @@ public class UserRequestService {
         processRejectedRequest(savedRequest);
 
         return savedRequest;
+    }
+
+    /**
+     * Xử lý yêu cầu đã được duyệt (theo ID)
+     * Dùng cho delayed execution vì không thể pass entity detached vào lambda
+     */
+    @Transactional
+    public void processApprovedRequestById(Long requestId) {
+        UserRequest request = userRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu: " + requestId));
+
+        // Chỉ xử lý nếu đang ở trạng thái APPROVED
+        if (request.getStatus() != UserRequest.RequestStatus.APPROVED) {
+            log.warn("Request {} is not in APPROVED status, skipping processing", requestId);
+            return;
+        }
+
+        processApprovedRequest(request);
     }
 
     /**
