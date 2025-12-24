@@ -11,6 +11,9 @@ import java.time.LocalDateTime;
 /**
  * Model lưu cài đặt thông báo của người dùng
  * Cho phép user bật/tắt từng loại thông báo
+ * 
+ * Lưu ý: Toggle tổng "Nhận thông báo trên thiết bị" được lưu
+ * trong User.notificationEnabled (tránh duplicate)
  */
 @Entity
 @Table(name = "cai_dat_thong_bao")
@@ -27,13 +30,6 @@ public class NotificationSettings {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_nguoi_dung", nullable = false, unique = true)
     private User user;
-
-    // ============================================
-    // Toggle tổng - Tắt hết tất cả thông báo
-    // ============================================
-    @Column(name = "nhan_thong_bao")
-    @Builder.Default
-    private Boolean pushEnabled = true;
 
     // ============================================
     // Loại thông báo

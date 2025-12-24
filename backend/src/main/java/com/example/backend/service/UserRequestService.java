@@ -47,8 +47,7 @@ public class UserRequestService {
         boolean hasPendingRequest = userRequestRepository.existsByUserIdAndStatusAndRequestType(
                 user.getId(),
                 UserRequest.RequestStatus.PENDING,
-                requestType
-        );
+                requestType);
 
         if (hasPendingRequest) {
             throw new RuntimeException("Bạn đã có một yêu cầu " + requestType + " đang chờ xử lý");
@@ -160,7 +159,9 @@ public class UserRequestService {
         UserRequest savedRequest = userRequestRepository.save(request);
         log.info("Request {} approved by admin: {}", requestId, adminUsername);
 
-        // Xử lý yêu cầu dựa trên loại
+        // Xử lý yêu cầu ngay sau khi duyệt (chạy async)
+        // Nếu muốn tách thành 2 bước (APPROVED -> COMPLETED), comment dòng dưới
+        // và để scheduler hoặc admin trigger manual
         processApprovedRequest(savedRequest);
 
         return savedRequest;
@@ -220,22 +221,21 @@ public class UserRequestService {
 
             // Tạo PDF
             String pdfPath = dataExportService.exportUserData(request.getUser().getId());
-            
+
             // Cập nhật request
             request.setFilePath(pdfPath);
-            
+
             // Gửi email với PDF
             emailService.sendDataExportEmail(
                     request.getUser().getEmail(),
                     request.getUser().getUsername(),
-                    pdfPath
-            );
-            
+                    pdfPath);
+
             // Cập nhật trạng thái
             request.setStatus(UserRequest.RequestStatus.COMPLETED);
             request.setEmailSentAt(LocalDateTime.now());
             userRequestRepository.save(request);
-            
+
             log.info("Data export completed and sent to: {}", request.getUser().getEmail());
 
         } catch (Exception e) {
@@ -254,9 +254,8 @@ public class UserRequestService {
             // Gửi email thông báo
             emailService.sendAccountDeletionNotification(
                     request.getUser().getEmail(),
-                    request.getUser().getUsername()
-            );
-            
+                    request.getUser().getUsername());
+
             // Cập nhật trạng thái
             request.setStatus(UserRequest.RequestStatus.COMPLETED);
             request.setEmailSentAt(LocalDateTime.now());
@@ -265,7 +264,7 @@ public class UserRequestService {
             // Lưu ý: Thực tế xóa tài khoản nên được thực hiện sau 24-48h
             // để user có thời gian hủy bỏ nếu nhầm lẫn
             // Có thể tạo một scheduled task để xóa các tài khoản đã được approved
-            
+
             log.info("Account deletion notification sent to: {}", request.getUser().getEmail());
 
         } catch (Exception e) {
@@ -283,8 +282,7 @@ public class UserRequestService {
                     request.getUser().getEmail(),
                     request.getUser().getUsername(),
                     request.getRequestType().name(),
-                    request.getAdminNote()
-            );
+                    request.getAdminNote());
             log.info("Rejection email sent to: {}", request.getUser().getEmail());
         } catch (Exception e) {
             log.error("Error sending rejection email for request {}", request.getId(), e);
@@ -303,7 +301,7 @@ public class UserRequestService {
             // Xóa tất cả dữ liệu liên quan đến user
             // Cascade delete sẽ xử lý transactions, categories, budgets, etc.
             userRepository.delete(user);
-            
+
             log.info("User account deleted: {}", user.getUsername());
 
         } catch (Exception e) {

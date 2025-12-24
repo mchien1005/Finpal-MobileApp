@@ -1,17 +1,17 @@
 -- =====================================================
 -- V009: Thêm bảng cài đặt thông báo cho người dùng
 -- Cho phép user bật/tắt từng loại thông báo
+-- 
+-- Lưu ý: Toggle tổng "Nhận thông báo trên thiết bị" 
+-- đã có trong bảng nguoi_dung.nhan_thong_bao
 -- =====================================================
 
 USE finpal_db;
 
--- Tạo bảng cài đặt thông báo
+-- Tạo bảng cài đặt thông báo chi tiết
 CREATE TABLE IF NOT EXISTS cai_dat_thong_bao (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     id_nguoi_dung BIGINT NOT NULL UNIQUE,
-    
-    -- Toggle tổng - Bật/tắt tất cả thông báo
-    nhan_thong_bao BOOLEAN DEFAULT TRUE,
     
     -- Loại thông báo
     canh_bao_giao_dich BOOLEAN DEFAULT TRUE,  -- Cảnh báo giao dịch mới
@@ -40,4 +40,4 @@ CREATE TABLE IF NOT EXISTS cai_dat_thong_bao (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Comment cho bảng
-ALTER TABLE cai_dat_thong_bao COMMENT = 'Cài đặt bật/tắt thông báo của người dùng';
+ALTER TABLE cai_dat_thong_bao COMMENT = 'Cài đặt bật/tắt từng loại thông báo của người dùng. Toggle tổng dùng nguoi_dung.nhan_thong_bao';

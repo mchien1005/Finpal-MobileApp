@@ -1,6 +1,7 @@
 package com.example.backend.dto;
 
 import com.example.backend.model.NotificationSettings;
+import com.example.backend.model.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,6 +10,9 @@ import lombok.NoArgsConstructor;
 /**
  * DTO cho cài đặt thông báo
  * Dùng để truyền dữ liệu giữa client và server
+ * 
+ * Lưu ý: pushEnabled được lấy từ User.notificationEnabled
+ * (không lưu trong NotificationSettings để tránh duplicate)
  */
 @Data
 @Builder
@@ -17,6 +21,7 @@ import lombok.NoArgsConstructor;
 public class NotificationSettingsDTO {
 
     // Toggle tổng - Bật/tắt nhận thông báo trên thiết bị
+    // Lấy từ User.notificationEnabled
     private Boolean pushEnabled;
 
     // Loại thông báo
@@ -35,10 +40,11 @@ public class NotificationSettingsDTO {
 
     /**
      * Chuyển từ Entity sang DTO
+     * pushEnabled lấy từ User.notificationEnabled
      */
-    public static NotificationSettingsDTO fromEntity(NotificationSettings entity) {
+    public static NotificationSettingsDTO fromEntity(NotificationSettings entity, User user) {
         return NotificationSettingsDTO.builder()
-                .pushEnabled(entity.getPushEnabled())
+                .pushEnabled(user.getNotificationEnabled() != null ? user.getNotificationEnabled() : true)
                 .transactionAlerts(entity.getTransactionAlerts())
                 .budgetAlerts(entity.getBudgetAlerts())
                 .goalReminders(entity.getGoalReminders())
@@ -52,10 +58,10 @@ public class NotificationSettingsDTO {
 
     /**
      * Cập nhật Entity từ DTO (chỉ update các field không null)
+     * Lưu ý: pushEnabled cần được update riêng vào User entity
      */
     public void updateEntity(NotificationSettings entity) {
-        if (pushEnabled != null)
-            entity.setPushEnabled(pushEnabled);
+        // pushEnabled được update vào User entity, không phải NotificationSettings
         if (transactionAlerts != null)
             entity.setTransactionAlerts(transactionAlerts);
         if (budgetAlerts != null)

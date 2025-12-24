@@ -12,6 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service quản lý cài đặt thông báo của người dùng
+ * 
+ * Lưu ý:
+ * - pushEnabled (toggle tổng) được lưu trong User.notificationEnabled
+ * - Các settings chi tiết được lưu trong NotificationSettings entity
  */
 @Service
 @Slf4j
@@ -33,7 +37,7 @@ public class NotificationSettingsService {
         NotificationSettings settings = settingsRepository.findByUserId(user.getId())
                 .orElseGet(() -> createDefaultSettings(user));
 
-        return NotificationSettingsDTO.fromEntity(settings);
+        return NotificationSettingsDTO.fromEntity(settings, user);
     }
 
     /**
@@ -42,6 +46,14 @@ public class NotificationSettingsService {
     @Transactional(readOnly = true)
     public NotificationSettings getSettingsByUserId(Long userId) {
         return settingsRepository.findByUserId(userId).orElse(null);
+    }
+
+    /**
+     * Lấy User theo userId
+     */
+    @Transactional(readOnly = true)
+    public User getUserById(Long userId) {
+        return userRepository.findById(userId).orElse(null);
     }
 
     /**
@@ -55,13 +67,19 @@ public class NotificationSettingsService {
         NotificationSettings settings = settingsRepository.findByUserId(user.getId())
                 .orElseGet(() -> createDefaultSettings(user));
 
-        // Cập nhật các field từ DTO
+        // Cập nhật pushEnabled vào User entity (tránh duplicate)
+        if (dto.getPushEnabled() != null) {
+            user.setNotificationEnabled(dto.getPushEnabled());
+            userRepository.save(user);
+        }
+
+        // Cập nhật các settings chi tiết
         dto.updateEntity(settings);
 
         NotificationSettings saved = settingsRepository.save(settings);
         log.info("📱 Updated notification settings for user: {}", username);
 
-        return NotificationSettingsDTO.fromEntity(saved);
+        return NotificationSettingsDTO.fromEntity(saved, user);
     }
 
     /**
@@ -70,7 +88,6 @@ public class NotificationSettingsService {
     private NotificationSettings createDefaultSettings(User user) {
         NotificationSettings settings = NotificationSettings.builder()
                 .user(user)
-                .pushEnabled(true)
                 .transactionAlerts(true)
                 .budgetAlerts(true)
                 .goalReminders(true)
@@ -88,101 +105,120 @@ public class NotificationSettingsService {
 
     // ============================================
     // Helper methods để check từng loại thông báo
+    // Kiểm tra cả User.notificationEnabled (toggle tổng) + settings chi tiết
     // ============================================
 
     /**
-     * Kiểm tra user có bật thông báo push không
+     * Kiểm tra user có bật thông báo push không (toggle tổng)
      */
     public boolean isPushEnabled(Long userId) {
-        NotificationSettings settings = getSettingsByUserId(userId);
-        return settings == null || Boolean.TRUE.equals(settings.getPushEnabled());
+        User user = getUserById(userId);
+        if (user == null)
+            return true; // Mặc định bật
+        return user.getNotificationEnabled() == null || Boolean.TRUE.equals(user.getNotificationEnabled());
     }
 
     /**
      * Kiểm tra user có bật cảnh báo giao dịch không
      */
     public boolean isTransactionAlertsEnabled(Long userId) {
+        if (!isPushEnabled(userId))
+            return false; // Toggle tổng tắt
+
         NotificationSettings settings = getSettingsByUserId(userId);
         if (settings == null)
             return true; // Mặc định bật
-        return Boolean.TRUE.equals(settings.getPushEnabled())
-                && Boolean.TRUE.equals(settings.getTransactionAlerts());
+        return Boolean.TRUE.equals(settings.getTransactionAlerts());
     }
 
     /**
      * Kiểm tra user có bật cảnh báo ngân sách không
      */
     public boolean isBudgetAlertsEnabled(Long userId) {
+        if (!isPushEnabled(userId))
+            return false;
+
         NotificationSettings settings = getSettingsByUserId(userId);
         if (settings == null)
             return true;
-        return Boolean.TRUE.equals(settings.getPushEnabled())
-                && Boolean.TRUE.equals(settings.getBudgetAlerts());
+        return Boolean.TRUE.equals(settings.getBudgetAlerts());
     }
 
     /**
      * Kiểm tra user có bật nhắc nhở mục tiêu không
      */
     public boolean isGoalRemindersEnabled(Long userId) {
+        if (!isPushEnabled(userId))
+            return false;
+
         NotificationSettings settings = getSettingsByUserId(userId);
         if (settings == null)
             return true;
-        return Boolean.TRUE.equals(settings.getPushEnabled())
-                && Boolean.TRUE.equals(settings.getGoalReminders());
+        return Boolean.TRUE.equals(settings.getGoalReminders());
     }
 
     /**
      * Kiểm tra user có bật cảnh báo bảo mật không
      */
     public boolean isSecurityAlertsEnabled(Long userId) {
+        if (!isPushEnabled(userId))
+            return false;
+
         NotificationSettings settings = getSettingsByUserId(userId);
         if (settings == null)
             return true;
-        return Boolean.TRUE.equals(settings.getPushEnabled())
-                && Boolean.TRUE.equals(settings.getSecurityAlerts());
+        return Boolean.TRUE.equals(settings.getSecurityAlerts());
     }
 
     /**
      * Kiểm tra user có bật báo cáo tuần không
      */
     public boolean isWeeklyReportEnabled(Long userId) {
+        if (!isPushEnabled(userId))
+            return false;
+
         NotificationSettings settings = getSettingsByUserId(userId);
         if (settings == null)
             return true;
-        return Boolean.TRUE.equals(settings.getPushEnabled())
-                && Boolean.TRUE.equals(settings.getWeeklyReport());
+        return Boolean.TRUE.equals(settings.getWeeklyReport());
     }
 
     /**
      * Kiểm tra user có bật báo cáo tháng không
      */
     public boolean isMonthlyReportEnabled(Long userId) {
+        if (!isPushEnabled(userId))
+            return false;
+
         NotificationSettings settings = getSettingsByUserId(userId);
         if (settings == null)
             return true;
-        return Boolean.TRUE.equals(settings.getPushEnabled())
-                && Boolean.TRUE.equals(settings.getMonthlyReport());
+        return Boolean.TRUE.equals(settings.getMonthlyReport());
     }
 
     /**
      * Kiểm tra user có bật gợi ý tiết kiệm không
      */
     public boolean isSavingsTipsEnabled(Long userId) {
+        if (!isPushEnabled(userId))
+            return false;
+
         NotificationSettings settings = getSettingsByUserId(userId);
         if (settings == null)
             return true;
-        return Boolean.TRUE.equals(settings.getPushEnabled())
-                && Boolean.TRUE.equals(settings.getSavingsTips());
+        return Boolean.TRUE.equals(settings.getSavingsTips());
     }
 
     /**
      * Kiểm tra user có bật phân tích chi tiêu không
      */
     public boolean isSpendingInsightsEnabled(Long userId) {
+        if (!isPushEnabled(userId))
+            return false;
+
         NotificationSettings settings = getSettingsByUserId(userId);
         if (settings == null)
             return true;
-        return Boolean.TRUE.equals(settings.getPushEnabled())
-                && Boolean.TRUE.equals(settings.getSpendingInsights());
+        return Boolean.TRUE.equals(settings.getSpendingInsights());
     }
 }
