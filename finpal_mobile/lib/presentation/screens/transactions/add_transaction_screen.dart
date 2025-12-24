@@ -10,7 +10,10 @@ import 'widgets/add_budget_tab.dart';
 
 /// Màn hình thêm giao dịch với 2 tab: Thêm giao dịch và Thêm ngân sách
 class AddTransactionScreen extends StatefulWidget {
-  const AddTransactionScreen({super.key});
+  /// Tab index ban đầu (0: Giao dịch, 1: Ngân sách)
+  final int initialTabIndex;
+
+  const AddTransactionScreen({super.key, this.initialTabIndex = 0});
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -34,7 +37,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.initialTabIndex,
+    );
     _loadCategories();
   }
 
