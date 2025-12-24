@@ -1,56 +1,20 @@
 import 'package:flutter/material.dart';
-import '../../../../data/models/category.dart';
-import 'budget_category_grid.dart';
-import 'budget_form.dart';
+import 'budget_list_card.dart';
 
-/// Widget tab thêm ngân sách
-/// BudgetCategoryGrid tự load danh mục riêng, không phụ thuộc vào tab giao dịch
-class AddBudgetTab extends StatefulWidget {
+/// Widget tab để quản lý ngân sách
+/// Hiển thị danh sách ngân sách kèm nút thêm mới, sửa và xóa
+class AddBudgetTab extends StatelessWidget {
   const AddBudgetTab({super.key});
 
   @override
-  State<AddBudgetTab> createState() => _AddBudgetTabState();
-}
-
-class _AddBudgetTabState extends State<AddBudgetTab> {
-  Category? _selectedCategory;
-  bool _showForm = false;
-
-  void _onCategorySelected(Category category) {
-    setState(() {
-      _selectedCategory = category;
-      _showForm = true;
-    });
-  }
-
-  void _onBack() {
-    setState(() {
-      _selectedCategory = null;
-      _showForm = false;
-    });
-  }
-
-  void _onSuccess() {
-    setState(() {
-      _selectedCategory = null;
-      _showForm = false;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    return const SingleChildScrollView(
       child: Column(
         children: [
-          const SizedBox(height: 8),
-          _showForm && _selectedCategory != null
-              ? BudgetForm(
-                  selectedCategory: _selectedCategory!,
-                  onBack: _onBack,
-                  onSuccess: _onSuccess,
-                )
-              : BudgetCategoryGrid(onCategorySelected: _onCategorySelected),
-          const SizedBox(height: 100),
+          SizedBox(height: 8),
+          // Card hiển thị danh sách ngân sách với chức năng thêm, sửa, xóa
+          BudgetListCard(),
+          SizedBox(height: 100),
         ],
       ),
     );

@@ -9,7 +9,19 @@ import '../../../../data/services/transaction_service.dart';
 class BudgetCategoryGrid extends StatefulWidget {
   final Function(Category) onCategorySelected;
 
-  const BudgetCategoryGrid({super.key, required this.onCategorySelected});
+  /// Có hiển thị container bọc ngoài hay không
+  /// Đặt false khi sử dụng bên trong card khác
+  final bool showContainer;
+
+  /// Có hiển thị tiêu đề hay không
+  final bool showTitle;
+
+  const BudgetCategoryGrid({
+    super.key,
+    required this.onCategorySelected,
+    this.showContainer = true,
+    this.showTitle = true,
+  });
 
   @override
   State<BudgetCategoryGrid> createState() => _BudgetCategoryGridState();
@@ -59,6 +71,72 @@ class _BudgetCategoryGridState extends State<BudgetCategoryGrid> {
 
   @override
   Widget build(BuildContext context) {
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.showTitle) ...[
+          const Text(
+            'Chọn danh mục ngân sách',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+
+        // Grid danh mục
+        _isLoading
+            ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40),
+                  child: CircularProgressIndicator(color: Color(0xFFD7006E)),
+                ),
+              )
+            : _categories.isEmpty
+            ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40),
+                  child: Text(
+                    'Không có danh mục nào',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              )
+            : GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3, // 3 cột để hiển thị nhiều hơn
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 0.9, // Thu nhỏ chiều cao
+                ),
+                itemCount: _categories.length,
+                itemBuilder: (context, index) {
+                  final category = _categories[index];
+                  return _BudgetCategoryCard(
+                    category: category,
+                    onTap: () => widget.onCategorySelected(category),
+                  );
+                },
+              ),
+      ],
+    );
+
+    // Nếu không hiển thị container, chỉ trả về nội dung
+    if (!widget.showContainer) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: content,
+      );
+    }
+
+    // Hiển thị với container
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(20),
@@ -73,60 +151,7 @@ class _BudgetCategoryGridState extends State<BudgetCategoryGrid> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Chọn danh mục ngân sách',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Grid danh mục
-          _isLoading
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(40),
-                    child: CircularProgressIndicator(color: Color(0xFFD7006E)),
-                  ),
-                )
-              : _categories.isEmpty
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(40),
-                    child: Text(
-                      'Không có danh mục nào',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                )
-              : GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3, // 3 cột để hiển thị nhiều hơn
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    childAspectRatio: 0.9, // Thu nhỏ chiều cao
-                  ),
-                  itemCount: _categories.length,
-                  itemBuilder: (context, index) {
-                    final category = _categories[index];
-                    return _BudgetCategoryCard(
-                      category: category,
-                      onTap: () => widget.onCategorySelected(category),
-                    );
-                  },
-                ),
-        ],
-      ),
+      child: content,
     );
   }
 }
@@ -140,11 +165,8 @@ class _BudgetCategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Lấy icon và màu từ API thông qua CategoryIconHelper
-    final iconData = CategoryIconHelper.getIconWithFallback(
-      category.icon,
-      category.name,
-    );
+    // Lấy emoji và màu từ API thông qua CategoryIconHelper
+    final emoji = CategoryIconHelper.getEmoji(category.icon);
     final iconColor = CategoryIconHelper.getColor(category.icon, category.name);
     final bgColor = CategoryIconHelper.getBackgroundColor(iconColor);
 
@@ -162,11 +184,11 @@ class _BudgetCategoryCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
                     color: iconColor.withValues(alpha: 0.2),
@@ -175,7 +197,9 @@ class _BudgetCategoryCard extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Icon(iconData, color: iconColor, size: 18),
+              child: Center(
+                child: Text(emoji, style: const TextStyle(fontSize: 22)),
+              ),
             ),
             const SizedBox(height: 6),
             Text(
