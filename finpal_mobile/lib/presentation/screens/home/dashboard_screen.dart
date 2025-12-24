@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_bottom_nav_bar.dart';
 import '../../../core/utils/bottom_nav_helper.dart';
 import '../../../core/utils/app_bar_with_drawer.dart';
