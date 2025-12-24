@@ -50,6 +50,9 @@ class BudgetResponse {
   final double progressPercentage;
   final double remainingAmount;
   final String status;
+  final int daysRemaining;
+  final double usagePercentage;
+  final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -68,11 +71,40 @@ class BudgetResponse {
     required this.progressPercentage,
     required this.remainingAmount,
     required this.status,
+    required this.daysRemaining,
+    required this.usagePercentage,
+    this.isActive = true,
     required this.createdAt,
     required this.updatedAt,
   });
 
   factory BudgetResponse.fromJson(Map<String, dynamic> json) {
+    // Parse daysRemaining an toàn
+    int parseDaysRemaining() {
+      final value = json['daysRemaining'];
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      return 0;
+    }
+
+    // Parse usagePercentage an toàn
+    double parseUsagePercentage() {
+      final value = json['usagePercentage'];
+      if (value == null) return 0;
+      if (value is num) return value.toDouble();
+      return 0;
+    }
+
+    // Parse progressPercentage an toàn (có thể dùng usagePercentage nếu không có)
+    double parseProgressPercentage() {
+      final progress = json['progressPercentage'];
+      if (progress != null && progress is num) return progress.toDouble();
+      final usage = json['usagePercentage'];
+      if (usage != null && usage is num) return usage.toDouble();
+      return 0;
+    }
+
     return BudgetResponse(
       id: json['id'] as int,
       userId: json['userId'] as int,
@@ -87,12 +119,35 @@ class BudgetResponse {
       categoryId: json['categoryId'] as int?,
       categoryName: json['categoryName'] as String?,
       categoryIcon: json['categoryIcon'] as String?,
-      progressPercentage: (json['progressPercentage'] as num?)?.toDouble() ?? 0,
+      progressPercentage: parseProgressPercentage(),
       remainingAmount: (json['remainingAmount'] as num?)?.toDouble() ?? 0,
       status: json['status'] as String? ?? 'ACTIVE',
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      daysRemaining: parseDaysRemaining(),
+      usagePercentage: parseUsagePercentage(),
+      isActive: json['isActive'] as bool? ?? true,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'] as String)
+          : DateTime.now(),
     );
+  }
+
+  /// Lấy trạng thái hiển thị tiếng Việt
+  String get statusDisplay {
+    switch (status) {
+      case 'EXCEEDED':
+        return 'Vượt ngân sách';
+      case 'WARNING':
+        return 'Sắp hết';
+      case 'OK':
+        return 'Bình thường';
+      case 'ACTIVE':
+        return 'Đang hoạt động';
+      default:
+        return status;
+    }
   }
 }
 

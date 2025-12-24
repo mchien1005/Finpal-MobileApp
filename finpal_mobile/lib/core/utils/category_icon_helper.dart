@@ -1,9 +1,288 @@
 import 'package:flutter/material.dart';
 
-/// Utility class để map icon string từ API sang Flutter IconData
-/// API trả về các icon string tiếng Anh như: "food", "car", "shopping", ...
+/// Utility class để map icon string từ API sang Emoji hoặc IconData
+/// Ưu tiên sử dụng Emoji đa màu sắc sinh động
 class CategoryIconHelper {
-  /// Map icon string sang IconData
+  /// Lấy Emoji đa màu cho danh mục (khuyên dùng)
+  static String getEmoji(String? iconString) {
+    if (iconString == null || iconString.isEmpty) {
+      return '📦';
+    }
+
+    // Chuyển về lowercase để so sánh
+    final icon = iconString.toLowerCase().trim();
+
+    switch (icon) {
+      // ========== CHI TIÊU ==========
+
+      // Ăn uống
+      case 'food':
+      case 'restaurant':
+      case 'dining':
+      case 'meal':
+      case 'eat':
+        return '🍔';
+
+      // Di chuyển
+      case 'car':
+      case 'transport':
+      case 'transportation':
+      case 'vehicle':
+      case 'commute':
+        return '🚗';
+
+      // Mua sắm
+      case 'shopping':
+      case 'shop':
+      case 'store':
+      case 'bag':
+      case 'cart':
+        return '🛍️';
+
+      // Giải trí
+      case 'entertainment':
+      case 'movie':
+      case 'cinema':
+      case 'fun':
+      case 'game':
+      case 'games':
+        return '🎬';
+
+      // Sức khỏe
+      case 'health':
+      case 'medical':
+      case 'hospital':
+      case 'medicine':
+      case 'doctor':
+      case 'pharmacy':
+      case 'heart_pulse':
+        return '💊';
+
+      // Giáo dục / Học tập
+      case 'education':
+      case 'school':
+      case 'study':
+      case 'book':
+      case 'learning':
+      case 'tuition':
+        return '🎓';
+
+      // Hóa đơn & Tiện ích
+      case 'bill':
+      case 'bills':
+      case 'receipt':
+      case 'invoice':
+      case 'utility':
+      case 'utilities':
+      case 'flash':
+        return '📝';
+
+      // Nhà ở
+      case 'home':
+      case 'house':
+      case 'rent':
+      case 'housing':
+      case 'apartment':
+      case 'accommodation':
+        return '🏠';
+
+      // Gia đình
+      case 'family':
+      case 'children':
+      case 'kids':
+      case 'account_group':
+        return '👨‍👩‍👧‍👦';
+
+      // Bảo hiểm
+      case 'insurance':
+      case 'protection':
+      case 'shield':
+      case 'shield_check':
+        return '🛡️';
+
+      // Đầu tư
+      case 'investment':
+      case 'invest':
+      case 'stock':
+      case 'trading':
+      case 'chart_line':
+        return '📈';
+
+      // Quà tặng
+      case 'gift':
+      case 'present':
+      case 'gifts':
+        return '🎁';
+
+      // Công việc
+      case 'work':
+      case 'job':
+      case 'office':
+      case 'briefcase':
+        return '💼';
+
+      // Làm đẹp
+      case 'beauty':
+      case 'cosmetic':
+      case 'face_woman':
+      case 'makeup':
+      case 'salon':
+        return '💄';
+
+      // Thú cưng
+      case 'pet':
+      case 'pets':
+      case 'animal':
+      case 'dog':
+      case 'cat':
+        return '🐾';
+
+      // Điện thoại
+      case 'phone':
+      case 'mobile':
+      case 'telecom':
+      case 'smartphone':
+        return '📱';
+
+      // Internet
+      case 'internet':
+      case 'wifi':
+      case 'network':
+      case 'data':
+        return '📶';
+
+      // Điện nước
+      case 'electricity':
+      case 'water':
+      case 'electric':
+        return '⚡';
+
+      // Cafe
+      case 'coffee':
+      case 'cafe':
+      case 'drink':
+      case 'beverage':
+        return '☕';
+
+      // Du lịch
+      case 'travel':
+      case 'trip':
+      case 'vacation':
+      case 'flight':
+      case 'holiday':
+        return '✈️';
+
+      // Thể thao
+      case 'sport':
+      case 'sports':
+      case 'fitness':
+      case 'gym':
+      case 'exercise':
+        return '🏋️';
+
+      // Tiết kiệm
+      case 'savings':
+      case 'save':
+      case 'saving':
+        return '🐷';
+
+      // Từ thiện
+      case 'charity':
+      case 'donate':
+      case 'donation':
+        return '❤️';
+
+      // Khác
+      case 'other':
+      case 'others':
+      case 'misc':
+      case 'miscellaneous':
+      case 'dots_horizontal':
+        return '📦';
+
+      // ========== THU NHẬP ==========
+
+      // Lương
+      case 'salary':
+      case 'wage':
+      case 'income':
+      case 'wallet':
+      case 'cash':
+        return '💰';
+
+      // Thưởng
+      case 'bonus':
+      case 'reward':
+      case 'prize':
+      case 'trophy':
+        return '🏆';
+
+      // Làm thêm
+      case 'freelance':
+      case 'parttime':
+      case 'sidejob':
+      case 'extra':
+      case 'overtime':
+      case 'clock_outline':
+        return '⏰';
+
+      // Kinh doanh
+      case 'business':
+      case 'business_income':
+      case 'sell':
+      case 'sales':
+      case 'profit':
+        return '🏪';
+
+      case 'trending_up':
+        return '📈';
+
+      // Cho vay (thu)
+      case 'loan':
+      case 'lend':
+      case 'lending':
+      case 'debt':
+      case 'debt_collect':
+      case 'handshake':
+        return '🤝';
+
+      // Được tặng
+      case 'receive':
+      case 'received':
+      case 'gift_received':
+      case 'gift_open':
+        return '🎀';
+
+      // Ngân sách / Ví
+      case 'budget':
+      case 'money':
+        return '💵';
+
+      // Danh mục mặc định
+      case 'category':
+      default:
+        return '📦';
+    }
+  }
+
+  /// Widget hiển thị Emoji với size tùy chỉnh
+  static Widget emojiWidget(String? iconString, {double size = 24}) {
+    return Text(getEmoji(iconString), style: TextStyle(fontSize: size));
+  }
+
+  /// Widget hiển thị Emoji với fallback theo tên
+  static Widget emojiWidgetWithFallback(
+    String? iconString,
+    String? name, {
+    double size = 24,
+  }) {
+    final emoji = iconString != null && iconString.isNotEmpty
+        ? getEmoji(iconString)
+        : (name != null && name.isNotEmpty ? getEmoji(name) : '📦');
+    return Text(emoji, style: TextStyle(fontSize: size));
+  }
+
+  /// Map icon string sang IconData (Material Icons) - fallback cho các trường hợp cần IconData
   static IconData getIcon(String? iconString) {
     if (iconString == null || iconString.isEmpty) {
       return Icons.category;
@@ -13,6 +292,8 @@ class CategoryIconHelper {
     final icon = iconString.toLowerCase().trim();
 
     switch (icon) {
+      // ========== CHI TIÊU ==========
+
       // Ăn uống
       case 'food':
       case 'restaurant':
@@ -251,6 +532,13 @@ class CategoryIconHelper {
       case 'gift_open':
         return Icons.redeem;
 
+      // Ngân sách / Ví
+      case 'budget':
+      case 'money':
+        return Icons.account_balance_wallet;
+
+      // Danh mục mặc định
+      case 'category':
       default:
         return Icons.category;
     }
@@ -316,7 +604,7 @@ class CategoryIconHelper {
       case 'house':
         return const Color(0xFF8D6E63);
 
-      // Gia đình -
+      // Gia đình
       case 'family':
       case 'account_group':
         return const Color.fromARGB(255, 55, 223, 72);
@@ -346,6 +634,37 @@ class CategoryIconHelper {
       case 'spa':
       case 'face_woman':
         return const Color(0xFFAB47BC);
+
+      // Thú cưng - Nâu nhạt
+      case 'pet':
+      case 'pets':
+        return const Color(0xFFBCAAA4);
+
+      // Cafe - Nâu cafe
+      case 'coffee':
+      case 'cafe':
+        return const Color(0xFF795548);
+
+      // Du lịch - Xanh biển
+      case 'travel':
+      case 'flight':
+        return const Color(0xFF00BCD4);
+
+      // Thể thao - Xanh lục
+      case 'sport':
+      case 'sports':
+      case 'fitness':
+        return const Color(0xFF8BC34A);
+
+      // Tiết kiệm - Xanh lá đậm
+      case 'savings':
+      case 'save':
+        return const Color(0xFF388E3C);
+
+      // Từ thiện - Hồng đỏ
+      case 'charity':
+      case 'donate':
+        return const Color(0xFFD81B60);
 
       // Khác - Xám
       case 'other':

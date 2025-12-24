@@ -251,8 +251,8 @@ class _AddTransactionTabState extends State<AddTransactionTab> {
                                   child: Row(
                                     children: [
                                       Container(
-                                        width: 24,
-                                        height: 24,
+                                        width: 28,
+                                        height: 28,
                                         decoration: BoxDecoration(
                                           color:
                                               CategoryIconHelper.getBackgroundColor(
@@ -262,18 +262,17 @@ class _AddTransactionTabState extends State<AddTransactionTab> {
                                                 ),
                                               ),
                                           borderRadius: BorderRadius.circular(
-                                            5,
+                                            6,
                                           ),
                                         ),
-                                        child: Icon(
-                                          CategoryIconHelper.getIconWithFallback(
-                                            category.icon,
-                                            category.name,
-                                          ),
-                                          size: 14,
-                                          color: CategoryIconHelper.getColor(
-                                            category.icon,
-                                            category.name,
+                                        child: Center(
+                                          child: Text(
+                                            CategoryIconHelper.getEmoji(
+                                              category.icon,
+                                            ),
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                            ),
                                           ),
                                         ),
                                       ),

@@ -168,8 +168,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
         dividerColor: Colors.transparent,
         padding: const EdgeInsets.all(4),
         tabs: const [
-          Tab(text: 'Thêm giao dịch'),
-          Tab(text: 'Thêm ngân sách'),
+          Tab(text: 'Giao dịch'),
+          Tab(text: 'Ngân sách'),
         ],
       ),
     );
