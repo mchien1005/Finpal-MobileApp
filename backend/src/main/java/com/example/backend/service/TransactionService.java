@@ -43,10 +43,10 @@ public class TransactionService {
     private final EncryptionUtil encryptionUtil;
 
     public enum CategorizationStrategy {
-        AI_FIRST,      // Ưu tiên AI → Rule fallback
-        RULE_FIRST,    // Ưu tiên Rule → AI fallback (mặc định)
-        HYBRID,        // Dùng cả 2, chọn confidence cao hơn
-        RULE_ONLY      // Chỉ dùng Rule
+        AI_FIRST, // Ưu tiên AI → Rule fallback
+        RULE_FIRST, // Ưu tiên Rule → AI fallback (mặc định)
+        HYBRID, // Dùng cả 2, chọn confidence cao hơn
+        RULE_ONLY // Chỉ dùng Rule
     }
 
     @Value("${ai.categorization.strategy:RULE_FIRST}")
@@ -103,63 +103,58 @@ public class TransactionService {
             // Sử dụng description để phân loại
             String textToAnalyze = request.getDescription();
             if (textToAnalyze != null && !textToAnalyze.trim().isEmpty()) {
-                autoCategorizeTransaction(transaction, textToAnalyze.trim(), 
-                                         request.getAmount().doubleValue(), user.getId());
+                autoCategorizeTransaction(transaction, textToAnalyze.trim(),
+                        request.getAmount().doubleValue(), user.getId());
             }
         }
 
         Transaction saved = transactionRepository.save(transaction);
-        
+
         // ========================================
         // REALTIME ANOMALY DETECTION
         // Kiểm tra giao dịch bất thường sau khi lưu
         // ========================================
         if (Transaction.TransactionType.EXPENSE.name().equals(request.getType())) {
             try {
-                String categoryName = saved.getCategory() != null ? 
-                        saved.getCategory().getName() : "Khác";
-                
-                com.example.backend.dto.AnomalyDetectionResult anomalyResult = 
-                        aiInsightsService.checkAnomaly(
-                            user.getId(),
-                            request.getAmount().doubleValue(),
-                            request.getDescription(),
-                            categoryName
-                        );
-                
+                String categoryName = saved.getCategory() != null ? saved.getCategory().getName() : "Khác";
+
+                com.example.backend.dto.AnomalyDetectionResult anomalyResult = aiInsightsService.checkAnomaly(
+                        user.getId(),
+                        request.getAmount().doubleValue(),
+                        request.getDescription(),
+                        categoryName);
+
                 if (anomalyResult != null && Boolean.TRUE.equals(anomalyResult.getIsAnomaly())) {
                     // Đánh dấu giao dịch là bất thường
                     saved.setIsAnomaly(true);
                     transactionRepository.save(saved);
-                    
+
                     // Push notification cho user
                     notificationService.sendAnomalyWarning(
                             user,
-                            anomalyResult.getMessage() != null ? 
-                                anomalyResult.getMessage() : anomalyResult.getReason(),
-                            saved
-                    );
-                    
-                    log.warn("🚨 Anomaly detected for transaction {}: {} (score: {})", 
-                            saved.getId(), 
-                            anomalyResult.getReason(), 
+                            anomalyResult.getMessage() != null ? anomalyResult.getMessage() : anomalyResult.getReason(),
+                            saved);
+
+                    log.warn("🚨 Anomaly detected for transaction {}: {} (score: {})",
+                            saved.getId(),
+                            anomalyResult.getReason(),
                             anomalyResult.getAnomalyScore());
                 }
             } catch (Exception e) {
-                log.warn("Failed to check anomaly for transaction {}: {}", 
+                log.warn("Failed to check anomaly for transaction {}: {}",
                         saved.getId(), e.getMessage());
                 // Không throw exception - anomaly check là optional
             }
         }
-        
+
         return TransactionResponse.fromEntity(saved);
     }
 
     /**
      * Tự động phân loại transaction theo strategy
      */
-    private void autoCategorizeTransaction(Transaction transaction, String textToAnalyze, 
-                                          Double amount, Long userId) {
+    private void autoCategorizeTransaction(Transaction transaction, String textToAnalyze,
+            Double amount, Long userId) {
         CategorizationStrategy strategy = getStrategy();
         log.debug("Using categorization strategy: {}", strategy);
 
@@ -182,8 +177,8 @@ public class TransactionService {
     /**
      * Strategy 1: AI_FIRST - Ưu tiên AI, fallback sang Rule
      */
-    private void autoCategorizeAIFirst(Transaction transaction, String textToAnalyze, 
-                                       Double amount, Long userId) {
+    private void autoCategorizeAIFirst(Transaction transaction, String textToAnalyze,
+            Double amount, Long userId) {
         // Bước 1: Thử AI trước
         CategoryPrediction aiPrediction = aiCategorizationService.predictCategory(
                 textToAnalyze, amount, textToAnalyze, userId);
@@ -215,8 +210,8 @@ public class TransactionService {
     /**
      * Strategy 2: RULE_FIRST - Ưu tiên Rule, fallback sang AI (mặc định)
      */
-    private void autoCategorizeRuleFirst(Transaction transaction, String textToAnalyze, 
-                                         Double amount, Long userId) {
+    private void autoCategorizeRuleFirst(Transaction transaction, String textToAnalyze,
+            Double amount, Long userId) {
         // Bước 1: Thử Rule trước
         Long ruleId = categoryRuleService.suggestCategoryByMerchant(textToAnalyze);
         if (ruleId != null) {
@@ -248,8 +243,8 @@ public class TransactionService {
     /**
      * Strategy 3: HYBRID - Dùng cả Rule và AI, chọn kết quả tốt hơn
      */
-    private void autoCategorizeHybrid(Transaction transaction, String textToAnalyze, 
-                                      Double amount, Long userId) {
+    private void autoCategorizeHybrid(Transaction transaction, String textToAnalyze,
+            Double amount, Long userId) {
         // Gọi cả 2 song song
         Long ruleId = categoryRuleService.suggestCategoryByMerchant(textToAnalyze);
         CategoryPrediction aiPrediction = aiCategorizationService.predictCategory(
@@ -277,7 +272,7 @@ public class TransactionService {
                     transaction.setCategorizationSource("HYBRID_AI");
                     transaction.setAiConfidence(aiPrediction.getConfidence());
                     log.info("🤖 HYBRID: AI wins (high confidence) '{}' -> {} ({}% > rule: {})",
-                            textToAnalyze, aiCategory.getName(), 
+                            textToAnalyze, aiCategory.getName(),
                             aiPrediction.getConfidence() * 100, ruleCategory.getName());
                 } else {
                     transaction.setCategory(ruleCategory);
@@ -384,11 +379,12 @@ public class TransactionService {
 
         query.where(predicates.toArray(new Predicate[0]));
 
-        // Áp dụng sắp xếp
+        // Áp dụng sắp xếp với secondary sort theo ID để đảm bảo thứ tự ổn định
+        // Khi nhiều giao dịch có cùng transactionDate, sẽ sắp xếp theo ID giảm dần
         if ("DESC".equalsIgnoreCase(sortDirection)) {
-            query.orderBy(cb.desc(root.get(sortBy)));
+            query.orderBy(cb.desc(root.get(sortBy)), cb.desc(root.get("id")));
         } else {
-            query.orderBy(cb.asc(root.get(sortBy)));
+            query.orderBy(cb.asc(root.get(sortBy)), cb.asc(root.get("id")));
         }
 
         // Thực thi query và lấy tất cả kết quả

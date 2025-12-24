@@ -44,6 +44,7 @@ public class TransactionResponse {
                 .transactionSource(transaction.getTransactionSource())
                 .categoryId(transaction.getCategory() != null ? transaction.getCategory().getId() : null)
                 .categoryName(transaction.getCategory() != null ? transaction.getCategory().getName() : null)
+                .categoryIcon(transaction.getCategory() != null ? transaction.getCategory().getIcon() : null)
                 .amount(transaction.getAmount())
                 .type(transaction.getType().name())
                 .description(transaction.getDescription())
