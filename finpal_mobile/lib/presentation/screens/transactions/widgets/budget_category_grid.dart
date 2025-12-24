@@ -5,7 +5,6 @@ import '../../../../data/models/category.dart';
 import '../../../../data/services/transaction_service.dart';
 
 /// Widget hiển thị grid các danh mục ngân sách để chọn
-/// Chỉ load danh mục chi tiêu (EXPENSE) vì ngân sách là giới hạn chi tiêu
 class BudgetCategoryGrid extends StatefulWidget {
   final Function(Category) onCategorySelected;
 

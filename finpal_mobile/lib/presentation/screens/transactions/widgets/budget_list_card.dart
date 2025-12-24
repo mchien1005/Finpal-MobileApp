@@ -10,8 +10,6 @@ import '../../../../data/services/budget_service.dart';
 import 'budget_category_grid.dart';
 import 'budget_form.dart';
 
-/// Widget card hiển thị danh sách các ngân sách đã tạo
-/// Bao gồm chức năng thêm, sửa và xóa ngân sách
 class BudgetListCard extends StatefulWidget {
   final VoidCallback? onBudgetChanged;
 
@@ -236,7 +234,11 @@ class _BudgetListCardState extends State<BudgetListCard> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.primary,
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFD7006E), Color(0xFFFF6B9D)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
@@ -286,12 +288,15 @@ class _BudgetListCardState extends State<BudgetListCard> {
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: AppColors.primary,
+                              color: Colors.green,
                               borderRadius: BorderRadius.circular(10),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(
-                                    0xFFD7006E,
+                                  color: const Color.fromARGB(
+                                    255,
+                                    44,
+                                    251,
+                                    75,
                                   ).withValues(alpha: 0.3),
                                   offset: const Offset(3, 3),
                                 ),
