@@ -32,21 +32,18 @@ public class TransactionController {
     // Service xử lý business logic cho transactions
     private final TransactionService transactionService;
 
-    @Operation(
-        summary = "Tạo giao dịch mới",
-        description = """
+    @Operation(summary = "Tạo giao dịch mới", description = """
             Tạo giao dịch thủ công (Manual Entry).
-            
+
             **Lưu ý:**
             - Nếu không có `categoryId`, hệ thống sẽ tự động phân loại bằng AI
             - `type` phải là `INCOME` hoặc `EXPENSE`
             - `amount` phải là số dương
-            """
-    )
+            """)
     @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Tạo giao dịch thành công"),
-        @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ"),
-        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
+            @ApiResponse(responseCode = "201", description = "Tạo giao dịch thành công"),
+            @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ"),
+            @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
     })
     @PostMapping
     public ResponseEntity<TransactionResponse> createTransaction(
@@ -57,20 +54,17 @@ public class TransactionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @Operation(
-        summary = "Lấy danh sách giao dịch",
-        description = """
+    @Operation(summary = "Lấy danh sách giao dịch", description = """
             Lấy danh sách giao dịch với các bộ lọc, phân trang và sắp xếp.
-            
+
             **Ví dụ:**
             - Lấy chi tiêu tháng 11: `?type=EXPENSE&startDate=2025-11-01&endDate=2025-11-30`
             - Lọc theo ngân hàng: `?transactionSource=VCB`
             - Tìm kiếm: `?keyword=cafe`
-            """
-    )
+            """)
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Thành công"),
-        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
+            @ApiResponse(responseCode = "200", description = "Thành công"),
+            @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
     })
     @GetMapping
     public ResponseEntity<PageResponse<TransactionResponse>> getTransactions(
@@ -84,7 +78,7 @@ public class TransactionController {
             @Parameter(description = "Từ khóa tìm kiếm") @RequestParam(required = false) String keyword,
             @Parameter(description = "Số trang (bắt đầu từ 0)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Số items mỗi trang") @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "Sắp xếp theo field") @RequestParam(defaultValue = "transactionDate") String sortBy,
+            @Parameter(description = "Sắp xếp theo field (mặc định: id)") @RequestParam(defaultValue = "id") String sortBy,
             @Parameter(description = "Hướng sắp xếp: ASC hoặc DESC") @RequestParam(defaultValue = "DESC") String sortDirection,
             Authentication authentication) {
 
@@ -107,14 +101,11 @@ public class TransactionController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(
-        summary = "Lấy chi tiết giao dịch",
-        description = "Lấy thông tin chi tiết của một giao dịch theo ID."
-    )
+    @Operation(summary = "Lấy chi tiết giao dịch", description = "Lấy thông tin chi tiết của một giao dịch theo ID.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Thành công"),
-        @ApiResponse(responseCode = "404", description = "Không tìm thấy giao dịch"),
-        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
+            @ApiResponse(responseCode = "200", description = "Thành công"),
+            @ApiResponse(responseCode = "404", description = "Không tìm thấy giao dịch"),
+            @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
     })
     @GetMapping("/{id}")
     public ResponseEntity<TransactionResponse> getTransactionById(
@@ -125,22 +116,19 @@ public class TransactionController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(
-        summary = "Cập nhật giao dịch",
-        description = """
+    @Operation(summary = "Cập nhật giao dịch", description = """
             Cập nhật thông tin giao dịch.
-            
+
             **Use case:**
             - Sửa category nếu AI phân loại sai
             - Sửa description/notes
             - Sửa amount nếu nhập sai
-            """
-    )
+            """)
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
-        @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ"),
-        @ApiResponse(responseCode = "404", description = "Không tìm thấy giao dịch"),
-        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
+            @ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
+            @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ"),
+            @ApiResponse(responseCode = "404", description = "Không tìm thấy giao dịch"),
+            @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
     })
     @PutMapping("/{id}")
     public ResponseEntity<TransactionResponse> updateTransaction(
@@ -152,14 +140,11 @@ public class TransactionController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(
-        summary = "Xóa giao dịch",
-        description = "Xóa giao dịch khỏi hệ thống (hard delete)."
-    )
+    @Operation(summary = "Xóa giao dịch", description = "Xóa giao dịch khỏi hệ thống (hard delete).")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Xóa thành công"),
-        @ApiResponse(responseCode = "404", description = "Không tìm thấy giao dịch"),
-        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
+            @ApiResponse(responseCode = "204", description = "Xóa thành công"),
+            @ApiResponse(responseCode = "404", description = "Không tìm thấy giao dịch"),
+            @ApiResponse(responseCode = "401", description = "Chưa đăng nhập")
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTransaction(
