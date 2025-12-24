@@ -10,6 +10,7 @@ import com.example.backend.repository.NotificationRepository;
 import com.example.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
  * - Gửi cảnh báo giao dịch bất thường
  * - Gửi Smart Tips từ AI
  * - Dọn dẹp thông báo cũ
+ * - Kiểm tra cài đặt thông báo của user trước khi gửi
  * 
  * Lưu ý: Các scheduled notifications (budget alerts, goal reminders, insights)
  * được xử lý bởi SmartNotificationScheduler để tránh duplicate.
@@ -39,6 +41,8 @@ public class NotificationService {
     private final UserRepository userRepository;
     private final AIInsightsService aiInsightsService;
     private final FcmService fcmService;
+    @Lazy
+    private final NotificationSettingsService notificationSettingsService;
 
     /**
      * Lấy tất cả thông báo của user
@@ -171,6 +175,12 @@ public class NotificationService {
      */
     @Transactional
     public void createBudgetAlert(Long userId, Long budgetId, String message, String priority) {
+        // Kiểm tra user có bật cảnh báo ngân sách không
+        if (!notificationSettingsService.isBudgetAlertsEnabled(userId)) {
+            log.debug("⏭️ Skipping budget alert for user {} - disabled in settings", userId);
+            return;
+        }
+
         Notification notification = new Notification();
         notification.setUserId(userId);
         notification.setType("BUDGET_ALERT");
@@ -192,6 +202,12 @@ public class NotificationService {
      */
     @Transactional
     public void createSavingsGoalReminder(Long userId, Long goalId, String message) {
+        // Kiểm tra user có bật nhắc nhở mục tiêu không
+        if (!notificationSettingsService.isGoalRemindersEnabled(userId)) {
+            log.debug("⏭️ Skipping goal reminder for user {} - disabled in settings", userId);
+            return;
+        }
+
         Notification notification = new Notification();
         notification.setUserId(userId);
         notification.setType("GOAL_REMINDER");
@@ -203,7 +219,6 @@ public class NotificationService {
 
         notificationRepository.save(notification);
     }
-
 
     /**
      * Convert Notification to Response DTO
@@ -222,7 +237,6 @@ public class NotificationService {
                 .createdAt(notification.getCreatedAt())
                 .build();
     }
-
 
     /**
      * Cleanup old read notifications (called by scheduler)
@@ -252,6 +266,12 @@ public class NotificationService {
 
         for (User user : allUsers) {
             try {
+                // Kiểm tra user có bật gợi ý tiết kiệm không
+                if (!notificationSettingsService.isSavingsTipsEnabled(user.getId())) {
+                    log.debug("⏭️ Skipping smart tips for user {} - disabled in settings", user.getId());
+                    continue;
+                }
+
                 // Gọi BackendAI để lấy smart tips
                 com.example.backend.dto.SmartTipsResponse tips = aiInsightsService.getSmartTips(user.getId(), 3);
 
@@ -289,8 +309,7 @@ public class NotificationService {
                                 user.getId(),
                                 title,
                                 content,
-                                data
-                        );
+                                data);
 
                         log.debug("📱 FCM push sent for smart tip to user {}", user.getId());
 
@@ -328,7 +347,7 @@ public class NotificationService {
                 notification.setActionUrl("/admin/user-requests");
 
                 notificationRepository.save(notification);
-                
+
                 log.debug("Notification sent to admin: {}", admin.getUsername());
 
             } catch (Exception e) {
@@ -343,9 +362,9 @@ public class NotificationService {
      * Gửi notification cho một user cụ thể
      */
     @Transactional
-    public void sendNotificationToUser(Long userId, String title, String message, 
-                                      String type,
-                                      Notification.NotificationPriority priority) {
+    public void sendNotificationToUser(Long userId, String title, String message,
+            String type,
+            Notification.NotificationPriority priority) {
         try {
             Notification notification = new Notification();
             notification.setUserId(userId);
@@ -357,7 +376,7 @@ public class NotificationService {
             notification.setPriority(priority);
 
             notificationRepository.save(notification);
-            
+
             log.info("Notification sent to user ID {}: {}", userId, title);
 
         } catch (Exception e) {
@@ -373,13 +392,19 @@ public class NotificationService {
      * 1. Lưu notification vào database
      * 2. Gửi FCM push notification đến điện thoại user
      * 
-     * @param user User cần gửi cảnh báo
-     * @param message Nội dung cảnh báo (từ AI)
+     * @param user        User cần gửi cảnh báo
+     * @param message     Nội dung cảnh báo (từ AI)
      * @param transaction Giao dịch bị đánh dấu bất thường
      */
     @Transactional
     public void sendAnomalyWarning(User user, String message, Transaction transaction) {
         try {
+            // Kiểm tra user có bật cảnh báo bảo mật không
+            if (!notificationSettingsService.isSecurityAlertsEnabled(user.getId())) {
+                log.debug("⏭️ Skipping anomaly warning for user {} - security alerts disabled", user.getUsername());
+                return;
+            }
+
             // 1. Lưu notification vào database
             Notification notification = new Notification();
             notification.setUserId(user.getId());
@@ -393,8 +418,8 @@ public class NotificationService {
             notification.setActionUrl("/transactions/" + transaction.getId());
 
             Notification savedNotification = notificationRepository.save(notification);
-            
-            log.warn("🚨 Anomaly warning saved for user {}: {} - Transaction ID: {}", 
+
+            log.warn("🚨 Anomaly warning saved for user {}: {} - Transaction ID: {}",
                     user.getUsername(), message, transaction.getId());
 
             // 2. Gửi FCM push notification đến điện thoại user
@@ -404,18 +429,16 @@ public class NotificationService {
                 data.put("notificationId", String.valueOf(savedNotification.getId()));
                 data.put("transactionId", String.valueOf(transaction.getId()));
                 data.put("amount", String.valueOf(transaction.getAmount()));
-                data.put("category", transaction.getCategory() != null ? 
-                        transaction.getCategory().getName() : "Khác");
-                
+                data.put("category", transaction.getCategory() != null ? transaction.getCategory().getName() : "Khác");
+
                 fcmService.sendPushToUser(
                         user.getId(),
                         "🚨 Giao dịch Bất thường",
                         message,
-                        data
-                );
-                
+                        data);
+
                 log.info("📱 FCM push notification sent to user {}", user.getUsername());
-                
+
             } catch (Exception fcmError) {
                 // FCM thất bại không ảnh hưởng đến notification đã lưu
                 log.warn("Failed to send FCM push: {}", fcmError.getMessage());
@@ -426,4 +449,3 @@ public class NotificationService {
         }
     }
 }
-
