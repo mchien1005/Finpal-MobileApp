@@ -222,7 +222,7 @@ const BankAndSmsparserPage = () => {
       title: 'Field Mappings',
       dataIndex: 'template',
       key: 'template',
-      width: 300,
+      width: 430,
       render: (text) => (
         <div
           style={{
@@ -231,7 +231,7 @@ const BankAndSmsparserPage = () => {
             borderRadius: 4,
             fontFamily: 'Cousine, monospace',
             fontSize: 12,
-            maxWidth: 300,
+            maxWidth: 430,
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
             overflow: 'hidden',
@@ -245,7 +245,7 @@ const BankAndSmsparserPage = () => {
       title: 'Regex Pattern',
       dataIndex: 'regex',
       key: 'regex',
-      width: 350,
+      width: 430,
       render: (text) => (
         <div
           style={{
@@ -253,8 +253,8 @@ const BankAndSmsparserPage = () => {
             padding: '8px 12px',
             borderRadius: 4,
             fontFamily: 'Cousine, monospace',
-            fontSize: 11,
-            maxWidth: 350,
+            fontSize: 12,
+            maxWidth: 430,
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
             overflow: 'hidden',
