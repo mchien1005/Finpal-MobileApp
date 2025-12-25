@@ -722,13 +722,32 @@ public class DatabaseBackupService {
     }
 
     private String extractDatabaseName(String jdbcUrl) {
-        // jdbc:mysql://localhost:3306/finpal_db?...
+        // jdbc:mysql://mysql:3306/finpal_db?createDatabaseIfNotExist=true&serverTimezone=Asia/Ho_Chi_Minh...
         try {
-            String[] parts = jdbcUrl.split("/");
-            String dbPart = parts[parts.length - 1];
-            return dbPart.split("\\?")[0];
+            // Bỏ phần "jdbc:mysql://"
+            String url = jdbcUrl.replace("jdbc:mysql://", "");
+
+            // Tìm vị trí dấu / đầu tiên sau host:port
+            int slashIndex = url.indexOf('/');
+            if (slashIndex == -1) {
+                log.warn("Không tìm thấy database name trong URL: {}", jdbcUrl);
+                return "finpal_db"; // fallback
+            }
+
+            // Lấy phần sau dấu /
+            String dbPart = url.substring(slashIndex + 1);
+
+            // Tách bỏ query parameters (phần sau dấu ?)
+            int questionMarkIndex = dbPart.indexOf('?');
+            if (questionMarkIndex != -1) {
+                dbPart = dbPart.substring(0, questionMarkIndex);
+            }
+
+            log.debug("Extracted database name: {} from URL: {}", dbPart, jdbcUrl);
+            return dbPart.isEmpty() ? "finpal_db" : dbPart;
+
         } catch (Exception e) {
-            log.error("Error extracting database name from URL: {}", jdbcUrl);
+            log.error("Error extracting database name from URL: {}", jdbcUrl, e);
             return "finpal_db"; // fallback
         }
     }

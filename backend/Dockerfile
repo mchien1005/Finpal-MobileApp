@@ -19,6 +19,15 @@ FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
+# Cài đặt MySQL client tools (mysqldump) cho chức năng backup database
+# Và wget cho health check
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        default-mysql-client \
+        wget \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
 # Copy JAR file từ build stage
 COPY --from=build /app/target/*.jar app.jar
 
