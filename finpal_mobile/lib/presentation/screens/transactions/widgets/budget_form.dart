@@ -87,6 +87,7 @@ class _BudgetFormState extends State<BudgetForm> {
         name: budget.categoryName ?? budget.name,
         type: 'EXPENSE',
         icon: budget.categoryIcon,
+        color: budget.categoryColor, // Sử dụng màu từ CSDL
         isSystem: true,
         displayOrder: 0,
       );
@@ -273,9 +274,13 @@ class _BudgetFormState extends State<BudgetForm> {
       return _buildCategorySelector();
     }
 
-    // Lấy emoji và màu từ CategoryIconHelper
+    // Lấy emoji và màu từ CategoryIconHelper (sử dụng màu từ API)
     final emoji = CategoryIconHelper.getEmoji(_categoryIcon);
-    final iconColor = CategoryIconHelper.getColor(_categoryIcon, _categoryName);
+    final iconColor = CategoryIconHelper.getColor(
+      _categoryIcon,
+      _categoryName,
+      colorFromApi: _currentCategory?.color,
+    );
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -641,7 +646,11 @@ class _BudgetFormState extends State<BudgetForm> {
   /// Build item danh mục
   Widget _buildCategoryItem(Category category, bool isSelected) {
     final emoji = CategoryIconHelper.getEmoji(category.icon);
-    final iconColor = CategoryIconHelper.getColor(category.icon, category.name);
+    final iconColor = CategoryIconHelper.getColor(
+      category.icon,
+      category.name,
+      colorFromApi: category.color,
+    );
     final bgColor = CategoryIconHelper.getBackgroundColor(iconColor);
 
     return InkWell(

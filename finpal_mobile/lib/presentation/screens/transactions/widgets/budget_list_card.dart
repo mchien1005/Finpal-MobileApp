@@ -582,6 +582,7 @@ class _BudgetItemCard extends StatelessWidget {
     final iconColor = CategoryIconHelper.getColor(
       budget.categoryIcon,
       budget.categoryName ?? budget.name,
+      colorFromApi: budget.categoryColor,
     );
     final progressColor = getProgressColor(budget.progressPercentage);
     final progressPercentage = budget.progressPercentage.clamp(0, 100);
