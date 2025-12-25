@@ -259,6 +259,7 @@ class _AddTransactionTabState extends State<AddTransactionTab> {
                                                 CategoryIconHelper.getColor(
                                                   category.icon,
                                                   category.name,
+                                                  colorFromApi: category.color,
                                                 ),
                                               ),
                                           borderRadius: BorderRadius.circular(

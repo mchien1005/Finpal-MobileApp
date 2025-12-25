@@ -166,7 +166,11 @@ class _BudgetCategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Lấy emoji và màu từ API thông qua CategoryIconHelper
     final emoji = CategoryIconHelper.getEmoji(category.icon);
-    final iconColor = CategoryIconHelper.getColor(category.icon, category.name);
+    final iconColor = CategoryIconHelper.getColor(
+      category.icon,
+      category.name,
+      colorFromApi: category.color,
+    );
     final bgColor = CategoryIconHelper.getBackgroundColor(iconColor);
 
     return InkWell(

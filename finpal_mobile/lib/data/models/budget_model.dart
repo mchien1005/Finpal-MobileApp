@@ -47,6 +47,7 @@ class BudgetResponse {
   final int? categoryId;
   final String? categoryName;
   final String? categoryIcon;
+  final String? categoryColor; // Màu sắc từ CSDL (hex format: #FF7043)
   final double progressPercentage;
   final double remainingAmount;
   final String status;
@@ -68,6 +69,7 @@ class BudgetResponse {
     this.categoryId,
     this.categoryName,
     this.categoryIcon,
+    this.categoryColor,
     required this.progressPercentage,
     required this.remainingAmount,
     required this.status,
@@ -119,6 +121,7 @@ class BudgetResponse {
       categoryId: json['categoryId'] as int?,
       categoryName: json['categoryName'] as String?,
       categoryIcon: json['categoryIcon'] as String?,
+      categoryColor: json['categoryColor'] as String?,
       progressPercentage: parseProgressPercentage(),
       remainingAmount: (json['remainingAmount'] as num?)?.toDouble() ?? 0,
       status: json['status'] as String? ?? 'ACTIVE',
