@@ -245,6 +245,10 @@ class SavingsGoalService {
   static Future<void> deleteSavingsGoal(int id) async {
     try {
       final token = await _authService.getToken();
+
+      print('🗑️ Deleting savings goal: $id');
+      print('Token available: ${token != null}');
+
       final response = await http.delete(
         Uri.parse('${ApiService.baseUrl}/savings-goals/$id'),
         headers: {
@@ -253,9 +257,13 @@ class SavingsGoalService {
         },
       );
 
-      if (response.statusCode != 200) {
+      print('Delete response status: ${response.statusCode}');
+      print('Delete response body: ${response.body}');
+
+      // API có thể trả về 200 (OK) hoặc 204 (No Content)
+      if (response.statusCode != 200 && response.statusCode != 204) {
         throw ApiException(
-          message: 'Failed to delete savings goal',
+          message: 'API trả về lỗi ${response.statusCode}: ${response.body}',
           statusCode: response.statusCode,
         );
       }
