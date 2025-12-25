@@ -64,58 +64,58 @@ public class EmailService {
      */
     public void sendDataExportEmail(String to, String username, String pdfPath) {
         String subject = "FinPal - Dữ liệu cá nhân của bạn";
-        
-        String body = String.format("""
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <style>
-                        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                        .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
-                        .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; }
-                        .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
-                        .button { display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <h1>FinPal</h1>
-                            <p>Quản lý tài chính cá nhân thông minh</p>
-                        </div>
-                        <div class="content">
-                            <h2>Xin chào %s,</h2>
-                            <p>Yêu cầu xuất dữ liệu cá nhân của bạn đã được xử lý thành công.</p>
-                            <p>File PDF đính kèm chứa toàn bộ thông tin về:</p>
-                            <ul>
-                                <li>Thông tin tài khoản</li>
-                                <li>Lịch sử giao dịch</li>
-                                <li>Danh mục cá nhân</li>
-                                <li>Ngân sách</li>
-                                <li>Mục tiêu tiết kiệm</li>
-                                <li>Thống kê và phân tích</li>
-                            </ul>
-                            <p><strong>Lưu ý bảo mật:</strong></p>
-                            <ul>
-                                <li>File này chứa thông tin cá nhân nhạy cảm của bạn</li>
-                                <li>Vui lòng lưu trữ file ở nơi an toàn</li>
-                                <li>Không chia sẻ file này với người khác</li>
-                            </ul>
-                            <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email này.</p>
-                            <div class="footer">
-                                <p>Email này được gửi tự động vào: %s</p>
-                                <p>© 2025 FinPal. All rights reserved.</p>
+
+        String body = String.format(
+                """
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="UTF-8">
+                            <style>
+                                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                                .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+                                .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; }
+                                .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+                                .button { display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="container">
+                                <div class="header">
+                                    <h1>FinPal</h1>
+                                    <p>Quản lý tài chính cá nhân thông minh</p>
+                                </div>
+                                <div class="content">
+                                    <h2>Xin chào %s,</h2>
+                                    <p>Yêu cầu xuất dữ liệu cá nhân của bạn đã được xử lý thành công.</p>
+                                    <p>File PDF đính kèm chứa toàn bộ thông tin về:</p>
+                                    <ul>
+                                        <li>Thông tin tài khoản</li>
+                                        <li>Lịch sử giao dịch</li>
+                                        <li>Danh mục cá nhân</li>
+                                        <li>Ngân sách</li>
+                                        <li>Mục tiêu tiết kiệm</li>
+                                        <li>Thống kê và phân tích</li>
+                                    </ul>
+                                    <p><strong>Lưu ý bảo mật:</strong></p>
+                                    <ul>
+                                        <li>File này chứa thông tin cá nhân nhạy cảm của bạn</li>
+                                        <li>Vui lòng lưu trữ file ở nơi an toàn</li>
+                                        <li>Không chia sẻ file này với người khác</li>
+                                    </ul>
+                                    <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email này.</p>
+                                    <div class="footer">
+                                        <p>Email này được gửi tự động vào: %s</p>
+                                        <p>© 2025 FinPal. All rights reserved.</p>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                </body>
-                </html>
-                """, 
-                username, 
-                LocalDateTime.now().format(DATE_TIME_FORMATTER)
-        );
+                        </body>
+                        </html>
+                        """,
+                username,
+                LocalDateTime.now().format(DATE_TIME_FORMATTER));
 
         sendEmailWithAttachment(to, subject, body, pdfPath);
     }
@@ -125,56 +125,56 @@ public class EmailService {
      */
     public void sendAccountDeletionNotification(String to, String username) {
         String subject = "FinPal - Xác nhận xóa tài khoản";
-        
-        String body = String.format("""
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <style>
-                        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                        .header { background-color: #f44336; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
-                        .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; }
-                        .warning { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 15px 0; }
-                        .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <h1>FinPal</h1>
-                            <p>Xóa tài khoản</p>
-                        </div>
-                        <div class="content">
-                            <h2>Xin chào %s,</h2>
-                            <p>Yêu cầu xóa tài khoản của bạn đã được admin phê duyệt.</p>
-                            <div class="warning">
-                                <h3>⚠️ CẢNH BÁO QUAN TRỌNG</h3>
-                                <p><strong>Tài khoản của bạn sẽ bị xóa vĩnh viễn trong vòng 24 giờ tới.</strong></p>
-                                <p>Tất cả dữ liệu của bạn sẽ bị xóa bao gồm:</p>
-                                <ul>
-                                    <li>Thông tin tài khoản</li>
-                                    <li>Tất cả giao dịch</li>
-                                    <li>Danh mục cá nhân</li>
-                                    <li>Ngân sách và mục tiêu tiết kiệm</li>
-                                    <li>Tất cả dữ liệu liên quan khác</li>
-                                </ul>
+
+        String body = String.format(
+                """
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="UTF-8">
+                            <style>
+                                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                                .header { background-color: #f44336; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+                                .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; }
+                                .warning { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 15px 0; }
+                                .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="container">
+                                <div class="header">
+                                    <h1>FinPal</h1>
+                                    <p>Xóa tài khoản</p>
+                                </div>
+                                <div class="content">
+                                    <h2>Xin chào %s,</h2>
+                                    <p>Yêu cầu xóa tài khoản của bạn đã được admin phê duyệt.</p>
+                                    <div class="warning">
+                                        <h3>⚠️ CẢNH BÁO QUAN TRỌNG</h3>
+                                        <p><strong>Tài khoản của bạn sẽ bị xóa vĩnh viễn trong vòng 24 giờ tới.</strong></p>
+                                        <p>Tất cả dữ liệu của bạn sẽ bị xóa bao gồm:</p>
+                                        <ul>
+                                            <li>Thông tin tài khoản</li>
+                                            <li>Tất cả giao dịch</li>
+                                            <li>Danh mục cá nhân</li>
+                                            <li>Ngân sách và mục tiêu tiết kiệm</li>
+                                            <li>Tất cả dữ liệu liên quan khác</li>
+                                        </ul>
+                                    </div>
+                                    <p>Nếu đây là nhầm lẫn, vui lòng liên hệ với chúng tôi ngay lập tức qua email này hoặc qua hotline hỗ trợ.</p>
+                                    <p>Chúng tôi rất tiếc khi phải chia tay với bạn. Cảm ơn bạn đã sử dụng FinPal!</p>
+                                    <div class="footer">
+                                        <p>Email này được gửi vào: %s</p>
+                                        <p>© 2025 FinPal. All rights reserved.</p>
+                                    </div>
+                                </div>
                             </div>
-                            <p>Nếu đây là nhầm lẫn, vui lòng liên hệ với chúng tôi ngay lập tức qua email này hoặc qua hotline hỗ trợ.</p>
-                            <p>Chúng tôi rất tiếc khi phải chia tay với bạn. Cảm ơn bạn đã sử dụng FinPal!</p>
-                            <div class="footer">
-                                <p>Email này được gửi vào: %s</p>
-                                <p>© 2025 FinPal. All rights reserved.</p>
-                            </div>
-                        </div>
-                    </div>
-                </body>
-                </html>
-                """, 
+                        </body>
+                        </html>
+                        """,
                 username,
-                LocalDateTime.now().format(DATE_TIME_FORMATTER)
-        );
+                LocalDateTime.now().format(DATE_TIME_FORMATTER));
 
         sendEmailWithAttachment(to, subject, body, null);
     }
@@ -184,54 +184,167 @@ public class EmailService {
      */
     public void sendRequestRejectionEmail(String to, String username, String requestType, String reason) {
         String subject = "FinPal - Yêu cầu của bạn đã bị từ chối";
-        
-        String requestTypeName = requestType.equals("EXPORT_DATA") 
-                ? "xuất dữ liệu cá nhân" 
+
+        String requestTypeName = requestType.equals("EXPORT_DATA")
+                ? "xuất dữ liệu cá nhân"
                 : "xóa tài khoản";
-        
-        String body = String.format("""
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <style>
-                        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                        .header { background-color: #ff9800; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
-                        .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; }
-                        .reason-box { background-color: #fff; border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 5px; }
-                        .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <h1>FinPal</h1>
-                            <p>Thông báo yêu cầu</p>
-                        </div>
-                        <div class="content">
-                            <h2>Xin chào %s,</h2>
-                            <p>Yêu cầu <strong>%s</strong> của bạn đã bị từ chối bởi quản trị viên.</p>
-                            <div class="reason-box">
-                                <h3>Lý do từ chối:</h3>
-                                <p>%s</p>
+
+        String body = String.format(
+                """
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="UTF-8">
+                            <style>
+                                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                                .header { background-color: #ff9800; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+                                .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; }
+                                .reason-box { background-color: #fff; border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 5px; }
+                                .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="container">
+                                <div class="header">
+                                    <h1>FinPal</h1>
+                                    <p>Thông báo yêu cầu</p>
+                                </div>
+                                <div class="content">
+                                    <h2>Xin chào %s,</h2>
+                                    <p>Yêu cầu <strong>%s</strong> của bạn đã bị từ chối bởi quản trị viên.</p>
+                                    <div class="reason-box">
+                                        <h3>Lý do từ chối:</h3>
+                                        <p>%s</p>
+                                    </div>
+                                    <p>Nếu bạn có bất kỳ thắc mắc nào về quyết định này, vui lòng liên hệ với chúng tôi qua email này.</p>
+                                    <p>Bạn có thể tạo yêu cầu mới nếu cần thiết.</p>
+                                    <div class="footer">
+                                        <p>Email này được gửi vào: %s</p>
+                                        <p>© 2025 FinPal. All rights reserved.</p>
+                                    </div>
+                                </div>
                             </div>
-                            <p>Nếu bạn có bất kỳ thắc mắc nào về quyết định này, vui lòng liên hệ với chúng tôi qua email này.</p>
-                            <p>Bạn có thể tạo yêu cầu mới nếu cần thiết.</p>
-                            <div class="footer">
-                                <p>Email này được gửi vào: %s</p>
-                                <p>© 2025 FinPal. All rights reserved.</p>
-                            </div>
-                        </div>
-                    </div>
-                </body>
-                </html>
-                """, 
+                        </body>
+                        </html>
+                        """,
                 username,
                 requestTypeName,
                 reason != null ? reason : "Không có lý do cụ thể",
-                LocalDateTime.now().format(DATE_TIME_FORMATTER)
-        );
+                LocalDateTime.now().format(DATE_TIME_FORMATTER));
+
+        sendEmailWithAttachment(to, subject, body, null);
+    }
+
+    /**
+     * Gửi email thông báo yêu cầu xóa tài khoản đã được phê duyệt (chờ 24h)
+     */
+    public void sendAccountDeletionApprovalNotification(String to, String username) {
+        String subject = "FinPal - Yêu cầu xóa tài khoản đã được phê duyệt";
+
+        String body = String.format(
+                """
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="UTF-8">
+                            <style>
+                                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                                .header { background-color: #ff9800; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+                                .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; }
+                                .warning { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 15px 0; }
+                                .countdown { background-color: #f44336; color: white; padding: 15px; text-align: center; font-size: 18px; margin: 15px 0; border-radius: 5px; }
+                                .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="container">
+                                <div class="header">
+                                    <h1>FinPal</h1>
+                                    <p>Thông báo xóa tài khoản</p>
+                                </div>
+                                <div class="content">
+                                    <h2>Xin chào %s,</h2>
+                                    <p>Yêu cầu xóa tài khoản của bạn đã được admin phê duyệt.</p>
+                                    <div class="countdown">
+                                        ⏰ <strong>TÀI KHOẢN SẼ BỊ XÓA SAU 24 GIỜ</strong> ⏰
+                                    </div>
+                                    <div class="warning">
+                                        <h3>⚠️ CẢNH BÁO QUAN TRỌNG</h3>
+                                        <p>Sau 24 giờ, tất cả dữ liệu của bạn sẽ bị xóa vĩnh viễn bao gồm:</p>
+                                        <ul>
+                                            <li>Thông tin tài khoản</li>
+                                            <li>Tất cả giao dịch</li>
+                                            <li>Danh mục cá nhân</li>
+                                            <li>Ngân sách và mục tiêu tiết kiệm</li>
+                                            <li>Tất cả dữ liệu liên quan khác</li>
+                                        </ul>
+                                    </div>
+                                    <p><strong>Bạn có thể HỦY yêu cầu này trong vòng 24 giờ</strong> bằng cách liên hệ với admin hoặc thông qua ứng dụng.</p>
+                                    <p>Nếu đây là nhầm lẫn, vui lòng liên hệ ngay với chúng tôi!</p>
+                                    <div class="footer">
+                                        <p>Email này được gửi vào: %s</p>
+                                        <p>© 2025 FinPal. All rights reserved.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </body>
+                        </html>
+                        """,
+                username,
+                LocalDateTime.now().format(DATE_TIME_FORMATTER));
+
+        sendEmailWithAttachment(to, subject, body, null);
+    }
+
+    /**
+     * Gửi email thông báo yêu cầu xóa tài khoản đã bị hủy
+     */
+    public void sendAccountDeletionCancelledNotification(String to, String username) {
+        String subject = "FinPal - Yêu cầu xóa tài khoản đã được hủy";
+
+        String body = String.format(
+                """
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="UTF-8">
+                            <style>
+                                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                                .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+                                .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; }
+                                .success { background-color: #dff0d8; border-left: 4px solid #4CAF50; padding: 15px; margin: 15px 0; }
+                                .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="container">
+                                <div class="header">
+                                    <h1>FinPal</h1>
+                                    <p>Thông báo quan trọng</p>
+                                </div>
+                                <div class="content">
+                                    <h2>Xin chào %s,</h2>
+                                    <div class="success">
+                                        <h3>✅ YÊU CẦU XÓA TÀI KHOẢN ĐÃ ĐƯỢC HỦY</h3>
+                                        <p>Tài khoản của bạn sẽ <strong>KHÔNG</strong> bị xóa.</p>
+                                    </div>
+                                    <p>Yêu cầu xóa tài khoản trước đó đã được hủy bỏ. Tài khoản của bạn vẫn hoạt động bình thường.</p>
+                                    <p>Bạn có thể tiếp tục sử dụng FinPal như bình thường.</p>
+                                    <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi.</p>
+                                    <div class="footer">
+                                        <p>Email này được gửi vào: %s</p>
+                                        <p>© 2025 FinPal. All rights reserved.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </body>
+                        </html>
+                        """,
+                username,
+                LocalDateTime.now().format(DATE_TIME_FORMATTER));
 
         sendEmailWithAttachment(to, subject, body, null);
     }

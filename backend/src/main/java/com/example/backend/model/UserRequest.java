@@ -51,6 +51,9 @@ public class UserRequest {
     @Column(name = "ngay_gui_email")
     private LocalDateTime emailSentAt;
 
+    @Column(name = "ngay_du_kien_xoa")
+    private LocalDateTime scheduledDeletionAt; // Thời gian dự kiến xóa tài khoản (24h sau khi approve)
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
@@ -62,14 +65,15 @@ public class UserRequest {
     }
 
     public enum RequestType {
-        EXPORT_DATA,      // Xuất dữ liệu cá nhân
-        DELETE_ACCOUNT    // Xóa tài khoản
+        EXPORT_DATA, // Xuất dữ liệu cá nhân
+        DELETE_ACCOUNT // Xóa tài khoản
     }
 
     public enum RequestStatus {
-        PENDING,      // Chờ duyệt
-        APPROVED,     // Đã duyệt
-        REJECTED,     // Từ chối
-        COMPLETED     // Hoàn thành (đã gửi email hoặc đã xóa tài khoản)
+        PENDING, // Chờ duyệt
+        APPROVED, // Đã duyệt (với DELETE_ACCOUNT: đang chờ 24h để xóa)
+        REJECTED, // Từ chối
+        COMPLETED, // Hoàn thành (đã gửi email hoặc đã xóa tài khoản)
+        CANCELLED // Đã hủy (dùng cho DELETE_ACCOUNT khi hủy trong 24h)
     }
 }

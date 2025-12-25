@@ -25,6 +25,7 @@ public class UserRequestDTO {
     private String approvedByUsername;
     private String filePath;
     private LocalDateTime emailSentAt;
+    private LocalDateTime scheduledDeletionAt; // Thời gian dự kiến xóa tài khoản (24h sau khi approve)
 
     /**
      * Convert Entity to DTO
@@ -41,15 +42,16 @@ public class UserRequestDTO {
         dto.setAdminNote(request.getAdminNote());
         dto.setCreatedAt(request.getCreatedAt());
         dto.setApprovedAt(request.getApprovedAt());
-        
+
         if (request.getApprovedBy() != null) {
             dto.setApprovedByUserId(request.getApprovedBy().getId());
             dto.setApprovedByUsername(request.getApprovedBy().getUsername());
         }
-        
+
         dto.setFilePath(request.getFilePath());
         dto.setEmailSentAt(request.getEmailSentAt());
-        
+        dto.setScheduledDeletionAt(request.getScheduledDeletionAt());
+
         return dto;
     }
 }

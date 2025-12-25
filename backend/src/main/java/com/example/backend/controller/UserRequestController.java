@@ -259,6 +259,40 @@ public class UserRequestController {
     }
 
     /**
+     * Hủy yêu cầu xóa tài khoản đã được phê duyệt (admin)
+     * Chỉ có thể hủy trong 24h sau khi phê duyệt
+     */
+    @PutMapping("/admin/{id}/cancel")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Hủy yêu cầu xóa tài khoản (Admin)", description = "Hủy yêu cầu xóa tài khoản đã được phê duyệt. Chỉ có thể hủy trong vòng 24 giờ sau khi phê duyệt.")
+    public ResponseEntity<?> cancelDeletionRequest(
+            @PathVariable Long id,
+            @RequestBody(required = false) ProcessRequestDTO processDTO,
+            Authentication authentication) {
+        try {
+            String adminUsername = authentication.getName();
+
+            // Lấy admin ID
+            Long adminId = userRequestService.getUserIdByUsername(adminUsername);
+
+            String cancelReason = processDTO != null ? processDTO.getAdminNote() : null;
+
+            UserRequest request = userRequestService.cancelApprovedDeletion(id, adminId, cancelReason);
+
+            log.info("Admin {} cancelled deletion request {}", adminUsername, id);
+
+            return ResponseEntity.ok(UserRequestDTO.fromEntity(request));
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Error cancelling deletion request", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Lỗi khi hủy yêu cầu: " + e.getMessage());
+        }
+    }
+
+    /**
      * Lấy thống kê yêu cầu (admin)
      */
     @GetMapping("/admin/statistics")

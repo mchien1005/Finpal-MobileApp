@@ -90,6 +90,15 @@ public interface UserRequestRepository extends JpaRepository<UserRequest, Long> 
                         @Param("startTime") LocalDateTime startTime,
                         @Param("endTime") LocalDateTime endTime);
 
+        // Tìm yêu cầu xóa tài khoản đã được duyệt và đã đến thời gian xóa
+        @Query("SELECT ur FROM UserRequest ur JOIN FETCH ur.user LEFT JOIN FETCH ur.approvedBy " +
+                        "WHERE ur.requestType = 'DELETE_ACCOUNT' " +
+                        "AND ur.status = 'APPROVED' " +
+                        "AND ur.scheduledDeletionAt IS NOT NULL " +
+                        "AND ur.scheduledDeletionAt <= :currentTime " +
+                        "ORDER BY ur.scheduledDeletionAt ASC")
+        List<UserRequest> findDeletionRequestsReadyToExecute(@Param("currentTime") LocalDateTime currentTime);
+
         // Xóa tất cả yêu cầu của một user (trừ một yêu cầu cụ thể)
         @Modifying
         @Transactional
