@@ -500,40 +500,6 @@ const DataPrivacyTab = () => {
           />
         </Spin>
       </Card>
-
-      {/* GDPR Compliance Info */}
-      <Card
-        style={{
-          borderRadius: 14,
-          border: '1px solid #bedbff',
-          background: '#eff6ff',
-        }}
-        bodyStyle={{ padding: 24 }}
-      >
-        <div style={{ display: 'flex', gap: 12 }}>
-          <SafetyOutlined style={{ fontSize: 24, color: '#1447e6' }} />
-          <div>
-            <Title level={5} style={{ margin: 0, marginBottom: 8, color: '#1c398e' }}>
-              Tuân thủ GDPR
-            </Title>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <Text style={{ color: '#1447e6' }}>
-                ✓ Dữ liệu được mã hóa AES-256
-              </Text>
-              <Text style={{ color: '#1447e6' }}>
-                ✓ Users có quyền xem, export, xóa dữ liệu cá nhân
-              </Text>
-              <Text style={{ color: '#1447e6' }}>
-                ✓ Dữ liệu không được chia sẻ với bên thứ ba
-              </Text>
-              <Text style={{ color: '#1447e6' }}>
-                ✓ Audit logs đầy đủ cho mọi thao tác
-              </Text>
-            </div>
-          </div>
-        </div>
-      </Card>
-
       {/* Deletion History Table */}
       <Card
         style={{
@@ -567,6 +533,38 @@ const DataPrivacyTab = () => {
             scroll={{ x: 900 }}
           />
         </Spin>
+      </Card>
+      {/* GDPR Compliance Info */}
+      <Card
+        style={{
+          borderRadius: 14,
+          border: '1px solid #bedbff',
+          background: '#eff6ff',
+        }}
+        bodyStyle={{ padding: 24 }}
+      >
+        <div style={{ display: 'flex', gap: 12 }}>
+          <SafetyOutlined style={{ fontSize: 24, color: '#1447e6' }} />
+          <div>
+            <Title level={5} style={{ margin: 0, marginBottom: 8, color: '#1c398e' }}>
+              Tuân thủ GDPR
+            </Title>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <Text style={{ color: '#1447e6' }}>
+                ✓ Dữ liệu được mã hóa AES-256
+              </Text>
+              <Text style={{ color: '#1447e6' }}>
+                ✓ Users có quyền xem, export, xóa dữ liệu cá nhân
+              </Text>
+              <Text style={{ color: '#1447e6' }}>
+                ✓ Dữ liệu không được chia sẻ với bên thứ ba
+              </Text>
+              <Text style={{ color: '#1447e6' }}>
+                ✓ Audit logs đầy đủ cho mọi thao tác
+              </Text>
+            </div>
+          </div>
+        </div>
       </Card>
     </div>
   );
