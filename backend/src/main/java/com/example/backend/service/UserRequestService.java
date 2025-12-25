@@ -1,7 +1,9 @@
 package com.example.backend.service;
 
+import com.example.backend.model.AccountDeletionLog;
 import com.example.backend.model.User;
 import com.example.backend.model.UserRequest;
+import com.example.backend.repository.AccountDeletionLogRepository;
 import com.example.backend.repository.UserRepository;
 import com.example.backend.repository.UserRequestRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ public class UserRequestService {
     private final UserDataExportService dataExportService;
     private final EmailService emailService;
     private final NotificationService notificationService;
+    private final AccountDeletionLogRepository accountDeletionLogRepository;
 
     @Value("${pdf.export.retention.days:7}")
     private int exportRetentionDays;
@@ -107,6 +110,19 @@ public class UserRequestService {
     @Transactional(readOnly = true)
     public Page<UserRequest> getAllRequests(Pageable pageable) {
         return userRequestRepository.findAll(pageable);
+    }
+
+    /**
+     * Lấy yêu cầu theo ID
+     * 
+     * @param requestId ID của yêu cầu
+     * @return UserRequest
+     * @throws RuntimeException nếu không tìm thấy
+     */
+    @Transactional(readOnly = true)
+    public UserRequest getRequestById(Long requestId) {
+        return userRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu với ID: " + requestId));
     }
 
     /**
@@ -267,30 +283,123 @@ public class UserRequestService {
 
     /**
      * Xử lý yêu cầu xóa tài khoản
+     * Khi admin phê duyệt, tài khoản sẽ bị xóa ngay lập tức
+     * Lịch sử xóa được lưu vào bảng AccountDeletionLog để audit
      */
     private void processAccountDeletionRequest(UserRequest request) {
+        // Lưu thông tin user TRƯỚC KHI xóa để tạo audit log
+        User user = request.getUser();
+        Long userId = user.getId();
+        Long requestId = request.getId();
+        String username = user.getUsername();
+        String userEmail = user.getEmail();
+        String fullName = user.getFullName();
+
+        // Thông tin admin phê duyệt
+        User approvedBy = request.getApprovedBy();
+        Long approvedByAdminId = approvedBy != null ? approvedBy.getId() : null;
+        String approvedByAdminUsername = approvedBy != null ? approvedBy.getUsername() : null;
+
+        boolean emailSent = false;
+
         try {
-            log.info("Processing account deletion request for user: {}", request.getUser().getUsername());
+            log.info("🗑️ Processing account deletion request for user: {} (ID: {})", username, userId);
 
-            // Gửi email thông báo
-            emailService.sendAccountDeletionNotification(
-                    request.getUser().getEmail(),
-                    request.getUser().getUsername());
+            // Bước 1: Gửi email thông báo TRƯỚC KHI xóa (vì sau khi xóa user sẽ không còn)
+            try {
+                emailService.sendAccountDeletionNotification(userEmail, username);
+                emailSent = true;
+                log.info("📧 Account deletion notification email sent to: {}", userEmail);
+            } catch (Exception emailError) {
+                log.warn("⚠️ Failed to send deletion notification email to {}: {}",
+                        userEmail, emailError.getMessage());
+                // Tiếp tục xử lý dù email thất bại
+            }
 
-            // Cập nhật trạng thái
-            request.setStatus(UserRequest.RequestStatus.COMPLETED);
-            request.setEmailSentAt(LocalDateTime.now());
-            userRequestRepository.save(request);
+            // Bước 2: Xóa tất cả các UserRequest khác của user (trừ request hiện tại)
+            log.info("🧹 Deleting other user requests for user: {} (keeping request ID: {})", username, requestId);
+            userRequestRepository.deleteByUserIdAndIdNot(userId, requestId);
 
-            // Lưu ý: Thực tế xóa tài khoản nên được thực hiện sau 24-48h
-            // để user có thời gian hủy bỏ nếu nhầm lẫn
-            // Có thể tạo một scheduled task để xóa các tài khoản đã được approved
+            // Bước 3: XÓA TÀI KHOẢN NGƯỜI DÙNG VÀ TẤT CẢ DỮ LIỆU LIÊN QUAN
+            log.info("🔴 DELETING user account and all related data for: {} (ID: {})", username, userId);
 
-            log.info("Account deletion notification sent to: {}", request.getUser().getEmail());
+            // Xóa user - Cascade delete sẽ tự động xóa:
+            // - Transactions (giao dịch)
+            // - Categories (danh mục tùy chỉnh)
+            // - Budgets (ngân sách)
+            // - SavingsGoals (mục tiêu tiết kiệm)
+            // - Notifications (thông báo)
+            // - DeviceTokens (token thiết bị)
+            // - NotificationSettings (cài đặt thông báo)
+            // - Và tất cả dữ liệu liên quan khác
+            userRepository.delete(user);
+
+            // Bước 4: Xóa luôn request hiện tại
+            userRequestRepository.deleteById(requestId);
+
+            // Bước 5: LƯU LỊCH SỬ XÓA TÀI KHOẢN ĐỂ AUDIT
+            AccountDeletionLog auditLog = new AccountDeletionLog();
+            auditLog.setDeletedUserId(userId);
+            auditLog.setUsername(username);
+            auditLog.setEmail(userEmail);
+            auditLog.setFullName(fullName);
+            auditLog.setRequestId(requestId);
+            auditLog.setRequestReason(request.getReason());
+            auditLog.setRequestCreatedAt(request.getCreatedAt());
+            auditLog.setApprovedByAdminId(approvedByAdminId);
+            auditLog.setApprovedByAdminUsername(approvedByAdminUsername);
+            auditLog.setAdminNote(request.getAdminNote());
+            auditLog.setApprovedAt(request.getApprovedAt());
+            auditLog.setDeletedAt(LocalDateTime.now());
+            auditLog.setEmailNotificationSent(emailSent);
+            auditLog.setDeletionStatus("COMPLETED");
+
+            accountDeletionLogRepository.save(auditLog);
+            log.info("📝 Audit log saved for deleted account: {} (ID: {})", username, userId);
+
+            log.info("✅ ACCOUNT DELETED SUCCESSFULLY: {} (ID: {})", username, userId);
+            log.info("📋 Summary: User '{}' account and all associated data have been permanently deleted", username);
 
         } catch (Exception e) {
-            log.error("Error processing account deletion for request {}", request.getId(), e);
-            throw new RuntimeException("Lỗi khi xử lý xóa tài khoản: " + e.getMessage(), e);
+            log.error("❌ Error processing account deletion for request {}: {}",
+                    requestId, e.getMessage(), e);
+
+            // Lưu audit log với trạng thái FAILED
+            try {
+                AccountDeletionLog failedLog = new AccountDeletionLog();
+                failedLog.setDeletedUserId(userId);
+                failedLog.setUsername(username);
+                failedLog.setEmail(userEmail);
+                failedLog.setFullName(fullName);
+                failedLog.setRequestId(requestId);
+                failedLog.setRequestReason(request.getReason());
+                failedLog.setRequestCreatedAt(request.getCreatedAt());
+                failedLog.setApprovedByAdminId(approvedByAdminId);
+                failedLog.setApprovedByAdminUsername(approvedByAdminUsername);
+                failedLog.setAdminNote(request.getAdminNote());
+                failedLog.setApprovedAt(request.getApprovedAt());
+                failedLog.setDeletedAt(LocalDateTime.now());
+                failedLog.setEmailNotificationSent(emailSent);
+                failedLog.setDeletionStatus("FAILED");
+                failedLog.setErrorMessage(e.getMessage());
+
+                accountDeletionLogRepository.save(failedLog);
+                log.info("📝 Failed deletion audit log saved for user: {}", username);
+            } catch (Exception auditError) {
+                log.error("Failed to save audit log", auditError);
+            }
+
+            // Cố gắng cập nhật trạng thái lỗi nếu có thể
+            try {
+                request.setStatus(UserRequest.RequestStatus.APPROVED); // Giữ ở APPROVED để có thể thử lại
+                request.setAdminNote((request.getAdminNote() != null ? request.getAdminNote() + " | " : "")
+                        + "Lỗi xóa tài khoản: " + e.getMessage());
+                userRequestRepository.save(request);
+            } catch (Exception saveError) {
+                log.error("Failed to update request status after deletion error", saveError);
+            }
+
+            throw new RuntimeException("Lỗi khi xóa tài khoản: " + e.getMessage(), e);
         }
     }
 
