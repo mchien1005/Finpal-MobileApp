@@ -4,6 +4,7 @@ import '../../../core/widgets/custom_bottom_nav_bar.dart';
 import '../../../core/utils/app_bar_with_drawer.dart';
 import '../../../core/utils/bottom_nav_helper.dart';
 import '../../../data/services/transaction_service.dart';
+import '../../../data/services/notification_service.dart';
 import '../../../data/models/category.dart';
 import 'widgets/add_transaction_tab.dart';
 import 'widgets/add_budget_tab.dart';
@@ -26,10 +27,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
   // Transaction Service
   final _transactionService = TransactionService();
+  final _notificationService = NotificationService();
 
   // Categories
   List<Category> _categories = [];
   bool _isCategoriesLoading = true;
+  int _unreadCount = 0;
 
   // Transaction type cho tab giao dịch
   String _transactionType = 'expense';
@@ -43,6 +46,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       initialIndex: widget.initialTabIndex,
     );
     _loadCategories();
+    _loadUnreadCount();
   }
 
   @override
@@ -79,6 +83,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     }
   }
 
+  Future<void> _loadUnreadCount() async {
+    try {
+      final count = await _notificationService.getUnreadCount();
+      if (mounted) {
+        setState(() {
+          _unreadCount = count;
+        });
+      }
+    } catch (e) {
+      // Ignore errors for notification count
+    }
+  }
+
   /// Xử lý thay đổi loại giao dịch
   void _onTransactionTypeChanged(String type) {
     setState(() {
@@ -97,8 +114,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       },
       child: AppBarWithDrawer.scrollable(
         context,
-        userName: 'Nguyễn Văn A',
-        notificationCount: 3,
+        notificationCount: _unreadCount,
         backgroundColor: AppColors.background,
         customTitle: 'Thêm giao dịch, ngân sách',
         body: Column(

@@ -127,7 +127,7 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
       child: AppBarWithDrawer.scrollable(
         context,
         userName: 'Nguyễn Văn A',
-        notificationCount: 3,
+        notificationCount: _unreadCount,
         backgroundColor: Colors.white,
         customTitle: 'AI gợi ý',
         body: _isLoading

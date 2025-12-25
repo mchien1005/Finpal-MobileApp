@@ -8,6 +8,7 @@ import '../../../core/widgets/success_notification_dialog.dart';
 import '../../../core/widgets/confirmation_dialog.dart';
 import '../../../data/models/transaction.dart';
 import '../../../data/services/transaction_service.dart';
+import '../../../data/services/notification_service.dart';
 import 'edit_transaction_dialog.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -22,11 +23,15 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   final int _selectedNavIndex = 1;
   late TabController _tabController;
   final TransactionService _transactionService = TransactionService();
+  final NotificationService _notificationService = NotificationService();
 
   // Transaction data
   List<Transaction> _transactions = [];
   bool _isLoading = false;
   String? _errorMessage;
+
+  // Số lượng thông báo chưa đọc
+  int _unreadCount = 0;
 
   @override
   void initState() {
@@ -38,6 +43,22 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       }
     });
     _loadTransactions();
+    _loadUnreadNotificationCount();
+  }
+
+  /// Load số lượng thông báo chưa đọc
+  Future<void> _loadUnreadNotificationCount() async {
+    try {
+      final count = await _notificationService.getUnreadCount();
+      if (mounted) {
+        setState(() {
+          _unreadCount = count;
+        });
+      }
+    } catch (e) {
+      // Bỏ qua lỗi khi load notification count
+      debugPrint('Lỗi khi load notification count: $e');
+    }
   }
 
   /// Load transactions from API
@@ -51,15 +72,17 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     try {
       // Load categories first to map categoryId -> category name
       final categories = await _transactionService.getCategories();
-      
+
       final result = await _transactionService.getTransactions(
         page: 0,
         size: 100, // Load more transactions
       );
 
       final transactionsList = result['content'] as List;
-      final transactions = transactionsList.map((t) => Transaction.fromJson(t)).toList();
-      
+      final transactions = transactionsList
+          .map((t) => Transaction.fromJson(t))
+          .toList();
+
       // Map categoryId to category for each transaction if missing
       for (int i = 0; i < transactions.length; i++) {
         var transaction = transactions[i];
@@ -69,7 +92,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               (c) => c.id == transaction.categoryId,
               orElse: () => categories.first,
             );
-            
+
             transactions[i] = Transaction(
               id: transaction.id,
               type: transaction.type,
@@ -153,8 +176,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       },
       child: AppBarWithDrawer.scrollable(
         context,
-        userName: 'Nguyễn Văn A',
-        notificationCount: 3,
+        notificationCount: _unreadCount,
+        customTitle: 'Giao dịch của bạn',
         body: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -273,10 +296,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               const SizedBox(height: 16),
               const Text(
                 'Không thể tải dữ liệu',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 8),
               Text(
@@ -319,9 +339,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        children: transactionWidgets,
-      ),
+      child: Column(children: transactionWidgets),
     );
   }
 
@@ -357,18 +375,30 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   IconData _getCategoryIcon(String? categoryName) {
     if (categoryName == null) return Icons.receipt;
     switch (categoryName.toLowerCase()) {
-      case 'ăn uống': return Icons.restaurant;
-      case 'di chuyển': return Icons.directions_car;
-      case 'mua sắm': return Icons.shopping_bag;
-      case 'giải trí': return Icons.movie;
-      case 'y tế': return Icons.medical_services;
-      case 'học tập': return Icons.school;
-      case 'hóa đơn': return Icons.receipt_long;
-      case 'lương': return Icons.account_balance_wallet;
-      case 'thưởng': return Icons.card_giftcard;
-      case 'đầu tư': return Icons.trending_up;
-      case 'kinh doanh': return Icons.business;
-      default: return Icons.receipt;
+      case 'ăn uống':
+        return Icons.restaurant;
+      case 'di chuyển':
+        return Icons.directions_car;
+      case 'mua sắm':
+        return Icons.shopping_bag;
+      case 'giải trí':
+        return Icons.movie;
+      case 'y tế':
+        return Icons.medical_services;
+      case 'học tập':
+        return Icons.school;
+      case 'hóa đơn':
+        return Icons.receipt_long;
+      case 'lương':
+        return Icons.account_balance_wallet;
+      case 'thưởng':
+        return Icons.card_giftcard;
+      case 'đầu tư':
+        return Icons.trending_up;
+      case 'kinh doanh':
+        return Icons.business;
+      default:
+        return Icons.receipt;
     }
   }
 
@@ -377,13 +407,16 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     final iconBg = transaction.isIncome
         ? const Color(0xFFDCFCE7)
         : const Color(0xFFFFE2E2);
-    final title = transaction.merchant ?? transaction.description ?? 'Giao dịch';
+    final title =
+        transaction.merchant ?? transaction.description ?? 'Giao dịch';
     final category = transaction.category?.name ?? 'Không phân loại';
     final account = transaction.transactionSource;
     final amountFormatted = transaction.isIncome
         ? '+${NumberFormat('#,###', 'vi_VN').format(transaction.amount)}đ'
         : '-${NumberFormat('#,###', 'vi_VN').format(transaction.amount)}đ';
-    final dateFormatted = DateFormat('MM-dd HH:mm').format(transaction.transactionDate);
+    final dateFormatted = DateFormat(
+      'MM-dd HH:mm',
+    ).format(transaction.transactionDate);
     final isIncome = transaction.isIncome;
 
     return Container(
@@ -520,69 +553,78 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                         account: account,
                         date: transaction.transactionDate,
                         isIncome: isIncome,
-                        onSave: ({
-                          required double amount,
-                          required String source,
-                          required String category,
-                          required int? categoryId,
-                          required String description,
-                          required DateTime date,
-                        }) async {
-                          // Close the edit dialog using the dialog's context
-                          Navigator.of(dialogContext).pop();
+                        onSave:
+                            ({
+                              required double amount,
+                              required String source,
+                              required String category,
+                              required int? categoryId,
+                              required String description,
+                              required DateTime date,
+                            }) async {
+                              // Close the edit dialog using the dialog's context
+                              Navigator.of(dialogContext).pop();
 
-                          // Show a loading indicator using the parent screen context
-                          showDialog(
-                            context: parentContext,
-                            barrierDismissible: false,
-                            builder: (_) => const Center(child: CircularProgressIndicator()),
-                          );
+                              // Show a loading indicator using the parent screen context
+                              showDialog(
+                                context: parentContext,
+                                barrierDismissible: false,
+                                builder: (_) => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
 
-                          try {
-                            await _updateTransaction(
-                              id: transaction.id,
-                              type: transaction.type,
-                              amount: amount,
-                              source: source,
-                              categoryId: categoryId,
-                              description: description,
-                              date: date,
-                            );
+                              try {
+                                await _updateTransaction(
+                                  id: transaction.id,
+                                  type: transaction.type,
+                                  amount: amount,
+                                  source: source,
+                                  categoryId: categoryId,
+                                  description: description,
+                                  date: date,
+                                );
 
-                            await _loadTransactions();
+                                await _loadTransactions();
 
-                            if (!mounted) return;
+                                if (!mounted) return;
 
-                            // Move the updated transaction to the top of the list
-                            setState(() {
-                              final idx = _transactions.indexWhere((t) => t.id == transaction.id);
-                              if (idx > 0) {
-                                final updatedTx = _transactions.removeAt(idx);
-                                _transactions.insert(0, updatedTx);
+                                // Move the updated transaction to the top of the list
+                                setState(() {
+                                  final idx = _transactions.indexWhere(
+                                    (t) => t.id == transaction.id,
+                                  );
+                                  if (idx > 0) {
+                                    final updatedTx = _transactions.removeAt(
+                                      idx,
+                                    );
+                                    _transactions.insert(0, updatedTx);
+                                  }
+                                });
+
+                                // Close the loading dialog (use parentContext)
+                                Navigator.of(parentContext).pop();
+
+                                SuccessNotificationDialog.show(
+                                  parentContext,
+                                  message: 'Đã cập nhật giao dịch thành công',
+                                );
+                              } catch (e) {
+                                if (!mounted) return;
+
+                                // Close the loading dialog (use parentContext)
+                                Navigator.of(parentContext).pop();
+
+                                ScaffoldMessenger.of(
+                                  parentContext,
+                                ).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Lỗi: ${e.toString()}'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
                               }
-                            });
-
-                            // Close the loading dialog (use parentContext)
-                            Navigator.of(parentContext).pop();
-
-                            SuccessNotificationDialog.show(
-                              parentContext,
-                              message: 'Đã cập nhật giao dịch thành công',
-                            );
-                          } catch (e) {
-                            if (!mounted) return;
-
-                            // Close the loading dialog (use parentContext)
-                            Navigator.of(parentContext).pop();
-
-                            ScaffoldMessenger.of(parentContext).showSnackBar(
-                              SnackBar(
-                                content: Text('Lỗi: ${e.toString()}'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        },
+                            },
                         onCancel: () => Navigator.of(dialogContext).pop(),
                       ),
                     );
@@ -609,7 +651,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                     ConfirmationDialog.show(
                       context,
                       title: 'Xóa giao dịch',
-                      message: 'Bạn có chắc chắn muốn xóa không? \nHành động này không thể hoàn tác.',
+                      message:
+                          'Bạn có chắc chắn muốn xóa không? \nHành động này không thể hoàn tác.',
                       confirmText: 'Xóa',
                       cancelText: 'Hủy',
                       confirmColor: const Color(0xFFD7006E),

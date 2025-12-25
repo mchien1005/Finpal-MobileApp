@@ -8,6 +8,7 @@ import 'widgets/edit_goal_dialog.dart';
 import 'widgets/contribute_goal.dart';
 import '../../../core/widgets/success_notification_dialog.dart';
 import '../../../data/services/savings_goal_service.dart';
+import '../../../data/services/notification_service.dart';
 import '../../../data/models/savings_goal_model.dart';
 
 class SavingsGoalsScreen extends StatefulWidget {
@@ -18,9 +19,11 @@ class SavingsGoalsScreen extends StatefulWidget {
 }
 
 class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
+  final NotificationService _notificationService = NotificationService();
   List<SavingsGoalResponse> _goals = [];
   bool _isLoading = true;
   String? _errorMessage;
+  int _unreadCount = 0;
 
   @override
   void initState() {
@@ -35,9 +38,13 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
     });
 
     try {
-      final goals = await SavingsGoalService.getAllSavingsGoals();
+      final results = await Future.wait([
+        SavingsGoalService.getAllSavingsGoals(),
+        _notificationService.getUnreadCount(),
+      ]);
       setState(() {
-        _goals = goals;
+        _goals = results[0] as List<SavingsGoalResponse>;
+        _unreadCount = results[1] as int;
         _isLoading = false;
       });
     } catch (e) {
@@ -79,7 +86,7 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
       child: AppBarWithDrawer.scrollable(
         context,
         userName: 'Nguyễn Văn A',
-        notificationCount: 3,
+        notificationCount: _unreadCount,
         backgroundColor: Colors.white,
         customTitle: 'Theo dõi mục tiêu tiết kiệm',
         body: _isLoading

@@ -115,8 +115,8 @@ class ScrollableAppBarScaffold extends StatelessWidget {
                   ),
                   if (notificationCount > 0)
                     Positioned(
-                      right: 8,
-                      top: 8,
+                      right: 5,
+                      top: 4,
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(
@@ -128,10 +128,10 @@ class ScrollableAppBarScaffold extends StatelessWidget {
                           minHeight: 16,
                         ),
                         child: Text(
-                          notificationCount > 9 ? '9+' : '$notificationCount',
+                          notificationCount.toString(),
                           style: const TextStyle(
                             color: AppColors.primary,
-                            fontSize: 10,
+                            fontSize: 9,
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,

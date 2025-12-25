@@ -5,6 +5,7 @@ import '../../../core/utils/bottom_nav_helper.dart';
 import '../../../core/utils/app_bar_with_drawer.dart';
 import '../../../data/services/dashboard_service.dart';
 import '../../../data/services/user_service.dart';
+import '../../../data/services/notification_service.dart';
 import '../../../data/models/dashboard_model.dart';
 import '../../../data/models/user.dart' show UserProfile;
 import '../../widgets/dashboard/summary_cards_section.dart';
@@ -13,6 +14,7 @@ import '../../widgets/dashboard/trend_chart_section.dart';
 import '../../widgets/dashboard/category_chart_section.dart';
 import '../../widgets/dashboard/warning_card_section.dart';
 import '../../widgets/dashboard/budget_analysis_section.dart';
+import '../transactions/add_transaction_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -24,7 +26,8 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final DashboardService _dashboardService = DashboardService();
   final UserService _userService = UserService();
-  
+  final NotificationService _notificationService = NotificationService();
+
   DashboardSummary? _summary;
   List<CategorySpending> _categories = [];
   List<BudgetItem> _budgets = [];
@@ -36,6 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   UserProfile? _user;
   bool _isLoading = true;
   String? _error;
+  int _unreadCount = 0;
 
   @override
   void initState() {
@@ -51,7 +55,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     try {
       print('📡 Dashboard: Bắt đầu tải dữ liệu...');
-      
+
       final results = await Future.wait([
         _dashboardService.getSummary(),
         _dashboardService.getSpendingByCategory(),
@@ -61,6 +65,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _userService.getProfile(),
         _dashboardService.getCategoryBudgets(),
         _dashboardService.getMonthlyTrend(months: _selectedMonths),
+        _notificationService.getUnreadCount(),
       ]);
 
       final summary = results[0] as DashboardSummary;
@@ -71,6 +76,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final user = results[5] as UserProfile;
       final categoryBudgets = results[6] as List<CategoryBudget>;
       final monthlyTrends = results[7] as List<MonthlyTrend>;
+      final unreadCount = results[8] as int;
 
       print('✅ Dashboard Summary:');
       print('   - Thu nhập: ${summary.totalIncome}');
@@ -80,24 +86,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
       print('✅ Dashboard Categories: ${categories.length} categories');
       if (categories.isNotEmpty) {
         for (var cat in categories) {
-          print('   - ${cat.categoryName}: ${cat.amount}đ (${cat.percentage}%)');
+          print(
+            '   - ${cat.categoryName}: ${cat.amount}đ (${cat.percentage}%)',
+          );
         }
       } else {
         print('   ⚠️  Không có categories nào!');
       }
       print('✅ User: ${user.fullName} (${user.email})');
-      print('✅ Active Budget: ${activeBudget != null ? "${activeBudget.name} - ${activeBudget.spent}/${activeBudget.amount}" : "Không có"}');
-      print('✅ Cash Flow - Budget: ${cashFlow.budgetUsed}/${cashFlow.budgetLimit} (${cashFlow.budgetPercentage.toStringAsFixed(1)}%)');
+      print(
+        '✅ Active Budget: ${activeBudget != null ? "${activeBudget.name} - ${activeBudget.spent}/${activeBudget.amount}" : "Không có"}',
+      );
+      print(
+        '✅ Cash Flow - Budget: ${cashFlow.budgetUsed}/${cashFlow.budgetLimit} (${cashFlow.budgetPercentage.toStringAsFixed(1)}%)',
+      );
       print('✅ Category Budgets: ${categoryBudgets.length} budgets');
       if (categoryBudgets.isNotEmpty) {
         for (var budget in categoryBudgets) {
-          print('   - ${budget.categoryName}: ${budget.spentAmount}/${budget.budgetAmount} (${budget.percentage.toStringAsFixed(1)}%) - ${budget.status}');
+          print(
+            '   - ${budget.categoryName}: ${budget.spentAmount}/${budget.budgetAmount} (${budget.percentage.toStringAsFixed(1)}%) - ${budget.status}',
+          );
         }
       }
       print('✅ Monthly Trends: ${monthlyTrends.length} months');
       if (monthlyTrends.isNotEmpty) {
         for (var trend in monthlyTrends) {
-          print('   - ${trend.month}: Income ${trend.income}, Expense ${trend.expense}');
+          print(
+            '   - ${trend.month}: Income ${trend.income}, Expense ${trend.expense}',
+          );
         }
       }
 
@@ -110,12 +126,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _activeBudget = activeBudget;
         _cashFlow = cashFlow;
         _user = user;
+        _unreadCount = unreadCount;
         _isLoading = false;
       });
     } catch (e, stackTrace) {
       print('❌ Lỗi tải dashboard: $e');
       print('📍 Stack: $stackTrace');
-      
+
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -134,7 +151,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: AppBarWithDrawer.scrollable(
         context,
         userName: _user?.fullName ?? 'User',
-        notificationCount: 3,
+        notificationCount: _unreadCount,
         body: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -151,44 +168,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: _isLoading
               ? const Center(
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
+                    ),
                   ),
                 )
               : _error != null
-                  ? _buildErrorWidget()
-                  : Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SummaryCardsSection(summary: _summary),
-                          const SizedBox(height: 16),
-                          ProgressCardSection(
-                            summary: _summary,
-                            activeBudget: _activeBudget,
-                            cashFlow: _cashFlow,
-                          ),
-                          const SizedBox(height: 16),
-                          TrendChartSection(
-                            monthlyTrends: _monthlyTrends,
-                            selectedMonths: _selectedMonths,
-                            onMonthsChanged: (value) {
-                              setState(() {
-                                _selectedMonths = value;
-                              });
-                              _loadDashboardData();
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          CategoryChartSection(categories: _categories),
-                          const SizedBox(height: 16),
-                          WarningCardSection(categories: _categories),
-                          const SizedBox(height: 16),
-                          BudgetAnalysisSection(),
-                          const SizedBox(height: 16),
-                        ],
+              ? _buildErrorWidget()
+              : Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SummaryCardsSection(summary: _summary),
+                      const SizedBox(height: 16),
+                      ProgressCardSection(
+                        summary: _summary,
+                        activeBudget: _activeBudget,
+                        cashFlow: _cashFlow,
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                      TrendChartSection(
+                        monthlyTrends: _monthlyTrends,
+                        selectedMonths: _selectedMonths,
+                        onMonthsChanged: (value) {
+                          setState(() {
+                            _selectedMonths = value;
+                          });
+                          _loadDashboardData();
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      CategoryChartSection(categories: _categories),
+                      const SizedBox(height: 16),
+                      WarningCardSection(categories: _categories),
+                      const SizedBox(height: 16),
+                      // Card tổng quan ngân sách mới
+                      BudgetAnalysisSection(
+                        onViewAll: () {
+                          // Điều hướng đến tab Ngân sách (index 1)
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AddTransactionScreen(
+                                initialTabIndex: 1,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
         ),
         bottomNavigationBar: CustomBottomNavBar(
           currentIndex: 0,
@@ -207,11 +239,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red,
-            ),
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
             const Text(
               'Không thể tải dữ liệu',
@@ -225,9 +253,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Text(
               _error ?? 'Đã xảy ra lỗi',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-              ),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
