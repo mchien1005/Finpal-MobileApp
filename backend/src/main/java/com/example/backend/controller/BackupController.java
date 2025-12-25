@@ -6,11 +6,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -37,11 +40,9 @@ public class BackupController {
      */
     @PostMapping("/create")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(
-            summary = "Tạo backup database",
-            description = "Tạo bản sao lưu database thủ công. Chỉ ADMIN mới có quyền. " +
-                    "Backup sẽ được thực hiện bất đồng bộ."
-    )
+    @Operation(summary = "Tạo backup database", description = "Tạo bản sao lưu database thủ công. Chỉ ADMIN mới có quyền. "
+            +
+            "Backup sẽ được thực hiện bất đồng bộ.")
     public ResponseEntity<Map<String, Object>> createBackup(
             @RequestBody(required = false) CreateBackupRequest request,
             Authentication authentication) {
@@ -65,11 +66,9 @@ public class BackupController {
      */
     @PostMapping("/restore")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(
-            summary = "Khôi phục database",
-            description = "Khôi phục database từ một backup đã lưu. Chỉ ADMIN mới có quyền. " +
-                    "⚠️ CẢNH BÁO: Thao tác này sẽ ghi đè toàn bộ dữ liệu hiện tại!"
-    )
+    @Operation(summary = "Khôi phục database", description = "Khôi phục database từ một backup đã lưu. Chỉ ADMIN mới có quyền. "
+            +
+            "⚠️ CẢNH BÁO: Thao tác này sẽ ghi đè toàn bộ dữ liệu hiện tại!")
     public ResponseEntity<Map<String, Object>> restoreBackup(
             @Valid @RequestBody RestoreBackupRequest request,
             Authentication authentication) {
@@ -100,10 +99,7 @@ public class BackupController {
      */
     @GetMapping("/history")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(
-            summary = "Lấy lịch sử backup",
-            description = "Lấy danh sách tất cả các bản backup (có phân trang). Chỉ ADMIN mới có quyền."
-    )
+    @Operation(summary = "Lấy lịch sử backup", description = "Lấy danh sách tất cả các bản backup (có phân trang). Chỉ ADMIN mới có quyền.")
     public ResponseEntity<Page<BackupHistoryDTO>> getBackupHistory(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -123,13 +119,36 @@ public class BackupController {
      */
     @GetMapping("/statistics")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(
-            summary = "Lấy thống kê backup",
-            description = "Lấy thống kê tổng quan về backup (tổng số, thành công, thất bại, dung lượng). Chỉ ADMIN mới có quyền."
-    )
+    @Operation(summary = "Lấy thống kê backup", description = "Lấy thống kê tổng quan về backup (tổng số, thành công, thất bại, dung lượng). Chỉ ADMIN mới có quyền.")
     public ResponseEntity<BackupStatisticsDTO> getBackupStatistics() {
         BackupStatisticsDTO statistics = backupService.getBackupStatistics();
         return ResponseEntity.ok(statistics);
+    }
+
+    /**
+     * GET /api/backup/download/{id}
+     * Tải file backup về máy
+     */
+    @GetMapping("/download/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Tải file backup", description = "Tải file backup SQL về máy. Chỉ có thể tải các backup đã hoàn thành thành công. Chỉ ADMIN mới có quyền.")
+    public ResponseEntity<?> downloadBackup(@PathVariable Long id) {
+        try {
+            Resource resource = backupService.getBackupFileAsResource(id);
+            String fileName = backupService.getBackupFileName(id);
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .body(resource);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi khi tải backup: " + e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
     }
 
     /**
@@ -138,10 +157,7 @@ public class BackupController {
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(
-            summary = "Xóa backup",
-            description = "Xóa một bản backup cụ thể (cả file và record). Chỉ ADMIN mới có quyền."
-    )
+    @Operation(summary = "Xóa backup", description = "Xóa một bản backup cụ thể (cả file và record). Chỉ ADMIN mới có quyền.")
     public ResponseEntity<Map<String, Object>> deleteBackup(@PathVariable Long id) {
 
         try {
@@ -168,10 +184,7 @@ public class BackupController {
      */
     @PostMapping("/cleanup")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(
-            summary = "Dọn dẹp backup cũ",
-            description = "Xóa các backup cũ theo chính sách lưu trữ (retention policy). Chỉ ADMIN mới có quyền."
-    )
+    @Operation(summary = "Dọn dẹp backup cũ", description = "Xóa các backup cũ theo chính sách lưu trữ (retention policy). Chỉ ADMIN mới có quyền.")
     public ResponseEntity<Map<String, Object>> cleanupOldBackups() {
 
         try {
@@ -190,5 +203,33 @@ public class BackupController {
 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
+    }
+
+    /**
+     * GET /api/backup/health
+     * Kiểm tra tình trạng hệ thống backup
+     */
+    @GetMapping("/health")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Kiểm tra sức khỏe hệ thống backup", description = "Kiểm tra xem hệ thống backup có hoạt động bình thường không (mysqldump có sẵn, thư mục có quyền ghi). Chỉ ADMIN mới có quyền.")
+    public ResponseEntity<Map<String, Object>> checkBackupHealth() {
+        Map<String, Object> health = backupService.checkBackupSystemHealth();
+        return ResponseEntity.ok(health);
+    }
+
+    /**
+     * GET /api/backup/failed
+     * Lấy danh sách các backup thất bại với chi tiết lỗi
+     */
+    @GetMapping("/failed")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Lấy danh sách backup thất bại", description = "Lấy danh sách các backup thất bại kèm thông tin lỗi chi tiết. Chỉ ADMIN mới có quyền.")
+    public ResponseEntity<Page<BackupHistoryDTO>> getFailedBackups(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<BackupHistoryDTO> failedBackups = backupService.getFailedBackups(pageable);
+        return ResponseEntity.ok(failedBackups);
     }
 }

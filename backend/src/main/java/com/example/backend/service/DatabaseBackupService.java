@@ -24,6 +24,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+
 /**
  * Service quản lý sao lưu và khôi phục database
  */
@@ -77,7 +80,7 @@ public class DatabaseBackupService {
             String dbName = extractDatabaseName(databaseUrl);
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
             String fileName = String.format("finpal_backup_%s.sql", timestamp);
-            
+
             // Tạo backup directory nếu chưa có
             Path backupDirPath = Paths.get(backupDirectory);
             if (!Files.exists(backupDirPath)) {
@@ -92,9 +95,9 @@ public class DatabaseBackupService {
             backup = backupHistoryRepository.save(backup);
 
             // Thực hiện backup bằng mysqldump
-            boolean success = executeMysqlDump(dbName, filePath);
+            BackupResult result = executeMysqlDump(dbName, filePath);
 
-            if (success) {
+            if (result.success) {
                 // Lấy file size
                 File backupFile = new File(filePath);
                 if (backupFile.exists()) {
@@ -106,8 +109,8 @@ public class DatabaseBackupService {
                 log.info("Backup thành công: {}", fileName);
             } else {
                 backup.setStatus(BackupHistory.BackupStatus.FAILED);
-                backup.setErrorMessage("mysqldump command failed");
-                log.error("Backup thất bại: {}", fileName);
+                backup.setErrorMessage(result.errorMessage);
+                log.error("Backup thất bại: {} - Lỗi: {}", fileName, result.errorMessage);
             }
 
         } catch (Exception e) {
@@ -136,7 +139,7 @@ public class DatabaseBackupService {
             String dbName = extractDatabaseName(databaseUrl);
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
             String fileName = String.format("finpal_scheduled_%s.sql", timestamp);
-            
+
             Path backupDirPath = Paths.get(backupDirectory);
             if (!Files.exists(backupDirPath)) {
                 Files.createDirectories(backupDirPath);
@@ -148,9 +151,9 @@ public class DatabaseBackupService {
 
             backup = backupHistoryRepository.save(backup);
 
-            boolean success = executeMysqlDump(dbName, filePath);
+            BackupResult result = executeMysqlDump(dbName, filePath);
 
-            if (success) {
+            if (result.success) {
                 File backupFile = new File(filePath);
                 if (backupFile.exists()) {
                     backup.setFileSize(backupFile.length());
@@ -160,8 +163,8 @@ public class DatabaseBackupService {
                 log.info("Scheduled backup thành công: {}", fileName);
             } else {
                 backup.setStatus(BackupHistory.BackupStatus.FAILED);
-                backup.setErrorMessage("mysqldump command failed");
-                log.error("Scheduled backup thất bại: {}", fileName);
+                backup.setErrorMessage(result.errorMessage);
+                log.error("Scheduled backup thất bại: {} - Lỗi: {}", fileName, result.errorMessage);
             }
 
         } catch (Exception e) {
@@ -216,14 +219,14 @@ public class DatabaseBackupService {
         Page<BackupHistory> backups = backupHistoryRepository.findAll(pageable);
         return backups.map(backup -> {
             BackupHistoryDTO dto = BackupHistoryDTO.fromEntity(backup);
-            
+
             // Lấy username của người tạo
             if (backup.getCreatedBy() != null) {
                 userRepository.findById(backup.getCreatedBy()).ifPresent(user -> {
                     dto.setCreatedByUsername(user.getUsername());
                 });
             }
-            
+
             return dto;
         });
     }
@@ -234,28 +237,28 @@ public class DatabaseBackupService {
     @Transactional(readOnly = true)
     public BackupStatisticsDTO getBackupStatistics() {
         BackupStatisticsDTO stats = new BackupStatisticsDTO();
-        
+
         stats.setTotalBackups(backupHistoryRepository.count());
         stats.setSuccessfulBackups(backupHistoryRepository.countByStatus(BackupHistory.BackupStatus.COMPLETED));
         stats.setFailedBackups(backupHistoryRepository.countByStatus(BackupHistory.BackupStatus.FAILED));
-        
+
         BackupHistory latestBackup = backupHistoryRepository.findLatestSuccessfulBackup();
         if (latestBackup != null) {
             stats.setLatestBackup(BackupHistoryDTO.fromEntity(latestBackup));
         }
-        
+
         // Tính tổng dung lượng
         List<BackupHistory> successfulBackups = backupHistoryRepository
                 .findByStatusOrderByCreatedAtDesc(BackupHistory.BackupStatus.COMPLETED);
-        
+
         long totalBytes = successfulBackups.stream()
                 .filter(b -> b.getFileSize() != null)
                 .mapToLong(BackupHistory::getFileSize)
                 .sum();
-        
+
         stats.setTotalStorageBytes(totalBytes);
         stats.setTotalStorageUsed(formatBytes(totalBytes));
-        
+
         return stats;
     }
 
@@ -267,11 +270,11 @@ public class DatabaseBackupService {
         log.info("Bắt đầu cleanup old backups (retention: {} days, max count: {})", retentionDays, maxBackupCount);
 
         LocalDateTime cutoffDate = LocalDateTime.now().minusDays(retentionDays);
-        
+
         // Xóa backup cũ hơn retention days
         List<BackupHistory> oldBackups = backupHistoryRepository
                 .findByCreatedAtBeforeAndStatus(cutoffDate, BackupHistory.BackupStatus.COMPLETED);
-        
+
         for (BackupHistory backup : oldBackups) {
             deleteBackupFile(backup);
             backupHistoryRepository.delete(backup);
@@ -281,7 +284,7 @@ public class DatabaseBackupService {
         // Giới hạn số lượng backup
         List<BackupHistory> allBackups = backupHistoryRepository
                 .findByStatusOrderByCreatedAtDesc(BackupHistory.BackupStatus.COMPLETED);
-        
+
         if (allBackups.size() > maxBackupCount) {
             List<BackupHistory> excessBackups = allBackups.subList(maxBackupCount, allBackups.size());
             for (BackupHistory backup : excessBackups) {
@@ -291,7 +294,8 @@ public class DatabaseBackupService {
             }
         }
 
-        log.info("Cleanup completed. Xóa {} backups", oldBackups.size() + Math.max(0, allBackups.size() - maxBackupCount));
+        log.info("Cleanup completed. Xóa {} backups",
+                oldBackups.size() + Math.max(0, allBackups.size() - maxBackupCount));
     }
 
     /**
@@ -307,72 +311,383 @@ public class DatabaseBackupService {
         log.info("Đã xóa backup: {}", backup.getFileName());
     }
 
+    /**
+     * Kiểm tra sức khỏe hệ thống backup
+     * Trả về thông tin chi tiết về tình trạng các thành phần cần thiết để backup
+     * hoạt động
+     */
+    public java.util.Map<String, Object> checkBackupSystemHealth() {
+        java.util.Map<String, Object> health = new java.util.LinkedHashMap<>();
+        boolean overallHealthy = true;
+        java.util.List<String> issues = new java.util.ArrayList<>();
+
+        // 1. Kiểm tra mysqldump có sẵn không
+        boolean mysqldumpAvailable = isMysqldumpAvailable();
+        health.put("mysqldumpAvailable", mysqldumpAvailable);
+        if (!mysqldumpAvailable) {
+            overallHealthy = false;
+            issues.add("mysqldump không được cài đặt hoặc không có trong PATH. Vui lòng cài đặt MySQL client tools.");
+        }
+
+        // 2. Kiểm tra thư mục backup
+        java.util.Map<String, Object> directoryInfo = new java.util.LinkedHashMap<>();
+        directoryInfo.put("path", backupDirectory);
+
+        Path backupDirPath = Paths.get(backupDirectory);
+        boolean directoryExists = Files.exists(backupDirPath);
+        directoryInfo.put("exists", directoryExists);
+
+        if (!directoryExists) {
+            try {
+                Files.createDirectories(backupDirPath);
+                directoryInfo.put("created", true);
+                directoryInfo.put("exists", true);
+                directoryExists = true;
+            } catch (IOException e) {
+                directoryInfo.put("created", false);
+                directoryInfo.put("createError", e.getMessage());
+                overallHealthy = false;
+                issues.add("Không thể tạo thư mục backup: " + e.getMessage());
+            }
+        }
+
+        if (directoryExists) {
+            boolean writable = Files.isWritable(backupDirPath);
+            directoryInfo.put("writable", writable);
+            if (!writable) {
+                overallHealthy = false;
+                issues.add("Thư mục backup không có quyền ghi: " + backupDirectory);
+            }
+
+            // Kiểm tra dung lượng trống
+            try {
+                java.io.File dir = backupDirPath.toFile();
+                long freeSpace = dir.getFreeSpace();
+                long totalSpace = dir.getTotalSpace();
+                directoryInfo.put("freeSpaceBytes", freeSpace);
+                directoryInfo.put("freeSpace", formatBytes(freeSpace));
+                directoryInfo.put("totalSpaceBytes", totalSpace);
+                directoryInfo.put("totalSpace", formatBytes(totalSpace));
+
+                // Cảnh báo nếu dung lượng trống < 1GB
+                if (freeSpace < 1024L * 1024 * 1024) {
+                    issues.add("Dung lượng trống thấp: chỉ còn " + formatBytes(freeSpace));
+                }
+            } catch (Exception e) {
+                log.warn("Không thể kiểm tra dung lượng đĩa: {}", e.getMessage());
+            }
+        }
+        health.put("backupDirectory", directoryInfo);
+
+        // 3. Kiểm tra kết nối database
+        java.util.Map<String, Object> databaseInfo = new java.util.LinkedHashMap<>();
+        databaseInfo.put("url", databaseUrl.replaceAll("password=[^&]*", "password=***"));
+        databaseInfo.put("username", databaseUsername);
+        databaseInfo.put("databaseName", extractDatabaseName(databaseUrl));
+        databaseInfo.put("host", extractHost(databaseUrl));
+        databaseInfo.put("port", extractPort(databaseUrl));
+        health.put("database", databaseInfo);
+
+        // 4. Thống kê backup gần đây
+        java.util.Map<String, Object> recentStats = new java.util.LinkedHashMap<>();
+        recentStats.put("totalBackups", backupHistoryRepository.count());
+        recentStats.put("successfulBackups",
+                backupHistoryRepository.countByStatus(BackupHistory.BackupStatus.COMPLETED));
+        recentStats.put("failedBackups", backupHistoryRepository.countByStatus(BackupHistory.BackupStatus.FAILED));
+        recentStats.put("inProgressBackups",
+                backupHistoryRepository.countByStatus(BackupHistory.BackupStatus.IN_PROGRESS));
+        health.put("statistics", recentStats);
+
+        // 5. Cấu hình backup
+        java.util.Map<String, Object> configInfo = new java.util.LinkedHashMap<>();
+        configInfo.put("retentionDays", retentionDays);
+        configInfo.put("maxBackupCount", maxBackupCount);
+        health.put("configuration", configInfo);
+
+        // Kết quả tổng hợp
+        health.put("healthy", overallHealthy);
+        health.put("issues", issues);
+        health.put("checkedAt", LocalDateTime.now().toString());
+
+        return health;
+    }
+
+    /**
+     * Lấy danh sách backup thất bại với chi tiết lỗi
+     */
+    @Transactional(readOnly = true)
+    public Page<BackupHistoryDTO> getFailedBackups(org.springframework.data.domain.Pageable pageable) {
+        Page<BackupHistory> failedBackups = backupHistoryRepository.findByStatus(
+                BackupHistory.BackupStatus.FAILED, pageable);
+
+        return failedBackups.map(backup -> {
+            BackupHistoryDTO dto = BackupHistoryDTO.fromEntity(backup);
+
+            // Lấy username của người tạo
+            if (backup.getCreatedBy() != null) {
+                userRepository.findById(backup.getCreatedBy()).ifPresent(user -> {
+                    dto.setCreatedByUsername(user.getUsername());
+                });
+            }
+
+            return dto;
+        });
+    }
+
+    /**
+     * Lấy file backup dưới dạng Resource để tải về
+     * 
+     * @param backupId ID của backup cần tải
+     * @return Resource của file backup
+     * @throws RuntimeException nếu backup không tồn tại hoặc file không tìm thấy
+     */
+    @Transactional(readOnly = true)
+    public Resource getBackupFileAsResource(Long backupId) {
+        BackupHistory backup = backupHistoryRepository.findById(backupId)
+                .orElseThrow(() -> new RuntimeException("Backup không tồn tại với ID: " + backupId));
+
+        // Chỉ cho phép tải backup đã hoàn thành
+        if (backup.getStatus() != BackupHistory.BackupStatus.COMPLETED) {
+            throw new RuntimeException(
+                    "Chỉ có thể tải các backup đã hoàn thành thành công. Trạng thái hiện tại: " + backup.getStatus());
+        }
+
+        File backupFile = new File(backup.getFilePath());
+        if (!backupFile.exists()) {
+            throw new RuntimeException("File backup không tồn tại trên server: " + backup.getFileName());
+        }
+
+        log.info("Đang chuẩn bị tải file backup: {} ({})", backup.getFileName(), formatBytes(backup.getFileSize()));
+
+        return new FileSystemResource(backupFile);
+    }
+
+    /**
+     * Lấy tên file của backup
+     * 
+     * @param backupId ID của backup
+     * @return Tên file backup
+     */
+    @Transactional(readOnly = true)
+    public String getBackupFileName(Long backupId) {
+        BackupHistory backup = backupHistoryRepository.findById(backupId)
+                .orElseThrow(() -> new RuntimeException("Backup không tồn tại với ID: " + backupId));
+
+        return backup.getFileName();
+    }
+
+    /**
+     * Lấy thông tin chi tiết của một backup
+     * 
+     * @param backupId ID của backup
+     * @return DTO chứa thông tin backup
+     */
+    @Transactional(readOnly = true)
+    public BackupHistoryDTO getBackupById(Long backupId) {
+        BackupHistory backup = backupHistoryRepository.findById(backupId)
+                .orElseThrow(() -> new RuntimeException("Backup không tồn tại với ID: " + backupId));
+
+        BackupHistoryDTO dto = BackupHistoryDTO.fromEntity(backup);
+
+        // Lấy username của người tạo nếu có
+        if (backup.getCreatedBy() != null) {
+            userRepository.findById(backup.getCreatedBy()).ifPresent(user -> {
+                dto.setCreatedByUsername(user.getUsername());
+            });
+        }
+
+        return dto;
+    }
+
     // ==================== PRIVATE HELPER METHODS ====================
 
-    private boolean executeMysqlDump(String dbName, String outputFilePath) {
+    /**
+     * Kết quả backup chứa cả status và error message
+     */
+    private static class BackupResult {
+        boolean success;
+        String errorMessage;
+
+        BackupResult(boolean success, String errorMessage) {
+            this.success = success;
+            this.errorMessage = errorMessage;
+        }
+    }
+
+    private BackupResult executeMysqlDump(String dbName, String outputFilePath) {
         try {
+            // Kiểm tra mysqldump có tồn tại không
+            if (!isMysqldumpAvailable()) {
+                String error = "mysqldump không được cài đặt hoặc không có trong PATH. Vui lòng cài đặt MySQL client tools.";
+                log.error(error);
+                return new BackupResult(false, error);
+            }
+
             // Build mysqldump command
             ProcessBuilder processBuilder;
-            
-            if (databasePassword != null && !databasePassword.isEmpty()) {
-                processBuilder = new ProcessBuilder(
-                    "mysqldump",
-                    "-u" + databaseUsername,
-                    "-p" + databasePassword,
-                    "--databases", dbName,
-                    "--result-file=" + outputFilePath,
-                    "--single-transaction",
-                    "--quick",
-                    "--lock-tables=false"
-                );
-            } else {
-                processBuilder = new ProcessBuilder(
-                    "mysqldump",
-                    "-u" + databaseUsername,
-                    "--databases", dbName,
-                    "--result-file=" + outputFilePath,
-                    "--single-transaction",
-                    "--quick",
-                    "--lock-tables=false"
-                );
-            }
+            String host = extractHost(databaseUrl);
+            String port = extractPort(databaseUrl);
 
-            processBuilder.redirectErrorStream(true);
+            List<String> command = new java.util.ArrayList<>();
+            command.add("mysqldump");
+            command.add("-h" + host);
+            command.add("-P" + port);
+            command.add("-u" + databaseUsername);
+            if (databasePassword != null && !databasePassword.isEmpty()) {
+                command.add("-p" + databasePassword);
+            }
+            command.add("--databases");
+            command.add(dbName);
+            command.add("--result-file=" + outputFilePath);
+            command.add("--single-transaction");
+            command.add("--quick");
+            command.add("--lock-tables=false");
+            command.add("--routines");
+            command.add("--triggers");
+
+            processBuilder = new ProcessBuilder(command);
+
+            // QUAN TRỌNG: Không merge stderr vào stdout để capture error riêng
+            processBuilder.redirectErrorStream(false);
             Process process = processBuilder.start();
 
-            // Đọc output
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                log.debug("mysqldump: {}", line);
+            // Đọc stdout và stderr riêng biệt trong thread riêng
+            StringBuilder stdoutBuilder = new StringBuilder();
+            StringBuilder stderrBuilder = new StringBuilder();
+
+            Thread stdoutThread = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        stdoutBuilder.append(line).append("\n");
+                        log.debug("mysqldump stdout: {}", line);
+                    }
+                } catch (IOException e) {
+                    log.error("Error reading stdout", e);
+                }
+            });
+
+            Thread stderrThread = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        // Bỏ qua warning về password trên command line
+                        if (!line.contains("Using a password on the command line interface can be insecure")) {
+                            stderrBuilder.append(line).append("\n");
+                            log.warn("mysqldump stderr: {}", line);
+                        }
+                    }
+                } catch (IOException e) {
+                    log.error("Error reading stderr", e);
+                }
+            });
+
+            stdoutThread.start();
+            stderrThread.start();
+
+            // Chờ process hoàn thành với timeout 30 phút
+            boolean finished = process.waitFor(30, java.util.concurrent.TimeUnit.MINUTES);
+
+            if (!finished) {
+                process.destroyForcibly();
+                return new BackupResult(false, "Backup timeout sau 30 phút");
             }
 
-            int exitCode = process.waitFor();
-            return exitCode == 0;
+            // Chờ các thread đọc output hoàn thành
+            stdoutThread.join(5000);
+            stderrThread.join(5000);
+
+            int exitCode = process.exitValue();
+
+            if (exitCode == 0) {
+                log.info("mysqldump hoàn thành thành công, exit code: 0");
+                return new BackupResult(true, null);
+            } else {
+                String errorMsg = stderrBuilder.toString().trim();
+                if (errorMsg.isEmpty()) {
+                    errorMsg = "mysqldump thất bại với exit code: " + exitCode;
+                }
+                log.error("mysqldump thất bại: {}", errorMsg);
+                return new BackupResult(false, errorMsg);
+            }
 
         } catch (Exception e) {
-            log.error("Error executing mysqldump: ", e);
+            String error = "Lỗi khi thực thi mysqldump: " + e.getMessage();
+            log.error(error, e);
+            return new BackupResult(false, error);
+        }
+    }
+
+    /**
+     * Kiểm tra mysqldump có sẵn trong hệ thống không
+     */
+    private boolean isMysqldumpAvailable() {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("mysqldump", "--version");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line = reader.readLine();
+            int exitCode = process.waitFor();
+
+            if (exitCode == 0 && line != null) {
+                log.info("mysqldump version: {}", line);
+                return true;
+            }
             return false;
+        } catch (Exception e) {
+            log.warn("mysqldump không khả dụng: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Trích xuất host từ JDBC URL
+     */
+    private String extractHost(String jdbcUrl) {
+        try {
+            // jdbc:mysql://hostname:port/database
+            String url = jdbcUrl.replace("jdbc:mysql://", "");
+            String hostPort = url.split("/")[0];
+            return hostPort.split(":")[0];
+        } catch (Exception e) {
+            return "localhost";
+        }
+    }
+
+    /**
+     * Trích xuất port từ JDBC URL
+     */
+    private String extractPort(String jdbcUrl) {
+        try {
+            String url = jdbcUrl.replace("jdbc:mysql://", "");
+            String hostPort = url.split("/")[0];
+            String[] parts = hostPort.split(":");
+            if (parts.length > 1) {
+                return parts[1];
+            }
+            return "3306"; // Default MySQL port
+        } catch (Exception e) {
+            return "3306";
         }
     }
 
     private boolean executeMysqlRestore(String dbName, String inputFilePath) {
         try {
             ProcessBuilder processBuilder;
-            
+
             if (databasePassword != null && !databasePassword.isEmpty()) {
                 processBuilder = new ProcessBuilder(
-                    "mysql",
-                    "-u" + databaseUsername,
-                    "-p" + databasePassword,
-                    dbName
-                );
+                        "mysql",
+                        "-u" + databaseUsername,
+                        "-p" + databasePassword,
+                        dbName);
             } else {
                 processBuilder = new ProcessBuilder(
-                    "mysql",
-                    "-u" + databaseUsername,
-                    dbName
-                );
+                        "mysql",
+                        "-u" + databaseUsername,
+                        dbName);
             }
 
             processBuilder.redirectErrorStream(true);
@@ -380,8 +695,9 @@ public class DatabaseBackupService {
 
             // Đọc file backup và ghi vào process input
             try (BufferedReader fileReader = new BufferedReader(new FileReader(inputFilePath));
-                 BufferedWriter processWriter = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()))) {
-                
+                    BufferedWriter processWriter = new BufferedWriter(
+                            new OutputStreamWriter(process.getOutputStream()))) {
+
                 String line;
                 while ((line = fileReader.readLine()) != null) {
                     processWriter.write(line);
@@ -433,16 +749,16 @@ public class DatabaseBackupService {
         if (bytes == 0) {
             return "0 B";
         }
-        
-        String[] units = {"B", "KB", "MB", "GB"};
+
+        String[] units = { "B", "KB", "MB", "GB" };
         int unitIndex = 0;
         double size = bytes;
-        
+
         while (size >= 1024 && unitIndex < units.length - 1) {
             size /= 1024;
             unitIndex++;
         }
-        
+
         return String.format("%.2f %s", size, units[unitIndex]);
     }
 }
