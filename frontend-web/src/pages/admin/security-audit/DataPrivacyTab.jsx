@@ -17,9 +17,15 @@ const DataPrivacyTab = () => {
   const [size, setSize] = useState(20);
   const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [deletionLoading, setDeletionLoading] = useState(false);
+  const [deletionData, setDeletionData] = useState([]);
+  const [delPage, setDelPage] = useState(0);
+  const [delSize, setDelSize] = useState(20);
+  const [delTotalElements, setDelTotalElements] = useState(0);
 
   useEffect(() => {
     fetchRequests();
+    fetchDeletionHistory();
   }, []);
 
   const fetchRequests = async ({ page: p = page, size: s = size } = {}) => {
@@ -93,6 +99,40 @@ const DataPrivacyTab = () => {
       console.error('Fetch requests error:', err?.response?.data || err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDeletionHistory = async ({ page: p = delPage, size: s = delSize } = {}) => {
+    try {
+      setDeletionLoading(true);
+      const resp = await userRequestService.getDeletionHistory({ page: p, size: s });
+      const list = Array.isArray(resp?.items) ? resp.items : [];
+
+      const rows = list.map((r) => {
+        const key = r.id || Math.random().toString(36).slice(2);
+        const email = r.userEmail || r.email || (r.user && r.user.email) || r.username;
+        const approvedBy = r.approvedByUsername || r.approvedBy || r.admin || r.adminUsername;
+        return {
+          key,
+          id: r.id,
+          user: email,
+          approvedBy,
+          approvedAt: r.approvedAt || r.processedAt || r.createdAt,
+          deletedAt: r.deletedAt || r.scheduledDeletionAt,
+          raw: r,
+        };
+      });
+
+      setDeletionData(rows);
+      setDelPage(resp.page ?? p);
+      setDelSize(resp.size ?? s);
+      setDelTotalElements(resp.totalElements ?? (Array.isArray(list) ? list.length : 0));
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Không thể tải lịch sử xóa tài khoản';
+      message.error(msg);
+      console.error('Fetch deletion history error:', err?.response?.data || err);
+    } finally {
+      setDeletionLoading(false);
     }
   };
 
@@ -262,15 +302,23 @@ const DataPrivacyTab = () => {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `request-${id}.zip`;
+            // Try to derive filename from Content-Disposition header
+            const cd = (res && (res.headers && (res.headers['content-disposition'] || res.headers['Content-Disposition']))) || '';
+            let filename = `request-${id}.zip`;
+            if (cd) {
+              const match = /filename\*=?UTF-8''([^;\n]+)|filename=\"?([^\";\n]+)\"?/.exec(cd);
+              if (match) filename = decodeURIComponent(match[1] || match[2]);
+            }
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             a.remove();
             window.URL.revokeObjectURL(url);
             message.success('Bắt đầu tải xuống');
           } catch (err) {
-            message.error('Không thể tải xuống');
-            console.error(err);
+            const serverMsg = err?.message || (err?.response && (err.response.data?.message || err.response.data)) || 'Không thể tải xuống';
+            message.error(serverMsg);
+            console.error('Download error:', err);
           } finally {
             setLoading(false);
           }
@@ -329,9 +377,87 @@ const DataPrivacyTab = () => {
               </Button>
             </div>
           );
+        } else if (record.status === 'Đã duyệt' || record.status === 'Chờ xử lý') {
+          // show Cancel button for approved/pending delete-account requests
+          const rawType = (record.raw && (record.raw.requestType || record.raw.type || (record.raw.request && record.raw.request.type))) || '';
+          const rawTypeUp = rawType.toString().toUpperCase();
+          const isDelete = rawTypeUp.includes('DELETE') || rawTypeUp.includes('REMOVE') || rawTypeUp.includes('DELETE_ACCOUNT');
+          if (isDelete) {
+            const handleCancel = async () => {
+              try {
+                setLoading(true);
+                await userRequestService.cancelDeletionRequest(id);
+                message.success('Yêu cầu xoá đã được hủy');
+                await fetchRequests();
+              } catch (err) {
+                const serverMsg = err?.message || (err?.response && (err.response.data?.message || err.response.data)) || 'Không thể hủy yêu cầu';
+                message.error(serverMsg);
+                console.error('Cancel deletion error:', err);
+              } finally {
+                setLoading(false);
+              }
+            };
+
+            return (
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Button
+                  size="small"
+                  onClick={handleCancel}
+                  style={{
+                    color: '#e7000b',
+                    borderRadius: 8,
+                    height: 32,
+                    paddingLeft: 12,
+                    paddingRight: 12,
+                    border: '1px solid rgba(0,0,0,0.1)',
+                  }}
+                >
+                  Hủy
+                </Button>
+              </div>
+            );
+          }
         }
         return null;
       },
+    },
+  ];
+
+  const deletionColumns = [
+    {
+      title: 'Mã yêu cầu',
+      dataIndex: 'id',
+      key: 'id',
+      width: 110,
+    },
+    {
+      title: 'Người dùng',
+      dataIndex: 'user',
+      key: 'user',
+      width: 220,
+    },
+    {
+      title: 'Đã duyệt bởi',
+      dataIndex: 'approvedBy',
+      key: 'approvedBy',
+      width: 180,
+    },
+    {
+      title: 'Ngày duyệt',
+      dataIndex: 'approvedAt',
+      key: 'approvedAt',
+      width: 180,
+    },
+    {
+      title: 'Ngày xóa',
+      dataIndex: 'deletedAt',
+      key: 'deletedAt',
+      width: 180,
+      render: (text) => (
+        <Tag color="#dcfce7" style={{ border: 'none', borderRadius: 8, color: '#065f46' }}>
+          {text || 'Đang chờ xóa'}
+        </Tag>
+      ),
     },
   ];
 
@@ -406,6 +532,41 @@ const DataPrivacyTab = () => {
             </div>
           </div>
         </div>
+      </Card>
+
+      {/* Deletion History Table */}
+      <Card
+        style={{
+          borderRadius: 14,
+          border: '1px solid rgba(0,0,0,0.1)',
+        }}
+        bodyStyle={{ padding: 1 }}
+      >
+        <div style={{ padding: 16 }}>
+          <Title level={5} style={{ margin: 0, marginBottom: 8 }}>
+            Lịch sử tài khoản đã xóa
+          </Title>
+          <Text type="secondary">Danh sách tài khoản đã xóa hoặc lên lịch xóa</Text>
+        </div>
+        <Spin spinning={deletionLoading}>
+          <Table
+            columns={deletionColumns}
+            dataSource={deletionData}
+            pagination={{
+              current: delPage + 1,
+              pageSize: delSize,
+              total: delTotalElements,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+            }}
+            onChange={(pagination) => {
+              const newPage = (pagination.current || 1) - 1;
+              const newSize = pagination.pageSize || delSize;
+              fetchDeletionHistory({ page: newPage, size: newSize });
+            }}
+            scroll={{ x: 900 }}
+          />
+        </Spin>
       </Card>
     </div>
   );

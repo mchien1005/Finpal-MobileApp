@@ -68,21 +68,32 @@ export const rejectRequest = async (id, { adminNote = '' } = {}) => {
   }
 };
 
-// Download exported data (try common path)
+// Admin: cancel deletion request (Swagger: PUT /user-requests/admin/{id}/cancel)
+export const cancelDeletionRequest = async (id, { adminNote = '' } = {}) => {
+  try {
+    const res = await api.put(`/user-requests/admin/${id}/cancel`, { adminNote });
+    return res.data;
+  } catch (err) {
+    const msg = err?.response?.data?.message || err?.response?.data || err?.message || 'Không thể hủy yêu cầu';
+    console.error('Error canceling deletion request:', err);
+    throw new Error(msg);
+  }
+};
+
+// Download exported data for a request (Swagger: GET /user-requests/admin/{id}/download-export)
 export const downloadRequestData = async (id) => {
   try {
-    // try export path
-    const res = await api.get(`/user-requests/${id}/export`, { responseType: 'blob' });
+    const res = await api.get(`/user-requests/admin/${id}/download-export`, { responseType: 'blob' });
     return res;
   } catch (err) {
-    console.error('Error downloading request data (export):', err);
-    // fallback to download path
+    // try common alternates
     try {
-      const res2 = await api.get(`/user-requests/${id}/download`, { responseType: 'blob' });
+      const res2 = await api.get(`/user-requests/${id}/export`, { responseType: 'blob' });
       return res2;
-    } catch (err2) {
-      console.error('Error downloading request data (download):', err2);
-      throw err2;
+    } catch (e2) {
+      const msg = err?.response?.data?.message || err?.response?.data || err?.message || 'Không thể tải tệp xuất dữ liệu';
+      console.error('Error downloading request data:', err, e2);
+      throw new Error(msg);
     }
   }
 };
@@ -105,10 +116,72 @@ export const countPendingRequests = async () => {
   }
 };
 
+// Admin: get deletion history (accounts that have been deleted)
+export const getDeletionHistory = async ({ page = 0, size = 20, sortBy = 'deletedAt', sortDirection = 'DESC' } = {}) => {
+  try {
+    // Try official admin path first
+    const res = await api.get('/user-requests/admin/deletion-history', {
+      params: { page, size, sortBy, sortDirection },
+    });
+
+    const body = res.data && res.data.data ? res.data.data : res.data;
+
+    if (body && typeof body === 'object' && Array.isArray(body.content)) {
+      return {
+        items: body.content,
+        page: body.pageNumber ?? page,
+        size: body.pageSize ?? size,
+        totalElements: body.totalElements ?? null,
+        totalPages: body.totalPages ?? null,
+        raw: body,
+      };
+    }
+
+    if (Array.isArray(body)) {
+      return {
+        items: body,
+        page,
+        size: body.length,
+        totalElements: body.length,
+        totalPages: 1,
+        raw: body,
+      };
+    }
+
+    // Fallbacks for alternative paths
+    try {
+      const alt = await api.get('/user-requests/deletion-history', { params: { page, size, sortBy, sortDirection } });
+      const b2 = alt.data && alt.data.data ? alt.data.data : alt.data;
+      if (b2 && typeof b2 === 'object' && Array.isArray(b2.content)) {
+        return {
+          items: b2.content,
+          page: b2.pageNumber ?? page,
+          size: b2.pageSize ?? size,
+          totalElements: b2.totalElements ?? null,
+          totalPages: b2.totalPages ?? null,
+          raw: b2,
+        };
+      }
+      if (Array.isArray(b2)) {
+        return { items: b2, page, size: b2.length, totalElements: b2.length, totalPages: 1, raw: b2 };
+      }
+    } catch (e2) {
+      // ignore and return empty below
+    }
+
+    return { items: [], page, size, totalElements: 0, totalPages: 0, raw: body };
+  } catch (err) {
+    console.error('Error fetching deletion history:', err);
+    throw err;
+  }
+};
+
 export default {
   getAdminRequests,
   approveRequest,
   rejectRequest,
+  cancelDeletionRequest,
   downloadRequestData,
   countPendingRequests,
+  getDeletionHistory,
 };
