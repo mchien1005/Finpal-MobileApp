@@ -19,7 +19,12 @@ class BudgetListCard extends StatefulWidget {
   State<BudgetListCard> createState() => _BudgetListCardState();
 }
 
-class _BudgetListCardState extends State<BudgetListCard> {
+class _BudgetListCardState extends State<BudgetListCard>
+    with AutomaticKeepAliveClientMixin {
+  // Giữ widget sống khi chuyển tab
+  @override
+  bool get wantKeepAlive => true;
+
   List<BudgetResponse> _budgets = [];
   bool _isLoading = true;
   final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
@@ -193,6 +198,8 @@ class _BudgetListCardState extends State<BudgetListCard> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Bắt buộc cho AutomaticKeepAliveClientMixin
+
     // Nếu đang ở chế độ edit, hiển thị BudgetForm
     if (_editingBudget != null) {
       return BudgetForm(

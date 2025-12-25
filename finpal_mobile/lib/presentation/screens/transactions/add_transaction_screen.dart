@@ -34,6 +34,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   bool _isCategoriesLoading = true;
   int _unreadCount = 0;
 
+  // Cache categories theo loại (EXPENSE/INCOME) để không cần gọi API mỗi lần
+  final Map<String, List<Category>> _categoryCache = {};
+
   // Transaction type cho tab giao dịch
   String _transactionType = 'expense';
 
@@ -55,15 +58,30 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     super.dispose();
   }
 
-  /// Tải danh mục từ API
+  /// Tải danh mục từ API (sử dụng cache nếu đã có)
   Future<void> _loadCategories() async {
+    final type = _transactionType == 'expense' ? 'EXPENSE' : 'INCOME';
+
+    // Kiểm tra cache trước - nếu đã có thì dùng luôn
+    if (_categoryCache.containsKey(type)) {
+      setState(() {
+        _categories = _categoryCache[type]!;
+        _isCategoriesLoading = false;
+      });
+      return; // Không cần gọi API
+    }
+
+    // Chưa có trong cache - gọi API
     setState(() {
       _isCategoriesLoading = true;
     });
 
     try {
-      final type = _transactionType == 'expense' ? 'EXPENSE' : 'INCOME';
       final categories = await _transactionService.getCategories(type: type);
+
+      // Lưu vào cache
+      _categoryCache[type] = categories;
+
       setState(() {
         _categories = categories;
         _isCategoriesLoading = false;

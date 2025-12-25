@@ -25,7 +25,12 @@ class AddTransactionTab extends StatefulWidget {
   State<AddTransactionTab> createState() => _AddTransactionTabState();
 }
 
-class _AddTransactionTabState extends State<AddTransactionTab> {
+class _AddTransactionTabState extends State<AddTransactionTab>
+    with AutomaticKeepAliveClientMixin {
+  // Giữ widget sống khi chuyển tab
+  @override
+  bool get wantKeepAlive => true;
+
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -35,6 +40,41 @@ class _AddTransactionTabState extends State<AddTransactionTab> {
   Category? _selectedCategory;
   DateTime? _selectedDate;
   bool _isLoading = false;
+
+  // Danh sách nguồn giao dịch
+  final List<String> _transactionSources = [
+    'Tiền mặt',
+    'Vietcombank',
+    'Techcombank',
+    'BIDV',
+    'VietinBank',
+    'MB Bank',
+    'ACB',
+    'Sacombank',
+    'VPBank',
+    'TPBank',
+    'HDBank',
+    'SHB',
+    'MSB',
+    'VIB',
+    'Eximbank',
+    'SeABank',
+    'OCB',
+    'LienVietPostBank',
+    'NCB',
+    'ABBank',
+    'BacABank',
+    'Agribank',
+    'HSBC Vietnam',
+    'Standard Chartered VN',
+    'MoMo',
+    'ZaloPay',
+    'VNPay',
+    'ShopeePay',
+    'ViettelPay',
+    'VNPT Money',
+    'Khác',
+  ];
 
   @override
   void dispose() {
@@ -121,6 +161,7 @@ class _AddTransactionTabState extends State<AddTransactionTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Bắt buộc cho AutomaticKeepAliveClientMixin
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -194,9 +235,11 @@ class _AddTransactionTabState extends State<AddTransactionTab> {
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _selectedSource,
-                    hint: const Text('Chọn danh mục'),
+                    hint: const Text('Chọn nguồn giao dịch'),
                     decoration: _buildInputDecoration(),
-                    items: ['Tiền mặt', 'Ngân hàng', 'Ví điện tử']
+                    menuMaxHeight: 300, // Giới hạn chiều cao dropdown
+                    isExpanded: true,
+                    items: _transactionSources
                         .map(
                           (item) =>
                               DropdownMenuItem(value: item, child: Text(item)),

@@ -32,14 +32,26 @@ class _BudgetCategoryGridState extends State<BudgetCategoryGrid> {
   List<Category> _categories = [];
   bool _isLoading = true;
 
+  // Cache static để lưu categories, chia sẻ giữa tất cả instances
+  static List<Category>? _cachedCategories;
+
   @override
   void initState() {
     super.initState();
     _loadCategories();
   }
 
-  /// Tải danh mục chi tiêu từ API
+  /// Tải danh mục chi tiêu từ API (sử dụng cache nếu đã có)
   Future<void> _loadCategories() async {
+    // Kiểm tra cache trước - nếu đã có thì dùng luôn
+    if (_cachedCategories != null && _cachedCategories!.isNotEmpty) {
+      setState(() {
+        _categories = _cachedCategories!;
+        _isLoading = false;
+      });
+      return; // Không cần gọi API
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -49,6 +61,10 @@ class _BudgetCategoryGridState extends State<BudgetCategoryGrid> {
       final categories = await _transactionService.getCategories(
         type: 'EXPENSE',
       );
+
+      // Lưu vào cache static
+      _cachedCategories = categories;
+
       setState(() {
         _categories = categories;
         _isLoading = false;
@@ -66,6 +82,11 @@ class _BudgetCategoryGridState extends State<BudgetCategoryGrid> {
         );
       }
     }
+  }
+
+  /// Xóa cache (gọi khi cần refresh dữ liệu)
+  static void clearCache() {
+    _cachedCategories = null;
   }
 
   @override

@@ -3,11 +3,7 @@ import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../data/services/sms_service.dart';
-import '../../data/services/transaction_deduplicator.dart';
 
-/// A reusable widget that provides SMS scanning functionality
-/// to auto-import bank transactions from SMS messages.
-/// Includes deduplication to prevent duplicate transactions.
 class SmsScannerBanner extends StatefulWidget {
   const SmsScannerBanner({super.key});
 
@@ -17,7 +13,6 @@ class SmsScannerBanner extends StatefulWidget {
 
 class _SmsScannerBannerState extends State<SmsScannerBanner> {
   final SmsService _smsService = SmsService();
-  final TransactionDeduplicator _deduplicator = TransactionDeduplicator();
   final SmsQuery _smsQuery = SmsQuery();
   bool _isSmsScanning = false;
 
@@ -120,8 +115,7 @@ class _SmsScannerBannerState extends State<SmsScannerBanner> {
             title: const Text('Xác nhận quét SMS'),
             content: Text(
               'Tìm thấy ${bankMessages.length} tin nhắn từ ngân hàng.\n\n'
-              'Bạn có muốn quét và thêm giao dịch tự động?\n\n'
-              '(Giao dịch trùng lặp sẽ tự động được bỏ qua)',
+              'Bạn có muốn quét và thêm giao dịch tự động?',
             ),
             actions: [
               TextButton(
@@ -147,9 +141,7 @@ class _SmsScannerBannerState extends State<SmsScannerBanner> {
         }
       }
 
-      // Process with deduplication
       int addedCount = 0;
-      int duplicateCount = 0;
       int failedCount = 0;
       List<String> errors = [];
 
@@ -162,22 +154,6 @@ class _SmsScannerBannerState extends State<SmsScannerBanner> {
         );
         final date = sms.date ?? DateTime.now();
 
-        // Check for duplicate using deduplicator
-        final amount = _deduplicator.parseAmountFromMessage(messageBody);
-        if (amount != null) {
-          final isNew = await _deduplicator.checkAndMark(
-            amount: amount,
-            date: date,
-            bankName: sender,
-          );
-
-          if (!isNew) {
-            duplicateCount++;
-            continue; // Skip duplicate
-          }
-        }
-
-        // Process the transaction
         try {
           final result = await _smsService.scanAndProcessSms([
             {'sender': sender, 'message': messageBody, 'date': date},
@@ -191,12 +167,11 @@ class _SmsScannerBannerState extends State<SmsScannerBanner> {
         }
       }
 
-      // Show result
+      // Hiển thị kết quả
       if (mounted) {
         _showScanResultDialog(
           totalScanned: bankMessages.length,
           added: addedCount,
-          duplicates: duplicateCount,
           failed: failedCount,
           errors: errors,
         );
@@ -219,11 +194,10 @@ class _SmsScannerBannerState extends State<SmsScannerBanner> {
     }
   }
 
-  /// Show scan result dialog with deduplication info
+  /// Show scan result dialog
   void _showScanResultDialog({
     required int totalScanned,
     required int added,
-    required int duplicates,
     required int failed,
     required List<String> errors,
   }) {
@@ -247,13 +221,6 @@ class _SmsScannerBannerState extends State<SmsScannerBanner> {
               '$added',
               valueColor: Colors.green,
             ),
-            if (duplicates > 0)
-              _buildResultRow(
-                'Bỏ qua (trùng lặp):',
-                '$duplicates',
-                valueColor: Colors.orange,
-                icon: Icons.content_copy,
-              ),
             if (failed > 0)
               _buildResultRow('Thất bại:', '$failed', valueColor: Colors.red),
             if (errors.isNotEmpty) ...[
