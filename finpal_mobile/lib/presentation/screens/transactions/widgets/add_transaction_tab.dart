@@ -36,6 +36,41 @@ class _AddTransactionTabState extends State<AddTransactionTab> {
   DateTime? _selectedDate;
   bool _isLoading = false;
 
+  // Danh sách nguồn giao dịch
+  final List<String> _transactionSources = [
+    'Tiền mặt',
+    'Vietcombank',
+    'Techcombank',
+    'BIDV',
+    'VietinBank',
+    'MB Bank',
+    'ACB',
+    'Sacombank',
+    'VPBank',
+    'TPBank',
+    'HDBank',
+    'SHB',
+    'MSB',
+    'VIB',
+    'Eximbank',
+    'SeABank',
+    'OCB',
+    'LienVietPostBank',
+    'NCB',
+    'ABBank',
+    'BacABank',
+    'Agribank',
+    'HSBC Vietnam',
+    'Standard Chartered VN',
+    'MoMo',
+    'ZaloPay',
+    'VNPay',
+    'ShopeePay',
+    'ViettelPay',
+    'VNPT Money',
+    'Khác',
+  ];
+
   @override
   void dispose() {
     _amountController.dispose();
@@ -194,9 +229,11 @@ class _AddTransactionTabState extends State<AddTransactionTab> {
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _selectedSource,
-                    hint: const Text('Chọn danh mục'),
+                    hint: const Text('Chọn nguồn giao dịch'),
                     decoration: _buildInputDecoration(),
-                    items: ['Tiền mặt', 'Ngân hàng', 'Ví điện tử']
+                    menuMaxHeight: 300, // Giới hạn chiều cao dropdown
+                    isExpanded: true,
+                    items: _transactionSources
                         .map(
                           (item) =>
                               DropdownMenuItem(value: item, child: Text(item)),
