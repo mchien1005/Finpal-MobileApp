@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/widgets/success_notification_dialog.dart';
 import 'package:finpal_mobile/core/constants/app_colors.dart';
+import 'package:finpal_mobile/data/services/notification_settings_service.dart';
+import 'package:finpal_mobile/data/models/notification_settings.dart';
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -9,6 +11,9 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
+  final NotificationSettingsService _service = NotificationSettingsService();
+  bool _isLoading = true;
+
   // Notification Channel Settings
   bool _smsNotifications = true;
   bool _emailNotifications = true;
@@ -23,6 +28,42 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   // Periodic Reports
   bool _weeklyReports = false;
   bool _monthlyReports = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      final NotificationSettings settings = await _service.getSettings();
+      setState(() {
+        _smsNotifications = settings.smsNotifications;
+        _emailNotifications = settings.emailNotifications;
+        _pushNotifications = settings.pushNotifications;
+
+        _transactionAlerts = settings.transactionAlerts;
+        _budgetAlerts = settings.budgetAlerts;
+        _goalReminders = settings.goalReminders;
+        _securityAlerts = settings.securityAlerts;
+
+        _weeklyReports = settings.weeklyReports;
+        _monthlyReports = settings.monthlyReports;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi tải cài đặt: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,11 +152,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
               // Content
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                       // Notification Channels Section
                       const Padding(
                         padding: EdgeInsets.only(left: 8, bottom: 12),
@@ -365,9 +408,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           ),
                         ),
                       ),
+
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 36,
+                        child: TextButton(
+                          onPressed: _handleResetSettings,
+                          child: const Text('Reset về mặc định'),
+                        ),
+                      ),
                     ],
-                  ),
-                ),
+                        ),
+                      ),
               ),
             ],
           ),
@@ -452,10 +505,77 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _handleSaveSettings() {
-    // TODO: Save settings to backend
-    SuccessNotificationDialog.show(
-      context,
-      message: 'Đã lưu cài đặt thành công',
+    _saveSettings();
+  }
+
+  Future<void> _saveSettings() async {
+    final settings = NotificationSettings(
+      smsNotifications: _smsNotifications,
+      emailNotifications: _emailNotifications,
+      pushNotifications: _pushNotifications,
+      transactionAlerts: _transactionAlerts,
+      budgetAlerts: _budgetAlerts,
+      goalReminders: _goalReminders,
+      securityAlerts: _securityAlerts,
+      weeklyReports: _weeklyReports,
+      monthlyReports: _monthlyReports,
     );
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      await _service.updateSettings(settings);
+      Navigator.of(context).pop(); // close loading
+      SuccessNotificationDialog.show(
+        context,
+        message: 'Đã lưu cài đặt thành công',
+      );
+    } catch (e) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi lưu cài đặt: $e')),
+      );
+    }
+  }
+
+  Future<void> _handleResetSettings() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xác nhận'),
+        content: const Text('Bạn có muốn reset cài đặt về mặc định không?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Hủy')),
+          TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Xác nhận')),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      await _service.resetSettings();
+      Navigator.of(context).pop();
+      await _loadSettings();
+      SuccessNotificationDialog.show(
+        context,
+        message: 'Đã reset về mặc định',
+      );
+    } catch (e) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi reset cài đặt: $e')),
+      );
+    }
   }
 }

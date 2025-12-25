@@ -50,4 +50,26 @@ class ApiService {
       throw Exception('Không thể kết nối đến server: $e');
     }
   }
+
+  Future<Map<String, dynamic>> put(
+    String endpoint,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['message'] ?? 'Có lỗi xảy ra');
+      }
+    } catch (e) {
+      throw Exception('Không thể kết nối đến server: $e');
+    }
+  }
 }
