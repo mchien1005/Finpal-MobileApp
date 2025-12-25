@@ -39,6 +39,10 @@ public interface UserRequestRepository extends JpaRepository<UserRequest, Long> 
         // Đếm số yêu cầu của một user theo trạng thái
         long countByUserIdAndStatus(Long userId, RequestStatus status);
 
+        // Tìm yêu cầu theo ID với User đã được load (tránh LazyInitializationException)
+        @Query("SELECT ur FROM UserRequest ur JOIN FETCH ur.user LEFT JOIN FETCH ur.approvedBy WHERE ur.id = :id")
+        java.util.Optional<UserRequest> findByIdWithUser(@Param("id") Long id);
+
         // Kiểm tra xem user có yêu cầu PENDING nào không
         boolean existsByUserIdAndStatusAndRequestType(
                         Long userId,

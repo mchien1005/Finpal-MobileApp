@@ -221,7 +221,9 @@ public class UserRequestService {
      */
     @Transactional
     public void processApprovedRequestById(Long requestId) {
-        UserRequest request = userRequestRepository.findById(requestId)
+        // Sử dụng findByIdWithUser để load User cùng với UserRequest
+        // Tránh lỗi LazyInitializationException khi chạy async
+        UserRequest request = userRequestRepository.findByIdWithUser(requestId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu: " + requestId));
 
         // Chỉ xử lý nếu đang ở trạng thái APPROVED
@@ -235,14 +237,21 @@ public class UserRequestService {
 
     /**
      * Xử lý yêu cầu đã được duyệt
+     * Chạy async trong thread riêng, tạo transaction mới để load entities
      */
     @Async
-    protected void processApprovedRequest(UserRequest request) {
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public void processApprovedRequest(UserRequest request) {
         try {
-            if (request.getRequestType() == UserRequest.RequestType.EXPORT_DATA) {
-                processDataExportRequest(request);
-            } else if (request.getRequestType() == UserRequest.RequestType.DELETE_ACCOUNT) {
-                processAccountDeletionRequest(request);
+            // Reload request với User đã được fetch để tránh LazyInitializationException
+            Long requestId = request.getId();
+            UserRequest freshRequest = userRequestRepository.findByIdWithUser(requestId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu: " + requestId));
+
+            if (freshRequest.getRequestType() == UserRequest.RequestType.EXPORT_DATA) {
+                processDataExportRequest(freshRequest);
+            } else if (freshRequest.getRequestType() == UserRequest.RequestType.DELETE_ACCOUNT) {
+                processAccountDeletionRequest(freshRequest);
             }
         } catch (Exception e) {
             log.error("Error processing approved request {}", request.getId(), e);
