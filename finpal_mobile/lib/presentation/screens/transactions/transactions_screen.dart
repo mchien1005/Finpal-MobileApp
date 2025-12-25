@@ -6,6 +6,8 @@ import '../../../core/utils/bottom_nav_helper.dart';
 import '../../../core/utils/app_bar_with_drawer.dart';
 import '../../../core/widgets/success_notification_dialog.dart';
 import '../../../core/widgets/confirmation_dialog.dart';
+import '../../../data/models/transaction.dart';
+import '../../../data/services/transaction_service.dart';
 import 'edit_transaction_dialog.dart';
 
 class TransactionsScreen extends StatefulWidget {
@@ -17,11 +19,14 @@ class TransactionsScreen extends StatefulWidget {
 
 class _TransactionsScreenState extends State<TransactionsScreen>
     with SingleTickerProviderStateMixin {
-  int _selectedNavIndex = 1;
+  final int _selectedNavIndex = 1;
   late TabController _tabController;
+  final TransactionService _transactionService = TransactionService();
 
   // Transaction data
-  List<Map<String, dynamic>> _transactions = [];
+  List<Transaction> _transactions = [];
+  bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -32,95 +37,73 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         setState(() {});
       }
     });
+    _loadTransactions();
+  }
 
-    // Initialize transactions data
-    _transactions = [
-      {
-        'id': '1',
-        'icon': Icons.directions_car,
-        'iconBg': const Color(0xFFFFE2E2),
-        'title': 'GRAB',
-        'category': 'Di chuyển',
-        'account': 'VCB',
-        'amount': '-55.000đ',
-        'date': '11-13 09:00',
-        'isIncome': false,
-        'hasAiBadge': false,
-      },
-      {
-        'id': '2',
-        'icon': Icons.coffee,
-        'iconBg': const Color(0xFFFFE2E2),
-        'title': 'THE COFFEE HOUSE',
-        'category': '\u0102n u\u1ed1ng',
-        'account': 'Techcombank',
-        'amount': '-125.000\u0111',
-        'date': '11-13 10:30',
-        'isIncome': false,
-        'hasAiBadge': false,
-      },
-      {
-        'id': '3',
-        'icon': Icons.shopping_bag,
-        'iconBg': const Color(0xFFFFE2E2),
-        'title': 'SHOPEE',
-        'category': 'Mua s\u1eafm',
-        'account': 'ACB',
-        'amount': '-450.000\u0111',
-        'date': '11-12 20:15',
-        'isIncome': false,
-        'hasAiBadge': false,
-      },
-      {
-        'id': '4',
-        'icon': Icons.coffee,
-        'iconBg': const Color(0xFFFFE2E2),
-        'title': 'B\u00e1nh m\u00ec',
-        'category': '\u0102n u\u1ed1ng',
-        'account': 'ACB',
-        'amount': '-15.000\u0111',
-        'date': '11-12 07:00',
-        'isIncome': false,
-        'hasAiBadge': false,
-      },
-      {
-        'id': '5',
-        'icon': Icons.account_balance_wallet,
-        'iconBg': const Color(0xFFDCFCE7),
-        'title': 'L\u01b0\u01a1ng th\u00e1ng 11',
-        'category': 'L\u01b0\u01a1ng',
-        'account': 'VCB',
-        'amount': '+15.000.000\u0111',
-        'date': '11-01 08:00',
-        'isIncome': true,
-        'hasAiBadge': false,
-      },
-      {
-        'id': '6',
-        'icon': Icons.movie,
-        'iconBg': const Color(0xFFFFE2E2),
-        'title': 'CGV CINEMA',
-        'category': 'Gi\u1ea3i tr\u00ed',
-        'account': 'Techcombank',
-        'amount': '-180.000\u0111',
-        'date': '11-10 19:30',
-        'isIncome': false,
-        'hasAiBadge': true,
-        'aiConfidence': '89% AI',
-      },
-      {
-        'id': '7',
-        'icon': Icons.bolt,
-        'iconBg': const Color(0xFFFFE2E2),
-        'title': 'Ti\u1ec1n \u0111i\u1ec7n',
-        'category': 'H\u00f3a \u0111\u01a1n',
-        'account': 'Techcombank',
-        'amount': '-350.000\u0111',
-        'date': '11-05 14:00',
-        'isIncome': false,
-        'hasAiBadge': false,
-      },
-    ];
+  /// Load transactions from API
+  Future<void> _loadTransactions() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Load categories first to map categoryId -> category name
+      final categories = await _transactionService.getCategories();
+      
+      final result = await _transactionService.getTransactions(
+        page: 0,
+        size: 100, // Load more transactions
+      );
+
+      final transactionsList = result['content'] as List;
+      final transactions = transactionsList.map((t) => Transaction.fromJson(t)).toList();
+      
+      // Map categoryId to category for each transaction if missing
+      for (int i = 0; i < transactions.length; i++) {
+        var transaction = transactions[i];
+        if (transaction.category == null && transaction.categoryId != null) {
+          try {
+            final category = categories.firstWhere(
+              (c) => c.id == transaction.categoryId,
+              orElse: () => categories.first,
+            );
+            
+            transactions[i] = Transaction(
+              id: transaction.id,
+              type: transaction.type,
+              amount: transaction.amount,
+              transactionSource: transaction.transactionSource,
+              categoryId: transaction.categoryId,
+              description: transaction.description,
+              merchant: transaction.merchant,
+              transactionDate: transaction.transactionDate,
+              isAuto: transaction.isAuto,
+              category: TransactionCategory(
+                id: category.id,
+                name: category.name,
+                icon: category.icon,
+              ),
+            );
+          } catch (_) {}
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _transactions = transactions;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -129,35 +112,35 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     super.dispose();
   }
 
-  void _updateTransaction({
-    required String id,
-    required String amount,
+  /// Update transaction via API
+  Future<void> _updateTransaction({
+    required int id,
+    required String type,
+    required double amount,
     required String source,
-    required String category,
+    required int? categoryId,
     required String description,
     required DateTime date,
-  }) {
-    setState(() {
-      final index = _transactions.indexWhere((t) => t['id'] == id);
-      if (index != -1) {
-        _transactions[index]['title'] = description;
-        _transactions[index]['category'] = category;
-        _transactions[index]['account'] = source;
-        _transactions[index]['amount'] =
-            amount.contains('-') || amount.contains('+')
-            ? amount
-            : (_transactions[index]['isIncome']
-                  ? '+$amount\u0111'
-                  : '-$amount\u0111');
-        _transactions[index]['date'] = DateFormat('MM-dd HH:mm').format(date);
-      }
-    });
+  }) async {
+    await _transactionService.updateTransaction(
+      id: id,
+      type: type,
+      amount: amount,
+      transactionSource: source,
+      categoryId: categoryId,
+      description: description,
+      transactionDate: date,
+    );
   }
 
-  void _deleteTransaction(String id) {
-    setState(() {
-      _transactions.removeWhere((t) => t['id'] == id);
-    });
+  /// Delete transaction via API
+  Future<void> _deleteTransaction(int id) async {
+    try {
+      await _transactionService.deleteTransaction(id);
+      await _loadTransactions();
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override
@@ -166,13 +149,12 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        await BottomNavHelper.handleBackButton(context);
+        Navigator.of(context).pop();
       },
       child: AppBarWithDrawer.scrollable(
         context,
         userName: 'Nguyễn Văn A',
         notificationCount: 3,
-        showSearchAction: true,
         body: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -274,23 +256,72 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   }
 
   Widget _buildCurrentTabContent() {
-    // Hiển thị nội dung dựa trên tab được chọn
-    List<Widget> transactions = [];
+    if (_isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+        child: Center(
+          child: Column(
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text(
+                'Không thể tải dữ liệu',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadTransactions,
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_transactions.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+        child: Center(
+          child: Text(
+            'Chưa có giao dịch nào',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    List<Widget> transactionWidgets = [];
 
     if (_tabController.index == 0) {
-      // Tất cả
-      transactions = _getAllTransactions();
+      transactionWidgets = _getAllTransactions();
     } else if (_tabController.index == 1) {
-      // Chi tiêu
-      transactions = _getExpenseTransactions();
+      transactionWidgets = _getExpenseTransactions();
     } else {
-      // Thu nhập
-      transactions = _getIncomeTransactions();
+      transactionWidgets = _getIncomeTransactions();
     }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(children: transactions),
+      child: Column(
+        children: transactionWidgets,
+      ),
     );
   }
 
@@ -298,89 +329,63 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     List<Widget> widgets = [];
     for (int i = 0; i < _transactions.length; i++) {
       if (i > 0) widgets.add(const SizedBox(height: 12));
-      final t = _transactions[i];
-      widgets.add(
-        _buildTransactionItem(
-          id: t['id'],
-          icon: t['icon'],
-          iconBg: t['iconBg'],
-          title: t['title'],
-          category: t['category'],
-          account: t['account'],
-          amount: t['amount'],
-          date: t['date'],
-          isIncome: t['isIncome'],
-          hasAiBadge: t['hasAiBadge'],
-          aiConfidence: t['aiConfidence'],
-        ),
-      );
+      widgets.add(_buildTransactionItem(_transactions[i]));
     }
     return widgets;
   }
 
   List<Widget> _getExpenseTransactions() {
     List<Widget> widgets = [];
-    final expenses = _transactions.where((t) => !t['isIncome']).toList();
+    final expenses = _transactions.where((t) => t.isExpense).toList();
     for (int i = 0; i < expenses.length; i++) {
       if (i > 0) widgets.add(const SizedBox(height: 12));
-      final t = expenses[i];
-      widgets.add(
-        _buildTransactionItem(
-          id: t['id'],
-          icon: t['icon'],
-          iconBg: t['iconBg'],
-          title: t['title'],
-          category: t['category'],
-          account: t['account'],
-          amount: t['amount'],
-          date: t['date'],
-          isIncome: t['isIncome'],
-          hasAiBadge: t['hasAiBadge'],
-          aiConfidence: t['aiConfidence'],
-        ),
-      );
+      widgets.add(_buildTransactionItem(expenses[i]));
     }
     return widgets;
   }
 
   List<Widget> _getIncomeTransactions() {
     List<Widget> widgets = [];
-    final incomes = _transactions.where((t) => t['isIncome']).toList();
+    final incomes = _transactions.where((t) => t.isIncome).toList();
     for (int i = 0; i < incomes.length; i++) {
       if (i > 0) widgets.add(const SizedBox(height: 12));
-      final t = incomes[i];
-      widgets.add(
-        _buildTransactionItem(
-          id: t['id'],
-          icon: t['icon'],
-          iconBg: t['iconBg'],
-          title: t['title'],
-          category: t['category'],
-          account: t['account'],
-          amount: t['amount'],
-          date: t['date'],
-          isIncome: t['isIncome'],
-          hasAiBadge: t['hasAiBadge'],
-          aiConfidence: t['aiConfidence'],
-        ),
-      );
+      widgets.add(_buildTransactionItem(incomes[i]));
     }
     return widgets;
   }
 
-  Widget _buildTransactionItem({
-    required String id,
-    required IconData icon,
-    required Color iconBg,
-    required String title,
-    required String category,
-    required String account,
-    required String amount,
-    required String date,
-    required bool isIncome,
-    required bool hasAiBadge,
-    String? aiConfidence,
-  }) {
+  IconData _getCategoryIcon(String? categoryName) {
+    if (categoryName == null) return Icons.receipt;
+    switch (categoryName.toLowerCase()) {
+      case 'ăn uống': return Icons.restaurant;
+      case 'di chuyển': return Icons.directions_car;
+      case 'mua sắm': return Icons.shopping_bag;
+      case 'giải trí': return Icons.movie;
+      case 'y tế': return Icons.medical_services;
+      case 'học tập': return Icons.school;
+      case 'hóa đơn': return Icons.receipt_long;
+      case 'lương': return Icons.account_balance_wallet;
+      case 'thưởng': return Icons.card_giftcard;
+      case 'đầu tư': return Icons.trending_up;
+      case 'kinh doanh': return Icons.business;
+      default: return Icons.receipt;
+    }
+  }
+
+  Widget _buildTransactionItem(Transaction transaction) {
+    final icon = _getCategoryIcon(transaction.category?.name);
+    final iconBg = transaction.isIncome
+        ? const Color(0xFFDCFCE7)
+        : const Color(0xFFFFE2E2);
+    final title = transaction.merchant ?? transaction.description ?? 'Giao dịch';
+    final category = transaction.category?.name ?? 'Không phân loại';
+    final account = transaction.transactionSource;
+    final amountFormatted = transaction.isIncome
+        ? '+${NumberFormat('#,###', 'vi_VN').format(transaction.amount)}đ'
+        : '-${NumberFormat('#,###', 'vi_VN').format(transaction.amount)}đ';
+    final dateFormatted = DateFormat('MM-dd HH:mm').format(transaction.transactionDate);
+    final isIncome = transaction.isIncome;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -421,25 +426,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFECEEF2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'Auto',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF030213),
-                            ),
-                          ),
-                        ),
-                        if (hasAiBadge && aiConfidence != null) ...[
+                        if (transaction.isAuto) ...[
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -447,17 +434,14 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              border: Border.all(
-                                color: const Color(0xFFFFD230),
-                                width: 1.12,
-                              ),
+                              color: const Color(0xFFECEEF2),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Text(
-                              aiConfidence,
-                              style: const TextStyle(
+                            child: const Text(
+                              'Auto',
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: Color(0xFFBB4D00),
+                                color: Color(0xFF030213),
                               ),
                             ),
                           ),
@@ -499,7 +483,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    amount,
+                    amountFormatted,
                     style: TextStyle(
                       fontSize: 14,
                       color: isIncome
@@ -509,7 +493,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    date,
+                    dateFormatted,
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -529,40 +513,62 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                       context: context,
                       builder: (context) => EditTransactionDialog(
                         title: title,
-                        amount: amount,
+                        amount: transaction.amount,
                         category: category,
+                        categoryId: transaction.categoryId,
                         account: account,
-                        date: date,
+                        date: transaction.transactionDate,
                         isIncome: isIncome,
-                        onSave:
-                            ({
-                              required String amount,
-                              required String source,
-                              required String category,
-                              required String description,
-                              required DateTime date,
-                            }) {
-                              Navigator.of(context).pop();
+                        onSave: ({
+                          required double amount,
+                          required String source,
+                          required String category,
+                          required int? categoryId,
+                          required String description,
+                          required DateTime date,
+                        }) async {
+                          final navigator = Navigator.of(context);
+                          navigator.pop(); // Close edit dialog
 
-                              // Update transaction in state
-                              _updateTransaction(
-                                id: id,
-                                amount: amount,
-                                source: source,
-                                category: category,
-                                description: description,
-                                date: date,
-                              );
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (_) => const Center(child: CircularProgressIndicator()),
+                          );
 
-                              // Show success popup
+                          try {
+                            await _updateTransaction(
+                              id: transaction.id,
+                              type: transaction.type,
+                              amount: amount,
+                              source: source,
+                              categoryId: categoryId,
+                              description: description,
+                              date: date,
+                            );
+
+                            await _loadTransactions();
+                            
+                            if (context.mounted) {
+                              Navigator.of(context).pop(); // Close loading
                               SuccessNotificationDialog.show(
                                 context,
-                                message: 'Cập nhật giao dịch thành công',
+                                message: 'Đã cập nhật giao dịch thành công',
                               );
-                            },
-                        onCancel: () {
-                          Navigator.of(context).pop();
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              Navigator.of(context).pop(); // Close loading
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Lỗi: ${e.toString()}'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
                         },
+                        onCancel: () => Navigator.of(context).pop(),
                       ),
                     );
                   },
@@ -588,17 +594,29 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                     ConfirmationDialog.show(
                       context,
                       title: 'Xóa giao dịch',
-                      message:
-                          'Bạn có chắc chắn muốn xóa  không? \nHành động này không thể hoàn tác.',
+                      message: 'Bạn có chắc chắn muốn xóa không? \nHành động này không thể hoàn tác.',
                       confirmText: 'Xóa',
                       cancelText: 'Hủy',
                       confirmColor: const Color(0xFFD7006E),
-                      onConfirm: () {
-                        _deleteTransaction(id);
-                        SuccessNotificationDialog.show(
-                          context,
-                          message: 'Đã xóa giao dịch thành công',
-                        );
+                      onConfirm: () async {
+                        try {
+                          await _deleteTransaction(transaction.id);
+                          if (mounted) {
+                            SuccessNotificationDialog.show(
+                              context,
+                              message: 'Đã xóa giao dịch thành công',
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Lỗi: ${e.toString()}'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
                       },
                     );
                   },
