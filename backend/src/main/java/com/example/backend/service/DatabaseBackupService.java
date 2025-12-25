@@ -539,11 +539,21 @@ public class DatabaseBackupService {
             command.add("--databases");
             command.add(dbName);
             command.add("--result-file=" + outputFilePath);
-            command.add("--single-transaction");
-            command.add("--quick");
-            command.add("--lock-tables=false");
-            command.add("--routines");
-            command.add("--triggers");
+
+            // Options để đảm bảo backup đầy đủ
+            command.add("--single-transaction"); // Backup consistent cho InnoDB
+            command.add("--quick"); // Tối ưu cho bảng lớn
+            command.add("--lock-tables=false"); // Không lock tables
+            command.add("--routines"); // Bao gồm stored procedures
+            command.add("--triggers"); // Bao gồm triggers
+            command.add("--events"); // Bao gồm events
+
+            // Options cho INSERT statements
+            command.add("--add-drop-table"); // Thêm DROP TABLE trước CREATE
+            command.add("--complete-insert"); // INSERT với tên cột đầy đủ
+            command.add("--extended-insert"); // INSERT nhiều rows trong 1 statement
+            command.add("--set-charset"); // Đặt charset
+            command.add("--default-character-set=utf8mb4"); // UTF-8 charset
 
             processBuilder = new ProcessBuilder(command);
 
