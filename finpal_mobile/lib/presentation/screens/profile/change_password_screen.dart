@@ -1,6 +1,8 @@
 
 import 'package:flutter/material.dart';
 import '../../../core/widgets/success_notification_dialog.dart';
+import '../../../data/services/auth_service.dart';
+import '../auth/login_screen.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -68,27 +70,43 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       });
 
       try {
-        // TODO: Replace with actual API call
-        // Simulate API call
-        await Future.delayed(const Duration(seconds: 2));
-        
-        // Example API call:
-        // await _authRepository.changePassword(
-        //   currentPassword: _currentPasswordController.text,
-        //   newPassword: _newPasswordController.text,
-        // );
+        final authService = AuthService();
+        final resp = await authService.changePassword(
+          currentPassword: _currentPasswordController.text.trim(),
+          newPassword: _newPasswordController.text.trim(),
+        );
 
         if (mounted) {
           setState(() {
             _isLoading = false;
           });
 
-          SuccessNotificationDialog.show(
-            context,
-            message: 'Đổi mật khẩu thành công',
-            onConfirm: () {
-              Navigator.pop(context);
-            },
+          // Show server message if available for debugging
+          final serverMessage = resp['message'] as String?;
+
+          // Temporary: use a simple AlertDialog to isolate crash source
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Đổi mật khẩu'),
+              content: Text(serverMessage ?? 'Đổi mật khẩu thành công'),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    Navigator.of(ctx).pop();
+                    await AuthService().logout();
+                    if (!mounted) return;
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (route) => false,
+                    );
+                  },
+                  child: const Text('Đồng ý'),
+                ),
+              ],
+            ),
           );
         }
       } catch (e) {
