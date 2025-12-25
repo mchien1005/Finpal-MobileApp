@@ -25,7 +25,12 @@ class AddTransactionTab extends StatefulWidget {
   State<AddTransactionTab> createState() => _AddTransactionTabState();
 }
 
-class _AddTransactionTabState extends State<AddTransactionTab> {
+class _AddTransactionTabState extends State<AddTransactionTab>
+    with AutomaticKeepAliveClientMixin {
+  // Giữ widget sống khi chuyển tab
+  @override
+  bool get wantKeepAlive => true;
+
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -156,6 +161,7 @@ class _AddTransactionTabState extends State<AddTransactionTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Bắt buộc cho AutomaticKeepAliveClientMixin
     return SingleChildScrollView(
       child: Column(
         children: [
