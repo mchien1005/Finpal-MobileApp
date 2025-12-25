@@ -509,9 +509,10 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
+                    final parentContext = context;
                     showDialog(
-                      context: context,
-                      builder: (context) => EditTransactionDialog(
+                      context: parentContext,
+                      builder: (dialogContext) => EditTransactionDialog(
                         title: title,
                         amount: transaction.amount,
                         category: category,
@@ -527,11 +528,12 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                           required String description,
                           required DateTime date,
                         }) async {
-                          final navigator = Navigator.of(context);
-                          navigator.pop(); // Close edit dialog
+                          // Close the edit dialog using the dialog's context
+                          Navigator.of(dialogContext).pop();
 
+                          // Show a loading indicator using the parent screen context
                           showDialog(
-                            context: context,
+                            context: parentContext,
                             barrierDismissible: false,
                             builder: (_) => const Center(child: CircularProgressIndicator()),
                           );
@@ -548,27 +550,40 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                             );
 
                             await _loadTransactions();
-                            
-                            if (context.mounted) {
-                              Navigator.of(context).pop(); // Close loading
-                              SuccessNotificationDialog.show(
-                                context,
-                                message: 'Đã cập nhật giao dịch thành công',
-                              );
-                            }
+
+                            if (!mounted) return;
+
+                            // Move the updated transaction to the top of the list
+                            setState(() {
+                              final idx = _transactions.indexWhere((t) => t.id == transaction.id);
+                              if (idx > 0) {
+                                final updatedTx = _transactions.removeAt(idx);
+                                _transactions.insert(0, updatedTx);
+                              }
+                            });
+
+                            // Close the loading dialog (use parentContext)
+                            Navigator.of(parentContext).pop();
+
+                            SuccessNotificationDialog.show(
+                              parentContext,
+                              message: 'Đã cập nhật giao dịch thành công',
+                            );
                           } catch (e) {
-                            if (context.mounted) {
-                              Navigator.of(context).pop(); // Close loading
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Lỗi: ${e.toString()}'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
+                            if (!mounted) return;
+
+                            // Close the loading dialog (use parentContext)
+                            Navigator.of(parentContext).pop();
+
+                            ScaffoldMessenger.of(parentContext).showSnackBar(
+                              SnackBar(
+                                content: Text('Lỗi: ${e.toString()}'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
                           }
                         },
-                        onCancel: () => Navigator.of(context).pop(),
+                        onCancel: () => Navigator.of(dialogContext).pop(),
                       ),
                     );
                   },
