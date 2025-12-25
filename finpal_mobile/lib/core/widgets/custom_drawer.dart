@@ -8,6 +8,7 @@ class CustomDrawer extends StatefulWidget {
   final Function(bool)? onThemeChanged;
   final String userName;
   final String userEmail;
+  final String? avatarUrl;
 
   const CustomDrawer({
     super.key,
@@ -17,6 +18,7 @@ class CustomDrawer extends StatefulWidget {
     this.onThemeChanged,
     this.userName = 'Nguyễn Văn A',
     this.userEmail = 'demo@finpal.com',
+    this.avatarUrl,
   });
 
   @override
@@ -26,6 +28,15 @@ class CustomDrawer extends StatefulWidget {
 class _CustomDrawerState extends State<CustomDrawer> {
   String _selectedLanguage = 'VI';
   bool _isDarkMode = false;
+
+  String _getInitials(String name) {
+    if (name.isEmpty) return 'U';
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[parts.length - 1][0]}'.toUpperCase();
+    }
+    return name[0].toUpperCase();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -138,17 +149,32 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       Container(
                         width: 48,
                         height: 48,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF51A2FF),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF51A2FF),
                           shape: BoxShape.circle,
+                          image:
+                              widget.avatarUrl != null &&
+                                  widget.avatarUrl!.isNotEmpty
+                              ? DecorationImage(
+                                  image: NetworkImage(widget.avatarUrl!),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
                         ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
+                        child:
+                            widget.avatarUrl == null ||
+                                widget.avatarUrl!.isEmpty
+                            ? Center(
+                                child: Text(
+                                  _getInitials(widget.userName),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              )
+                            : null,
                       ),
                     ],
                   ),

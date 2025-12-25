@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../widgets/custom_drawer.dart';
 import '../../presentation/screens/notification_screen.dart';
+import '../../presentation/screens/transactions/search_transaction_screen.dart';
 
 /// A scaffold with a scrollable app bar that hides when scrolling down
 class ScrollableAppBarScaffold extends StatelessWidget {
   final String userName;
+  final String? userEmail;
+  final String? avatarUrl;
   final int notificationCount;
   final Widget body;
   final Widget? bottomNavigationBar;
@@ -15,11 +18,15 @@ class ScrollableAppBarScaffold extends StatelessWidget {
   final VoidCallback? onSettingsPressed;
   final Function(String)? onLanguageChanged;
   final Function(bool)? onThemeChanged;
+  final bool showSearchAction;
+  final String? customTitle; // Tiêu đề tùy chỉnh thay vì 'Xin chào, userName'
 
   const ScrollableAppBarScaffold({
     super.key,
     required this.body,
     this.userName = 'Nguyễn Văn A',
+    this.userEmail,
+    this.avatarUrl,
     this.notificationCount = 0,
     this.bottomNavigationBar,
     this.backgroundColor,
@@ -28,6 +35,8 @@ class ScrollableAppBarScaffold extends StatelessWidget {
     this.onSettingsPressed,
     this.onLanguageChanged,
     this.onThemeChanged,
+    this.showSearchAction = false,
+    this.customTitle,
   });
 
   @override
@@ -35,6 +44,9 @@ class ScrollableAppBarScaffold extends StatelessWidget {
     return Scaffold(
       backgroundColor: backgroundColor ?? AppColors.background,
       endDrawer: CustomDrawer(
+        userName: userName,
+        userEmail: userEmail ?? 'demo@finpal.com',
+        avatarUrl: avatarUrl,
         onLogoutPressed: onLogoutPressed,
         onSettingsPressed: onSettingsPressed,
         onLanguageChanged: onLanguageChanged,
@@ -56,21 +68,33 @@ class ScrollableAppBarScaffold extends StatelessWidget {
                   'FinPal',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    fontWeight: FontWeight.normal,
                   ),
                 ),
                 Text(
-                  'Xin chào, $userName',
+                  customTitle ?? 'Xin chào, $userName',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.normal,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
             actions: [
+              if (showSearchAction)
+                IconButton(
+                  icon: const Icon(Icons.search, color: Colors.white),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SearchTransactionScreen(),
+                      ),
+                    );
+                  },
+                ),
               Stack(
                 children: [
                   IconButton(
@@ -91,8 +115,8 @@ class ScrollableAppBarScaffold extends StatelessWidget {
                   ),
                   if (notificationCount > 0)
                     Positioned(
-                      right: 8,
-                      top: 8,
+                      right: 5,
+                      top: 4,
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(
@@ -104,10 +128,10 @@ class ScrollableAppBarScaffold extends StatelessWidget {
                           minHeight: 16,
                         ),
                         child: Text(
-                          notificationCount > 9 ? '9+' : '$notificationCount',
+                          notificationCount.toString(),
                           style: const TextStyle(
                             color: AppColors.primary,
-                            fontSize: 10,
+                            fontSize: 9,
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,

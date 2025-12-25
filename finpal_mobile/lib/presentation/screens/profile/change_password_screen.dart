@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/widgets/success_notification_dialog.dart';
 import '../../../data/services/auth_service.dart';
 import '../auth/login_screen.dart';
+import '../../../core/theme/app_theme.dart';
+// ...existing code...
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -16,11 +18,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   bool _obscureCurrentPassword = true;
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
-  
+
   bool _isValid = false;
   bool _isLoading = false;
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
@@ -63,7 +65,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     setState(() {
       _autovalidateMode = AutovalidateMode.onUserInteraction;
     });
-    
+
     if (_formKey.currentState!.validate() && _isValid) {
       setState(() {
         _isLoading = true;
@@ -84,29 +86,19 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           // Show server message if available for debugging
           final serverMessage = resp['message'] as String?;
 
-          // Temporary: use a simple AlertDialog to isolate crash source
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Đổi mật khẩu'),
-              content: Text(serverMessage ?? 'Đổi mật khẩu thành công'),
-              actions: [
-                TextButton(
-                  onPressed: () async {
-                    Navigator.of(ctx).pop();
-                    await AuthService().logout();
-                    if (!mounted) return;
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      (route) => false,
-                    );
-                  },
-                  child: const Text('Đồng ý'),
-                ),
-              ],
-            ),
+          // Show success dialog using shared widget
+          await SuccessNotificationDialog.show(
+            context,
+            message: serverMessage ?? 'Đổi mật khẩu thành công',
+            onConfirm: () async {
+              await AuthService().logout();
+              if (!mounted) return;
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
+              );
+            },
           );
         }
       } catch (e) {
@@ -129,7 +121,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEFF6FF),
+      backgroundColor: AppColors.primary,
       body: SafeArea(
         child: Container(
           decoration: const BoxDecoration(
@@ -144,7 +136,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               // App Bar
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD7006E),
+                  color:AppColors.primary,
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(24),
                     bottomRight: Radius.circular(24),
