@@ -7,6 +7,7 @@ import 'widgets/add_goal_dialog.dart';
 import 'widgets/edit_goal_dialog.dart';
 import 'widgets/contribute_goal.dart';
 import '../../../core/widgets/success_notification_dialog.dart';
+import '../../../core/widgets/confirmation_dialog.dart';
 import '../../../data/services/savings_goal_service.dart';
 import '../../../data/services/notification_service.dart';
 import '../../../data/models/savings_goal_model.dart';
@@ -483,7 +484,7 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with icon and title
+          // Header with icon, title and delete button
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -533,6 +534,53 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
                     ),
                   ],
                 ),
+              ),
+              // Delete (X) button
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: const Icon(
+                  Icons.close,
+                  size: 18,
+                  color: Color(0xFF6B7280),
+                ),
+                onPressed: () async {
+                  final confirmed = await ConfirmationDialog.show(
+                    context,
+                    title: 'Xóa mục tiêu',
+                    message:
+                        'Bạn có chắc muốn xóa mục tiêu "${goal.name}" không? Hành động này không thể hoàn tác.',
+                    confirmText: 'Xóa',
+                    cancelText: 'Hủy',
+                    confirmColor: Colors.red,
+                    icon: Icons.delete,
+                    iconColor: Colors.red,
+                  );
+
+                  if (confirmed == true) {
+                    try {
+                      await SavingsGoalService.deleteSavingsGoal(goal.id);
+                      if (!mounted) return;
+                      await showDialog(
+                        context: context,
+                        builder: (context) => const SuccessNotificationDialog(
+                          message: 'Xóa mục tiêu thành công!',
+                        ),
+                      );
+                      _loadGoals();
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Không thể xóa mục tiêu: ${e.toString()}',
+                          ),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
               ),
             ],
           ),
