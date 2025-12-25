@@ -24,6 +24,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +49,16 @@ public class UserDataExportService {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter FILE_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
+    // Timezone Việt Nam (UTC+7)
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+
+    /**
+     * Lấy thời gian hiện tại theo múi giờ Việt Nam
+     */
+    private LocalDateTime getVietnamNow() {
+        return ZonedDateTime.now(VIETNAM_ZONE).toLocalDateTime();
+    }
+
     /**
      * Xuất tất cả dữ liệu cá nhân của người dùng ra file PDF
      */
@@ -64,13 +76,13 @@ public class UserDataExportService {
         // Tạo tên file
         String fileName = String.format("FinPal_Data_Export_%s_%s.pdf",
                 user.getUsername(),
-                LocalDateTime.now().format(FILE_DATE_FORMATTER));
+                getVietnamNow().format(FILE_DATE_FORMATTER));
         String filePath = exportPath.resolve(fileName).toString();
 
         // Tạo PDF
         try (PdfWriter writer = new PdfWriter(new FileOutputStream(filePath));
-             PdfDocument pdfDoc = new PdfDocument(writer);
-             Document document = new Document(pdfDoc)) {
+                PdfDocument pdfDoc = new PdfDocument(writer);
+                Document document = new Document(pdfDoc)) {
 
             // Font hỗ trợ Unicode (tiếng Việt)
             // Sử dụng font từ classpath hoặc system font
@@ -78,7 +90,7 @@ public class UserDataExportService {
             PdfFont boldFont;
             try {
                 // Thử dùng font Arial từ hệ thống (hỗ trợ Unicode)
-                font = PdfFontFactory.createFont("Helvetica", com.itextpdf.io.font.PdfEncodings.IDENTITY_H, 
+                font = PdfFontFactory.createFont("Helvetica", com.itextpdf.io.font.PdfEncodings.IDENTITY_H,
                         PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
                 boldFont = PdfFontFactory.createFont("Helvetica-Bold", com.itextpdf.io.font.PdfEncodings.IDENTITY_H,
                         PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
@@ -114,7 +126,7 @@ public class UserDataExportService {
 
             // Footer
             Paragraph footer = new Paragraph(String.format("Bao cao duoc tao vao: %s",
-                    LocalDateTime.now().format(DATE_TIME_FORMATTER)))
+                    getVietnamNow().format(DATE_TIME_FORMATTER)))
                     .setFont(font)
                     .setFontSize(10)
                     .setTextAlignment(TextAlignment.CENTER)
@@ -132,15 +144,17 @@ public class UserDataExportService {
                 .setFontSize(14)
                 .setMarginTop(10));
 
-        Table table = new Table(UnitValue.createPercentArray(new float[]{30, 70}))
+        Table table = new Table(UnitValue.createPercentArray(new float[] { 30, 70 }))
                 .setWidth(UnitValue.createPercentValue(100));
 
         addTableRow(table, "Ten dang nhap:", user.getUsername(), font, boldFont);
         addTableRow(table, "Email:", user.getEmail(), font, boldFont);
         addTableRow(table, "Ho ten:", user.getFullName() != null ? user.getFullName() : "N/A", font, boldFont);
         addTableRow(table, "So dien thoai:", user.getPhone() != null ? user.getPhone() : "N/A", font, boldFont);
-        addTableRow(table, "Ngay sinh:", user.getDateOfBirth() != null ? user.getDateOfBirth().format(DATE_FORMATTER) : "N/A", font, boldFont);
-        addTableRow(table, "Ngay tao tai khoan:", user.getCreatedAt() != null ? user.getCreatedAt().format(DATE_TIME_FORMATTER) : "N/A", font, boldFont);
+        addTableRow(table, "Ngay sinh:",
+                user.getDateOfBirth() != null ? user.getDateOfBirth().format(DATE_FORMATTER) : "N/A", font, boldFont);
+        addTableRow(table, "Ngay tao tai khoan:",
+                user.getCreatedAt() != null ? user.getCreatedAt().format(DATE_TIME_FORMATTER) : "N/A", font, boldFont);
 
         document.add(table);
     }
@@ -154,17 +168,17 @@ public class UserDataExportService {
         // Tính toán thống kê
         List<Transaction> allTransactions = transactionRepository.findByUserIdOrderByTransactionDateDesc(userId);
         BigDecimal totalIncome = allTransactions.stream()
-            .filter(t -> t.getType() == Transaction.TransactionType.INCOME)
-            .map(Transaction::getAmount)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .filter(t -> t.getType() == Transaction.TransactionType.INCOME)
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal totalExpense = allTransactions.stream()
-            .filter(t -> t.getType() == Transaction.TransactionType.EXPENSE)
-            .map(Transaction::getAmount)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .filter(t -> t.getType() == Transaction.TransactionType.EXPENSE)
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        Table table = new Table(UnitValue.createPercentArray(new float[]{40, 60}))
-            .setWidth(UnitValue.createPercentValue(100));
+        Table table = new Table(UnitValue.createPercentArray(new float[] { 40, 60 }))
+                .setWidth(UnitValue.createPercentValue(100));
 
         addTableRow(table, "Tong so giao dich:", String.valueOf(allTransactions.size()), font, boldFont);
         addTableRow(table, "Tong thu nhap:", formatMoney(totalIncome) + " VND", font, boldFont);
@@ -187,7 +201,7 @@ public class UserDataExportService {
             return;
         }
 
-        Table table = new Table(UnitValue.createPercentArray(new float[]{15, 20, 30, 20, 15}))
+        Table table = new Table(UnitValue.createPercentArray(new float[] { 15, 20, 30, 20, 15 }))
                 .setWidth(UnitValue.createPercentValue(100));
 
         // Header
@@ -201,10 +215,13 @@ public class UserDataExportService {
         int limit = Math.min(transactions.size(), 1000);
         for (int i = 0; i < limit; i++) {
             Transaction t = transactions.get(i);
-            table.addCell(new Cell().add(new Paragraph(t.getTransactionDate().format(DATE_FORMATTER)).setFont(font).setFontSize(9)));
+            table.addCell(new Cell()
+                    .add(new Paragraph(t.getTransactionDate().format(DATE_FORMATTER)).setFont(font).setFontSize(9)));
             table.addCell(new Cell().add(new Paragraph(t.getType().name()).setFont(font).setFontSize(9)));
-            table.addCell(new Cell().add(new Paragraph(t.getCategory() != null ? t.getCategory().getName() : "N/A").setFont(font).setFontSize(9)));
-            table.addCell(new Cell().add(new Paragraph(t.getDescription() != null ? t.getDescription() : "").setFont(font).setFontSize(9)));
+            table.addCell(new Cell().add(new Paragraph(t.getCategory() != null ? t.getCategory().getName() : "N/A")
+                    .setFont(font).setFontSize(9)));
+            table.addCell(new Cell().add(
+                    new Paragraph(t.getDescription() != null ? t.getDescription() : "").setFont(font).setFontSize(9)));
             table.addCell(new Cell().add(new Paragraph(formatMoney(t.getAmount())).setFont(font).setFontSize(9)));
         }
 
@@ -217,7 +234,6 @@ public class UserDataExportService {
                     .setItalic());
         }
     }
-
 
     private void addBudgets(Document document, Long userId, PdfFont font, PdfFont boldFont) {
         document.add(new Paragraph("4. NGAN SACH")
@@ -232,7 +248,7 @@ public class UserDataExportService {
             return;
         }
 
-        Table table = new Table(UnitValue.createPercentArray(new float[]{30, 25, 25, 20}))
+        Table table = new Table(UnitValue.createPercentArray(new float[] { 30, 25, 25, 20 }))
                 .setWidth(UnitValue.createPercentValue(100));
 
         table.addHeaderCell(new Cell().add(new Paragraph("Danh muc").setFont(boldFont).setFontSize(10)));
@@ -247,7 +263,8 @@ public class UserDataExportService {
                 Category cat = null;
                 try {
                     cat = categoryRepository.findById(budget.getCategoryId()).orElse(null);
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
                 if (cat != null) {
                     categoryName = cat.getName();
                 }
@@ -255,7 +272,8 @@ public class UserDataExportService {
             table.addCell(new Cell().add(new Paragraph(categoryName).setFont(font).setFontSize(9)));
             table.addCell(new Cell().add(new Paragraph(formatMoney(budget.getAmount())).setFont(font).setFontSize(9)));
             table.addCell(new Cell().add(new Paragraph(budget.getPeriod().name()).setFont(font).setFontSize(9)));
-            table.addCell(new Cell().add(new Paragraph(budget.getIsActive() ? "Active" : "Inactive").setFont(font).setFontSize(9)));
+            table.addCell(new Cell()
+                    .add(new Paragraph(budget.getIsActive() ? "Active" : "Inactive").setFont(font).setFontSize(9)));
         }
 
         document.add(table);
@@ -274,7 +292,7 @@ public class UserDataExportService {
             return;
         }
 
-        Table table = new Table(UnitValue.createPercentArray(new float[]{30, 20, 20, 15, 15}))
+        Table table = new Table(UnitValue.createPercentArray(new float[] { 30, 20, 20, 15, 15 }))
                 .setWidth(UnitValue.createPercentValue(100));
 
         table.addHeaderCell(new Cell().add(new Paragraph("Ten muc tieu").setFont(boldFont).setFontSize(10)));
@@ -285,16 +303,21 @@ public class UserDataExportService {
 
         for (SavingsGoal goal : goals) {
             table.addCell(new Cell().add(new Paragraph(goal.getName()).setFont(font).setFontSize(9)));
-            table.addCell(new Cell().add(new Paragraph(formatMoney(goal.getTargetAmount())).setFont(font).setFontSize(9)));
-            table.addCell(new Cell().add(new Paragraph(formatMoney(goal.getCurrentAmount())).setFont(font).setFontSize(9)));
+            table.addCell(
+                    new Cell().add(new Paragraph(formatMoney(goal.getTargetAmount())).setFont(font).setFontSize(9)));
+            table.addCell(
+                    new Cell().add(new Paragraph(formatMoney(goal.getCurrentAmount())).setFont(font).setFontSize(9)));
 
             double progress = goal.getTargetAmount().compareTo(BigDecimal.ZERO) > 0
-                ? goal.getCurrentAmount().divide(goal.getTargetAmount(), 4, java.math.RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(100)).doubleValue()
-                : 0;
-            table.addCell(new Cell().add(new Paragraph(String.format("%.1f%%", progress)).setFont(font).setFontSize(9)));
+                    ? goal.getCurrentAmount().divide(goal.getTargetAmount(), 4, java.math.RoundingMode.HALF_UP)
+                            .multiply(BigDecimal.valueOf(100)).doubleValue()
+                    : 0;
+            table.addCell(
+                    new Cell().add(new Paragraph(String.format("%.1f%%", progress)).setFont(font).setFontSize(9)));
             // Use deadline instead of getTargetDate
-            table.addCell(new Cell().add(new Paragraph(goal.getDeadline() != null ? goal.getDeadline().format(DATE_FORMATTER) : "N/A").setFont(font).setFontSize(9)));
+            table.addCell(new Cell()
+                    .add(new Paragraph(goal.getDeadline() != null ? goal.getDeadline().format(DATE_FORMATTER) : "N/A")
+                            .setFont(font).setFontSize(9)));
         }
 
         document.add(table);
@@ -306,7 +329,8 @@ public class UserDataExportService {
     }
 
     private String formatMoney(BigDecimal amount) {
-        if (amount == null) return "0";
+        if (amount == null)
+            return "0";
         return String.format("%,d", amount.longValue());
     }
 
@@ -320,7 +344,7 @@ public class UserDataExportService {
                 return;
             }
 
-            LocalDateTime cutoffDate = LocalDateTime.now().minusDays(retentionDays);
+            LocalDateTime cutoffDate = getVietnamNow().minusDays(retentionDays);
 
             Files.walk(exportPath)
                     .filter(Files::isRegularFile)
