@@ -184,7 +184,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(height: 16),
                           WarningCardSection(categories: _categories),
                           const SizedBox(height: 16),
-                          BudgetAnalysisSection(categoryBudgets: _categoryBudgets),
+                          BudgetAnalysisSection(),
                           const SizedBox(height: 16),
                         ],
                       ),
