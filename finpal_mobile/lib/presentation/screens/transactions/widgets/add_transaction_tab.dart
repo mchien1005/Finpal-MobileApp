@@ -468,6 +468,7 @@ class _AddTransactionTabState extends State<AddTransactionTab>
   Widget _buildDatePicker() {
     return InkWell(
       onTap: () async {
+        // Bước 1: Chọn ngày
         final date = await showDatePicker(
           context: context,
           initialDate: _selectedDate ?? DateTime.now(),
@@ -492,10 +493,60 @@ class _AddTransactionTabState extends State<AddTransactionTab>
             );
           },
         );
-        if (date != null) {
-          setState(() {
-            _selectedDate = date;
-          });
+        if (date != null && mounted) {
+          // Thêm delay nhỏ để đảm bảo UI ổn định trước khi hiện time picker
+          await Future.delayed(const Duration(milliseconds: 100));
+
+          if (!mounted) return;
+
+          // Bước 2: Chọn giờ phút
+          final time = await showTimePicker(
+            context: context,
+            initialTime: _selectedDate != null
+                ? TimeOfDay(
+                    hour: _selectedDate!.hour,
+                    minute: _selectedDate!.minute,
+                  )
+                : TimeOfDay.now(),
+          );
+
+          print('⏰ Time picker result: $time');
+
+          if (!mounted) return;
+
+          if (time != null) {
+            // Kết hợp ngày và giờ đã chọn
+            final selectedDateTime = DateTime(
+              date.year,
+              date.month,
+              date.day,
+              time.hour,
+              time.minute,
+            );
+            print('📅⏰ Combined DateTime: $selectedDateTime');
+
+            setState(() {
+              _selectedDate = selectedDateTime;
+            });
+          } else {
+            // Nếu người dùng hủy chọn giờ, sử dụng giờ hiện tại
+            final now = DateTime.now();
+            final selectedDateTime = DateTime(
+              date.year,
+              date.month,
+              date.day,
+              now.hour,
+              now.minute,
+              now.second,
+            );
+            print(
+              '📅⏰ Combined DateTime (with current time): $selectedDateTime',
+            );
+
+            setState(() {
+              _selectedDate = selectedDateTime;
+            });
+          }
         }
       },
       child: Container(
@@ -510,8 +561,8 @@ class _AddTransactionTabState extends State<AddTransactionTab>
           children: [
             Text(
               _selectedDate != null
-                  ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                  : 'Chọn ngày',
+                  ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year} ${_selectedDate!.hour.toString().padLeft(2, '0')}:${_selectedDate!.minute.toString().padLeft(2, '0')}'
+                  : 'Chọn ngày và giờ',
               style: TextStyle(
                 fontSize: 16,
                 color: _selectedDate != null

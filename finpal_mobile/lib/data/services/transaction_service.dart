@@ -61,7 +61,10 @@ class TransactionService {
     }
   }
 
-  Future<Map<String, dynamic>> getTransactions({int page = 0, int size = 10}) async {
+  Future<Map<String, dynamic>> getTransactions({
+    int page = 0,
+    int size = 10,
+  }) async {
     final url = Uri.parse('$_baseUrl/transactions?page=$page&size=$size');
     final token = await _authService.getToken();
     final headers = {'Content-Type': 'application/json'};
@@ -77,7 +80,8 @@ class TransactionService {
       return jsonDecode(response.body);
     } else {
       final errorMessage = response.body.isNotEmpty
-          ? jsonDecode(response.body)['message'] ?? 'Failed to fetch transactions'
+          ? jsonDecode(response.body)['message'] ??
+                'Failed to fetch transactions'
           : 'Failed to fetch transactions';
       throw Exception(errorMessage);
     }
@@ -94,14 +98,14 @@ class TransactionService {
   }) async {
     final url = Uri.parse('$_baseUrl/transactions/$id');
     final token = await _authService.getToken();
-    
+
     final requestBody = {
       'type': type.toUpperCase(),
       'amount': amount,
       'transactionSource': transactionSource,
       'transactionDate': transactionDate.toIso8601String(),
     };
-    
+
     if (categoryId != null) requestBody['categoryId'] = categoryId;
     if (description != null) requestBody['description'] = description;
 
@@ -119,7 +123,8 @@ class TransactionService {
 
     if (response.statusCode != 200 && response.statusCode != 204) {
       final errorMessage = response.body.isNotEmpty
-          ? jsonDecode(response.body)['message'] ?? 'Failed to update transaction'
+          ? jsonDecode(response.body)['message'] ??
+                'Failed to update transaction'
           : 'Failed to update transaction';
       throw Exception(errorMessage);
     }
@@ -139,7 +144,8 @@ class TransactionService {
 
     if (response.statusCode != 200 && response.statusCode != 204) {
       final errorMessage = response.body.isNotEmpty
-          ? jsonDecode(response.body)['message'] ?? 'Failed to delete transaction'
+          ? jsonDecode(response.body)['message'] ??
+                'Failed to delete transaction'
           : 'Failed to delete transaction';
       throw Exception(errorMessage);
     }
