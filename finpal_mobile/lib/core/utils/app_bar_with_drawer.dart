@@ -1,105 +1,93 @@
 import 'package:finpal_mobile/core/constants/app_colors.dart';
 import 'package:flutter/material.dart';
-import '../widgets/custom_app_bar.dart';
-import '../widgets/custom_drawer.dart';
+import 'package:finpal_mobile/data/services/auth_service.dart';
+import 'package:finpal_mobile/data/repositories/user_repository.dart';
 import '../widgets/confirmation_dialog.dart';
+import '../widgets/scrollable_app_bar_scaffold.dart';
 import '../../presentation/screens/auth/login_screen.dart';
+import '../../presentation/screens/profile/app_settings_screen.dart';
 
-/// Wrapper widget that provides both AppBar and Drawer functionality
-/// Use this in Scaffold instead of separate appBar and endDrawer
-class AppBarWithDrawer extends StatelessWidget {
-  final String userName;
-  final int notificationCount;
-  final VoidCallback? onNotificationPressed;
-  final VoidCallback? onLogoutPressed;
-  final VoidCallback? onSettingsPressed;
-  final Function(String)? onLanguageChanged;
-  final Function(bool)? onThemeChanged;
+/// Utility class for creating scrollable AppBar with drawer functionality
+/// All screens should use AppBarWithDrawer.scrollable() method
+class AppBarWithDrawer {
+  static final UserRepository _userRepository = UserRepository();
 
-  const AppBarWithDrawer({
-    super.key,
-    this.userName = 'Nguyễn Văn A',
-    this.notificationCount = 0,
-    this.onNotificationPressed,
-    this.onLogoutPressed,
-    this.onSettingsPressed,
-    this.onLanguageChanged,
-    this.onThemeChanged,
-  });
-
-  /// Factory constructor with common shared event handlers
-  /// Use this for consistent behavior across all screens
-  factory AppBarWithDrawer.common(
+  /// Creates a scrollable scaffold with app bar that hides when scrolling down
+  /// and shows when scrolling up
+  static Widget scrollable(
     BuildContext context, {
+    required Widget body,
     String userName = 'Nguyễn Văn A',
+    String? userEmail,
+    String? avatarUrl,
     int notificationCount = 0,
+    Widget? bottomNavigationBar,
+    Color? backgroundColor,
     VoidCallback? onNotificationPressed,
+    bool showSearchAction = false,
+    String? customTitle,
   }) {
-    return AppBarWithDrawer(
-      userName: userName,
-      notificationCount: notificationCount,
-      onNotificationPressed: onNotificationPressed,
-      onLogoutPressed: () {
-        ConfirmationDialog.show(
-          context,
-          title: 'Xác nhận đăng xuất',
-          message:
-              'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản? Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng FinPal.',
-          confirmText: 'Đăng xuất',
-          cancelText: 'Hủy',
-          confirmColor: AppColors.primary,
-          onConfirm: () {
-            Navigator.pushAndRemoveUntil(
+    return FutureBuilder(
+      future: _userRepository.getProfile(),
+      builder: (context, snapshot) {
+        final profile = snapshot.data;
+
+        return ScrollableAppBarScaffold(
+          userName: profile?.fullName ?? userName,
+          userEmail: profile?.email ?? userEmail,
+          avatarUrl: profile?.avatarUrl ?? avatarUrl,
+          notificationCount: notificationCount,
+          body: body,
+          bottomNavigationBar: bottomNavigationBar,
+          backgroundColor: backgroundColor,
+          onNotificationPressed: onNotificationPressed,
+          showSearchAction: showSearchAction,
+          customTitle: customTitle,
+          onLogoutPressed: () {
+            ConfirmationDialog.show(
               context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-              (route) => false,
+              title: 'Xác nhận đăng xuất',
+              message:
+                  'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản? Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng FinPal.',
+              confirmText: 'Đăng xuất',
+              cancelText: 'Hủy',
+              confirmColor: AppColors.primary,
+              onConfirm: () async {
+                // Gọi logout để xóa token và unregister FCM
+                await AuthService().logout();
+
+                if (context.mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
+                    (route) => false,
+                  );
+                }
+              },
+            );
+          },
+          onSettingsPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AppSettingsScreen(),
+              ),
+            );
+          },
+          onLanguageChanged: (language) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Đổi ngôn ngữ: $language')));
+          },
+          onThemeChanged: (isDark) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Đổi chủ đề: ${isDark ? "Tối" : "Sáng"}')),
             );
           },
         );
       },
-      onSettingsPressed: () {
-        // TODO: Navigate to settings screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Chức năng cài đặt đang phát triển')),
-        );
-      },
-      onLanguageChanged: (language) {
-        // TODO: Implement language change logic
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Đổi ngôn ngữ: $language')));
-      },
-      onThemeChanged: (isDark) {
-        // TODO: Implement theme change logic
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đổi chủ đề: ${isDark ? "Tối" : "Sáng"}')),
-        );
-      },
-    );
-  }
-
-  /// Returns the AppBar widget
-  PreferredSizeWidget get appBar => CustomAppBar(
-    userName: userName,
-    notificationCount: notificationCount,
-    onNotificationPressed: onNotificationPressed,
-  );
-
-  /// Returns the Drawer widget
-  Widget get drawer => CustomDrawer(
-    onLogoutPressed: onLogoutPressed,
-    onSettingsPressed: onSettingsPressed,
-    onLanguageChanged: onLanguageChanged,
-    onThemeChanged: onThemeChanged,
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    // This widget is not meant to be used in the widget tree
-    // Use the appBar and drawer getters instead
-    throw UnimplementedError(
-      'AppBarWithDrawer should not be built directly. '
-      'Use appBar and drawer properties instead.',
     );
   }
 }
