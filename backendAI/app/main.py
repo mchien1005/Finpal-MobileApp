@@ -21,11 +21,11 @@ async def lifespan(app: FastAPI):
     # Startup
     print("🚀 Starting Finpal AI Backend...")
     
-    # Khởi động auto-retrain scheduler (train lúc 2:00 AM hằng ngày)
+    # Khởi động auto-retrain scheduler (train lúc 9:30 AM hằng ngày - giờ Việt Nam)
     try:
         from app.services.auto_retrain import start_auto_retrain_scheduler
-        start_auto_retrain_scheduler(retrain_hour=2)
-        print("✅ Auto-retrain scheduler started (daily at 2:00 AM)")
+        start_auto_retrain_scheduler(retrain_hour=9, retrain_minute=30)
+        print("✅ Auto-retrain scheduler started (daily at 9:30 AM Vietnam Time)")
     except Exception as e:
         print(f"⚠️ Could not start auto-retrain scheduler: {e}")
     

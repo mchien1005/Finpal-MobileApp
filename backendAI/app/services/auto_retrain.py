@@ -2,7 +2,7 @@
 Auto Retrain Service - Tự động train lại models hằng ngày
 
 Service này chạy background task để:
-1. Train lại models vào lúc 2:00 AM mỗi ngày
+1. Train lại models vào lúc 9:30 AM mỗi ngày (giờ Việt Nam)
 2. Kiểm tra accuracy và ghi log
 3. Gửi thông báo nếu accuracy giảm đáng kể
 """
@@ -106,13 +106,13 @@ async def retrain_all_models():
     return results
 
 
-def get_seconds_until_target(target_hour: int = 2, target_minute: int = 0) -> float:
+def get_seconds_until_target(target_hour: int = 9, target_minute: int = 30) -> float:
     """
     Tính số giây cho đến thời điểm target
     
     Args:
-        target_hour: Giờ target (0-23), mặc định 2 (2:00 AM)
-        target_minute: Phút target (0-59), mặc định 0
+        target_hour: Giờ target (0-23), mặc định 9 (9:30 AM)
+        target_minute: Phút target (0-59), mặc định 30
         
     Returns:
         Số giây cần chờ
@@ -128,22 +128,23 @@ def get_seconds_until_target(target_hour: int = 2, target_minute: int = 0) -> fl
     return (target_time - now).total_seconds()
 
 
-async def auto_retrain_loop(retrain_hour: int = 2):
+async def auto_retrain_loop(retrain_hour: int = 9, retrain_minute: int = 30):
     """
     Vòng lặp chính để auto-retrain hằng ngày
     
     Args:
-        retrain_hour: Giờ train (0-23), mặc định 2:00 AM
+        retrain_hour: Giờ train (0-23), mặc định 9
+        retrain_minute: Phút train (0-59), mặc định 30 (9:30 AM)
     """
     global _is_running
     _is_running = True
     
-    logger.info(f"🕐 Auto-retrain scheduler started. Will run daily at {retrain_hour}:00")
+    logger.info(f"🕐 Auto-retrain scheduler started. Will run daily at {retrain_hour}:{retrain_minute:02d}")
     
     while _is_running:
         try:
             # Chờ đến thời điểm train
-            seconds_to_wait = get_seconds_until_target(retrain_hour, 0)
+            seconds_to_wait = get_seconds_until_target(retrain_hour, retrain_minute)
             hours_to_wait = seconds_to_wait / 3600
             
             logger.info(f"⏳ Next retrain in {hours_to_wait:.1f} hours")
@@ -175,12 +176,13 @@ async def auto_retrain_loop(retrain_hour: int = 2):
     logger.info("Auto-retrain scheduler stopped")
 
 
-def start_auto_retrain_scheduler(retrain_hour: int = 2):
+def start_auto_retrain_scheduler(retrain_hour: int = 9, retrain_minute: int = 30):
     """
     Khởi động scheduler auto-retrain
     
     Args:
-        retrain_hour: Giờ train hằng ngày (0-23), mặc định 2:00 AM
+        retrain_hour: Giờ train hằng ngày (0-23), mặc định 9
+        retrain_minute: Phút train (0-59), mặc định 30 (9:30 AM)
     """
     global _retrain_task
     
@@ -194,8 +196,8 @@ def start_auto_retrain_scheduler(retrain_hour: int = 2):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
     
-    _retrain_task = loop.create_task(auto_retrain_loop(retrain_hour))
-    logger.info(f"✅ Auto-retrain scheduler started (daily at {retrain_hour}:00)")
+    _retrain_task = loop.create_task(auto_retrain_loop(retrain_hour, retrain_minute))
+    logger.info(f"✅ Auto-retrain scheduler started (daily at {retrain_hour}:{retrain_minute:02d})")
 
 
 def stop_auto_retrain_scheduler():
@@ -219,12 +221,13 @@ def get_scheduler_status() -> dict:
     """Lấy trạng thái của scheduler"""
     next_run = None
     if _is_running:
-        seconds = get_seconds_until_target(2, 0)
+        seconds = get_seconds_until_target(9, 30)
         next_run = datetime.now().timestamp() + seconds
     
     return {
         "is_running": is_scheduler_running(),
         "next_run_at": datetime.fromtimestamp(next_run).isoformat() if next_run else None,
-        "retrain_hour": 2,
-        "description": "Daily auto-retrain at 2:00 AM"
+        "retrain_hour": 9,
+        "retrain_minute": 30,
+        "description": "Daily auto-retrain at 9:30 AM (Vietnam Time)"
     }

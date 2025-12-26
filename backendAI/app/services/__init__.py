@@ -12,25 +12,33 @@ from app.services.database import (
     is_mysql_available,
     PYMYSQL_AVAILABLE
 )
-from app.services.training_history import TrainingHistoryService
-from app.services.auto_retrain import (
-    start_auto_retrain_scheduler,
-    stop_auto_retrain_scheduler,
-    is_scheduler_running,
-    get_scheduler_status,
-    retrain_all_models
+
+# Training history functions
+from app.services.training_history import (
+    record_training,
+    record_prediction,
+    get_accuracy_history,
+    get_all_models_accuracy_history,
+    get_model_stats,
+    get_prediction_logs,
+    get_model_accuracy_from_logs
 )
+
+# Auto-retrain functions (lazy import để tránh lỗi khi khởi động)
+# from app.services.auto_retrain import ...
 
 __all__ = [
     "DatabaseService",
     "get_database_service",
     "is_mysql_available",
     "PYMYSQL_AVAILABLE",
-    "TrainingHistoryService",
-    "start_auto_retrain_scheduler",
-    "stop_auto_retrain_scheduler",
-    "is_scheduler_running",
-    "get_scheduler_status",
-    "retrain_all_models"
+    "record_training",
+    "record_prediction",
+    "get_accuracy_history",
+    "get_all_models_accuracy_history",
+    "get_model_stats",
+    "get_prediction_logs",
+    "get_model_accuracy_from_logs"
 ]
+
 
