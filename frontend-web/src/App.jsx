@@ -11,6 +11,7 @@ import ContentManagementPage from './pages/admin/ContentManagementPage';
 import AIModelManagementPage from './pages/admin/AIModelManagementPage';
 import SecurityAndAuditPage from './pages/admin/SecurityAndAuditPage';
 import SystemAndConfigPage from './pages/admin/SystemAndConfigPage';
+import NotificationsPage from './pages/admin/NotificationsPage';
 import authService from './services/authService';
 import { SidebarProvider } from './contexts/SidebarContext';
 import CategoryManagementPage from './pages/admin/CategoryManagementPage';
@@ -108,6 +109,14 @@ function App() {
             element={
               <AdminRoute>
                 <SystemAndConfigPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/notifications"
+            element={
+              <AdminRoute>
+                <NotificationsPage />
               </AdminRoute>
             }
           />
