@@ -83,6 +83,30 @@ class TransactionService {
     }
   }
 
+  /// Tìm kiếm giao dịch theo từ khóa (paginated)
+  Future<Map<String, dynamic>> searchTransactions(String keyword, {int page = 0, int size = 10}) async {
+    final encoded = Uri.encodeQueryComponent(keyword);
+    final url = Uri.parse('$_baseUrl/transactions/search?keyword=$encoded&page=$page&size=$size');
+    final token = await _authService.getToken();
+    final headers = {'Content-Type': 'application/json'};
+
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    print('🔎 Searching transactions with keyword "$keyword" at: $url');
+    final response = await http.get(url, headers: headers);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      final errorMessage = response.body.isNotEmpty
+          ? jsonDecode(response.body)['message'] ?? 'Failed to search transactions'
+          : 'Failed to search transactions';
+      throw Exception(errorMessage);
+    }
+  }
+
   Future<void> updateTransaction({
     required int id,
     required String type,
@@ -304,5 +328,28 @@ class TransactionService {
     }
 
     return [];
+  }
+
+  /// Lấy transaction theo id
+  Future<Map<String, dynamic>> getTransactionById(int id) async {
+    final url = Uri.parse('$_baseUrl/transactions/$id');
+    final token = await _authService.getToken();
+    final headers = {'Content-Type': 'application/json'};
+
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    print('🔍 Fetching transaction by id from: $url');
+    final response = await http.get(url, headers: headers);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      final errorMessage = response.body.isNotEmpty
+          ? jsonDecode(response.body)['message'] ?? 'Failed to fetch transaction'
+          : 'Failed to fetch transaction';
+      throw Exception(errorMessage);
+    }
   }
 }
