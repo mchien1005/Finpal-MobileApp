@@ -72,6 +72,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
               },
             );
 
+        // Tự động đăng nhập sau khi đăng ký thành công
+        await _authService
+            .login(_usernameController.text, _passwordController.text)
+            .timeout(
+              const Duration(seconds: 15),
+              onTimeout: () {
+                throw TimeoutException(
+                  'Kết nối timeout khi đăng nhập. Vui lòng thử lại.',
+                );
+              },
+            );
+
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -91,10 +103,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               _showConnectionLostDialog();
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(e.message),
-                  backgroundColor: Colors.red,
-                ),
+                SnackBar(content: Text(e.message), backgroundColor: Colors.red),
               );
             }
           } else {

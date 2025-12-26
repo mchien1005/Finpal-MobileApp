@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
+import '../home/dashboard_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -13,10 +15,95 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
+  // Trạng thái quyền SMS
+  bool _smsPermissionGranted = false;
+  bool _isRequestingPermission = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSmsPermission();
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  /// Kiểm tra trạng thái quyền SMS hiện tại
+  Future<void> _checkSmsPermission() async {
+    final status = await Permission.sms.status;
+    setState(() {
+      _smsPermissionGranted = status.isGranted;
+    });
+  }
+
+  /// Yêu cầu quyền đọc SMS
+  Future<void> _requestSmsPermission() async {
+    if (_isRequestingPermission) return;
+
+    setState(() {
+      _isRequestingPermission = true;
+    });
+
+    try {
+      final status = await Permission.sms.request();
+
+      setState(() {
+        _smsPermissionGranted = status.isGranted;
+        _isRequestingPermission = false;
+      });
+
+      if (mounted) {
+        if (status.isGranted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Đã cấp quyền đọc SMS thành công!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else if (status.isPermanentlyDenied) {
+          // Người dùng đã từ chối vĩnh viễn, cần mở Settings
+          _showOpenSettingsDialog();
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isRequestingPermission = false;
+      });
+      debugPrint('❌ Lỗi khi yêu cầu quyền SMS: $e');
+    }
+  }
+
+  /// Hiển thị dialog mở Settings khi quyền bị từ chối vĩnh viễn
+  void _showOpenSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cần cấp quyền'),
+        content: const Text(
+          'Bạn đã từ chối quyền đọc SMS. Để sử dụng tính năng tự động ghi nhận giao dịch, vui lòng cấp quyền trong Cài đặt.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Để sau'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text(
+              'Mở Cài đặt',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _nextPage() {
@@ -516,31 +603,61 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Cho phép đọc SMS',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Cho phép đọc SMS',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
                             ),
-                          ),
-                          Text(
-                            'Tự động ghi nhận giao dịch',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6B7280),
+                            Text(
+                              _smsPermissionGranted
+                                  ? '✅ Đã cấp quyền'
+                                  : 'Tự động ghi nhận giao dịch',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _smsPermissionGranted
+                                    ? Colors.green
+                                    : const Color(0xFF6B7280),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      Switch(
-                        value: true,
-                        onChanged: (value) {},
-                        activeColor: AppColors.primary,
-                      ),
+                      _isRequestingPermission
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primary,
+                              ),
+                            )
+                          : Switch(
+                              value: _smsPermissionGranted,
+                              onChanged: (value) {
+                                // Khi toggle switch, luôn request permission
+                                if (!_smsPermissionGranted) {
+                                  _requestSmsPermission();
+                                } else {
+                                  // Nếu đã có quyền, hướng dẫn user vào Settings để tắt
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Để tắt quyền SMS, vui lòng vào Cài đặt > Ứng dụng > FinPal > Quyền',
+                                      ),
+                                      backgroundColor: Colors.orange,
+                                    ),
+                                  );
+                                }
+                              },
+                              activeColor: AppColors.primary,
+                            ),
                     ],
                   ),
                 ),
