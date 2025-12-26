@@ -226,11 +226,7 @@ class DataPrivacyScreen extends StatelessWidget {
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -270,11 +266,7 @@ class DataPrivacyScreen extends StatelessWidget {
   Widget _buildImportantInfoSection() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -339,19 +331,84 @@ class DataPrivacyScreen extends StatelessWidget {
   }
 
   void _showExportDataDialog(BuildContext context) async {
-    final result = await ConfirmationDialog.show(
-      context,
-      title: 'Xuất dữ liệu',
-      message:
-          'Bạn có muốn xuất toàn bộ dữ liệu cá nhân của mình không? Dữ liệu sẽ được gửi đến email của bạn.',
-      icon: MdiIcons.downloadOutline,
-      iconColor: AppColors.primary,
-      confirmColor: AppColors.primary,
-      confirmText: 'Xác nhận',
-      cancelText: 'Hủy',
+    final reasonController = TextEditingController();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(MdiIcons.downloadOutline, color: AppColors.primary, size: 28),
+            const SizedBox(width: 12),
+            const Text(
+              'Xuất dữ liệu',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Bạn có muốn xuất toàn bộ dữ liệu cá nhân của mình không? Dữ liệu sẽ được gửi đến email của bạn.',
+              style: TextStyle(fontSize: 14, color: Color(0xFF6A7282)),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Lý do (tùy chọn):',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Nhập lý do yêu cầu xuất dữ liệu...',
+                hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.primary),
+                ),
+                contentPadding: const EdgeInsets.all(12),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: Color(0xFF6A7282)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Xác nhận',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
     );
 
     if (result == true && context.mounted) {
+      final reason = reasonController.text.trim();
+
       // Show loading dialog
       showDialog(
         context: context,
@@ -363,7 +420,9 @@ class DataPrivacyScreen extends StatelessWidget {
 
       try {
         final userRequestService = UserRequestService();
-        await userRequestService.requestExportData();
+        await userRequestService.requestExportData(
+          reason: reason.isNotEmpty ? reason : null,
+        );
 
         if (context.mounted) {
           Navigator.pop(context); // Close loading dialog
@@ -416,19 +475,132 @@ class DataPrivacyScreen extends StatelessWidget {
   }
 
   void _showDeleteConfirmationDialog(BuildContext context) async {
-    final result = await ConfirmationDialog.showWithTextConfirmation(
-      context,
-      title: 'Xác nhận xóa tài khoản',
-      message: 'Nhập "XÓA TÀI KHOẢN" để xác nhận:',
-      confirmationText: 'XÓA TÀI KHOẢN',
-      confirmText: 'Xóa tài khoản',
-      cancelText: 'Hủy',
-      confirmColor: Colors.red,
-      icon: Icons.delete_forever_outlined,
-      iconColor: Colors.red,
+    final reasonController = TextEditingController();
+    final confirmController = TextEditingController();
+    bool isConfirmValid = false;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: const [
+              Icon(Icons.delete_forever_outlined, color: Colors.red, size: 28),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Xác nhận xóa tài khoản',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Trường lý do
+                const Text(
+                  'Lý do xóa tài khoản (tùy chọn):',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: reasonController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText:
+                        'Cho chúng tôi biết lý do bạn muốn xóa tài khoản...',
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF9CA3AF),
+                      fontSize: 13,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.red),
+                    ),
+                    contentPadding: const EdgeInsets.all(12),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Trường xác nhận
+                const Text(
+                  'Nhập "XÁC NHẬN" để xác nhận:',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: confirmController,
+                  onChanged: (value) {
+                    setDialogState(() {
+                      isConfirmValid = value.trim().toUpperCase() == 'XÁC NHẬN';
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'XÁC NHẬN',
+                    hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: isConfirmValid ? Colors.green : Colors.red,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.all(12),
+                    suffixIcon: isConfirmValid
+                        ? const Icon(Icons.check_circle, color: Colors.green)
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text(
+                'Hủy',
+                style: TextStyle(color: Color(0xFF6A7282)),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: isConfirmValid
+                  ? () => Navigator.pop(context, true)
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                disabledBackgroundColor: Colors.grey.shade300,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Xóa tài khoản',
+                style: TextStyle(
+                  color: isConfirmValid ? Colors.white : Colors.grey,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
 
     if (result == true && context.mounted) {
+      final reason = reasonController.text.trim();
+
       // Show loading dialog
       showDialog(
         context: context,
@@ -439,7 +611,9 @@ class DataPrivacyScreen extends StatelessWidget {
 
       try {
         final userRequestService = UserRequestService();
-        await userRequestService.requestDeleteAccount();
+        await userRequestService.requestDeleteAccount(
+          reason: reason.isNotEmpty ? reason : null,
+        );
 
         if (context.mounted) {
           Navigator.pop(context); // Close loading dialog
