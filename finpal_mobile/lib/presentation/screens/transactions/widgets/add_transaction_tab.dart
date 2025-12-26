@@ -473,6 +473,24 @@ class _AddTransactionTabState extends State<AddTransactionTab>
           initialDate: _selectedDate ?? DateTime.now(),
           firstDate: DateTime(2000),
           lastDate: DateTime(2100),
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: const ColorScheme.light(
+                  primary: Color(0xFFD7006E),
+                ),
+                datePickerTheme: DatePickerThemeData(
+                  backgroundColor: Colors.white,
+                  headerBackgroundColor: AppColors.primary,
+                  headerForegroundColor: Colors.white,
+                  surfaceTintColor: Colors.transparent,
+                  dayStyle: const TextStyle(color: Colors.black),
+                  yearStyle: const TextStyle(color: Colors.black),
+                ),
+              ),
+              child: child!,
+            );
+          },
         );
         if (date != null) {
           setState(() {
@@ -486,6 +504,7 @@ class _AddTransactionTabState extends State<AddTransactionTab>
           color: AppColors.inputBackground,
           borderRadius: BorderRadius.circular(8),
         ),
+
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
