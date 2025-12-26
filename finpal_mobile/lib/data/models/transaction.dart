@@ -1,18 +1,30 @@
-/// DateTime.parse() mặc định coi là UTC, nhưng thực tế đây là local time
-/// Hàm này parse và tạo DateTime với thời gian local chính xác
-DateTime _parseLocalDateTime(String dateTimeString) {
-  // Parse chuỗi datetime
-  final parsed = DateTime.parse(dateTimeString);
-
-  // Nếu chuỗi không có timezone info ('Z' hoặc offset), DateTime.parse sẽ trả về
-  // DateTime với isUtc = false nhưng giá trị thời gian vẫn đúng
-  // Tuy nhiên nếu server gửi với 'Z' cuối, ta cần chuyển về local
-  if (parsed.isUtc) {
-    return parsed.toLocal();
+/// Parse datetime từ string API trả về
+/// Nếu có timezone info (Z hoặc +/-) thì parse và convert về local
+/// Nếu không có timezone thì giữ nguyên giá trị (server đã trả về local time)
+DateTime _parseDateTime(String ts) {
+  // Kiểm tra xem có timezone info không (Z hoặc +/- offset)
+  final tzMatch = RegExp(r'[Zz]|[+-]\d{2}:?\d{2}');
+  if (tzMatch.hasMatch(ts)) {
+    return DateTime.parse(ts).toLocal();
   }
 
-  // Nếu không phải UTC, giá trị đã là local time
-  return parsed;
+  // Không có timezone - parse thủ công để tạo local DateTime
+  // Tránh Dart tự động coi là UTC
+  final match = RegExp(
+    r'^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?',
+  ).firstMatch(ts);
+  if (match != null) {
+    final y = int.parse(match.group(1)!);
+    final m = int.parse(match.group(2)!);
+    final d = int.parse(match.group(3)!);
+    final hh = int.parse(match.group(4)!);
+    final mm = int.parse(match.group(5)!);
+    final ss = match.group(6) != null ? int.parse(match.group(6)!) : 0;
+    return DateTime(y, m, d, hh, mm, ss);
+  }
+
+  // Fallback về default parser
+  return DateTime.parse(ts);
 }
 
 class Transaction {
@@ -76,35 +88,6 @@ class Transaction {
       'category': category?.toJson(),
     };
   }
-}
-
-DateTime _parseDateTime(String ts) {
-  // If the timestamp contains timezone info (Z or +/-) parse and convert to local.
-  // If it lacks timezone information, assume the server already returned a local
-  // timestamp and parse it as-is (no UTC conversion) so the displayed time matches
-  // what the server intended.
-  final tzMatch = RegExp(r'[Zz]|[+-]\d{2}:?\d{2}');
-  if (tzMatch.hasMatch(ts)) {
-    return DateTime.parse(ts).toLocal();
-  }
-
-  // No timezone present. Parse components and construct a local DateTime so
-  // Dart does not treat the string as UTC and shift by timezone.
-  final match = RegExp(
-    r'^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?',
-  ).firstMatch(ts);
-  if (match != null) {
-    final y = int.parse(match.group(1)!);
-    final m = int.parse(match.group(2)!);
-    final d = int.parse(match.group(3)!);
-    final hh = int.parse(match.group(4)!);
-    final mm = int.parse(match.group(5)!);
-    final ss = match.group(6) != null ? int.parse(match.group(6)!) : 0;
-    return DateTime(y, m, d, hh, mm, ss);
-  }
-
-  // Fallback to default parser
-  return DateTime.parse(ts);
 }
 
 class TransactionCategory {
