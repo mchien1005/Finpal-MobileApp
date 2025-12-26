@@ -57,46 +57,66 @@ class TransactionCategorizer:
         self.label_encoder = None        # Encoder cho category labels
         self.feature_names = []          # Tên các features
         
-    def _extract_features(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _extract_features(self, df: pd.DataFrame, is_training: bool = False) -> pd.DataFrame:
         """
         Trích xuất features từ transaction data - Extract features from transaction data
         
         Tạo features cho model từ raw transaction data:
-        1. Text features: TF-IDF vectorization của merchant name (50 dimensions)
-        2. Numerical features: amount, log(amount)
-        3. Time features: hour, day_of_week, is_weekend, is_month_start/end
+        1. Text features: TF-IDF vectorization của merchant + description (150 dimensions)
+        2. Numerical features: amount, log(amount), amount_category
+        3. Time features: hour, day_of_week, is_weekend, is_month_start/end, quarter
         
         Args:
             df: DataFrame chứa transaction data (merchant, amount, timestamp)
+            is_training: True nếu đang training (để tạo combined_text từ description)
         
         Returns:
             pd.DataFrame: DataFrame chứa engineered features sẵn sàng cho model
         """
         
-        # Text features từ merchant name (TF-IDF)
-        # Chuyển "GRAB VIETNAM" -> vector [0.3, 0.7, 0.1, ...] (50 dims)
-        merchant_tfidf = self.vectorizer.transform(df['merchant'].fillna(''))
+        # QUAN TRỌNG: Kết hợp merchant + description để có context tốt hơn
+        if 'description' in df.columns:
+            combined_text = df['merchant'].fillna('') + ' ' + df['description'].fillna('')
+        else:
+            combined_text = df['merchant'].fillna('')
+        
+        # Text features từ combined text (TF-IDF)
+        merchant_tfidf = self.vectorizer.transform(combined_text)
         
         # Numerical features
         features = pd.DataFrame()
         features['amount'] = df['amount']
         features['amount_log'] = np.log1p(df['amount'])  # log transform để giảm skewness
         
+        # Amount category: low, medium, high, very_high
+        amount_q = df['amount'].quantile([0.25, 0.5, 0.75]).values if len(df) > 4 else [50000, 200000, 1000000]
+        features['amount_low'] = (df['amount'] <= amount_q[0] if len(amount_q) > 0 else 50000).astype(int)
+        features['amount_medium'] = ((df['amount'] > amount_q[0] if len(amount_q) > 0 else 50000) & 
+                                     (df['amount'] <= amount_q[1] if len(amount_q) > 1 else 200000)).astype(int)
+        features['amount_high'] = ((df['amount'] > amount_q[1] if len(amount_q) > 1 else 200000) & 
+                                   (df['amount'] <= amount_q[2] if len(amount_q) > 2 else 1000000)).astype(int)
+        features['amount_very_high'] = (df['amount'] > amount_q[2] if len(amount_q) > 2 else 1000000).astype(int)
+        
         # Time features - thời gian ảnh hưởng đến category
-        # Ví dụ: 7AM -> café, 12PM -> ăn trưa, 10PM -> giải trí
         if 'timestamp' in df.columns:
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            features['hour'] = df['timestamp'].dt.hour
-            features['day_of_week'] = df['timestamp'].dt.dayofweek  # 0=Monday, 6=Sunday
-            features['day_of_month'] = df['timestamp'].dt.day
-            features['is_weekend'] = (df['timestamp'].dt.dayofweek >= 5).astype(int)
-            features['is_month_start'] = (df['timestamp'].dt.day <= 5).astype(int)  # Đầu tháng
-            features['is_month_end'] = (df['timestamp'].dt.day >= 25).astype(int)   # Cuối tháng
+            ts = pd.to_datetime(df['timestamp'])
+            features['hour'] = ts.dt.hour
+            features['day_of_week'] = ts.dt.dayofweek  # 0=Monday, 6=Sunday
+            features['day_of_month'] = ts.dt.day
+            features['month'] = ts.dt.month
+            features['quarter'] = ts.dt.quarter
+            features['is_weekend'] = (ts.dt.dayofweek >= 5).astype(int)
+            features['is_month_start'] = (ts.dt.day <= 5).astype(int)  # Đầu tháng
+            features['is_month_end'] = (ts.dt.day >= 25).astype(int)   # Cuối tháng
+            features['is_lunch_time'] = ((ts.dt.hour >= 11) & (ts.dt.hour <= 14)).astype(int)  # Giờ ăn trưa
+            features['is_dinner_time'] = ((ts.dt.hour >= 18) & (ts.dt.hour <= 21)).astype(int)  # Giờ ăn tối
+            features['is_morning'] = ((ts.dt.hour >= 6) & (ts.dt.hour <= 10)).astype(int)  # Buổi sáng
+            features['is_night'] = ((ts.dt.hour >= 22) | (ts.dt.hour <= 5)).astype(int)  # Đêm khuya
         
         # Combine TF-IDF với numerical features
         tfidf_df = pd.DataFrame(
             merchant_tfidf.toarray(),
-            columns=[f'merchant_{i}' for i in range(merchant_tfidf.shape[1])]
+            columns=[f'text_{i}' for i in range(merchant_tfidf.shape[1])]
         )
         
         features = pd.concat([features.reset_index(drop=True), tfidf_df], axis=1)
@@ -134,20 +154,31 @@ class TransactionCategorizer:
         print(f"✅ Loaded {len(df)} expense transactions")
         print(f"📋 Categories: {df['category'].unique()}")
         
-        # Initialize TF-IDF vectorizer
-        # max_features=50: chỉ lấy 50 words quan trọng nhất
-        # ngram_range=(1,2): unigrams + bigrams ("grab" + "grab vietnam")
-        # min_df=2: bỏ words xuất hiện < 2 lần
-        print("\n🔧 Extracting features...")
-        self.vectorizer = TfidfVectorizer(
-            max_features=50,
-            ngram_range=(1, 2),
-            min_df=2
-        )
-        self.vectorizer.fit(df['merchant'].fillna(''))
+        # Initialize TF-IDF vectorizer - CẢI TIẾN
+        # max_features=150: tăng từ 50 lên 150 để capture nhiều patterns hơn
+        # ngram_range=(1,3): unigrams + bigrams + trigrams
+        # min_df=1: giữ lại tất cả words (vì đã có max_features)
+        # sublinear_tf=True: giảm ảnh hưởng của terms xuất hiện nhiều lần
+        print("\n🔧 Extracting features (OPTIMIZED)...")
         
-        # Extract features
-        X = self._extract_features(df)
+        # Kết hợp merchant + description để có context tốt hơn
+        if 'description' in df.columns:
+            combined_text = df['merchant'].fillna('') + ' ' + df['description'].fillna('')
+        else:
+            combined_text = df['merchant'].fillna('')
+        
+        self.vectorizer = TfidfVectorizer(
+            max_features=150,  # Tăng từ 50 lên 150
+            ngram_range=(1, 3),  # Thêm trigrams
+            min_df=1,  # Giữ lại tất cả
+            sublinear_tf=True,  # Áp dụng sublinear scaling
+            analyzer='word',
+            token_pattern=r'(?u)\b\w+\b'  # Bắt cả single characters
+        )
+        self.vectorizer.fit(combined_text)
+        
+        # Extract features với description
+        X = self._extract_features(df, is_training=True)
         self.feature_names = X.columns.tolist()
         
         # Encode labels
@@ -161,15 +192,19 @@ class TransactionCategorizer:
         
         print(f"📦 Training set: {len(X_train)}, Test set: {len(X_test)}")
         
-        # Train model
-        print("\n🤖 Training Random Forest model...")
+        # Train model - CẢI TIẾN hyperparameters
+        print("\n🤖 Training Random Forest model (OPTIMIZED)...")
         self.model = RandomForestClassifier(
-            n_estimators=100,
-            max_depth=20,
-            min_samples_split=5,
-            min_samples_leaf=2,
+            n_estimators=200,  # Tăng từ 100 lên 200 trees
+            max_depth=30,  # Tăng từ 20 lên 30
+            min_samples_split=3,  # Giảm từ 5 xuống 3
+            min_samples_leaf=1,  # Giảm từ 2 xuống 1 để capture patterns nhỏ
+            max_features='sqrt',  # Optimize feature selection
+            class_weight='balanced',  # Xử lý imbalanced classes
             random_state=42,
-            n_jobs=-1
+            n_jobs=-1,
+            bootstrap=True,
+            oob_score=True  # Out-of-bag score để đánh giá
         )
         
         self.model.fit(X_train, y_train)
