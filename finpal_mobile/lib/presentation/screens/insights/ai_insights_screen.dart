@@ -2,7 +2,15 @@ import 'package:flutter/material.dart';
 import '../../../core/widgets/custom_bottom_nav_bar.dart';
 import '../../../core/utils/bottom_nav_helper.dart';
 import '../../../core/utils/app_bar_with_drawer.dart';
+import '../../../core/utils/category_icon_helper.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../../data/services/ai_insights_service.dart';
+import '../../../data/services/notification_service.dart';
+import '../../../data/services/storage_service.dart';
+import '../../../data/models/weekly_spending_trend_model.dart';
+import '../../../data/models/notification_model.dart';
+import 'package:intl/intl.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AIInsightsScreen extends StatefulWidget {
   const AIInsightsScreen({super.key});
@@ -12,86 +20,176 @@ class AIInsightsScreen extends StatefulWidget {
 }
 
 class _AIInsightsScreenState extends State<AIInsightsScreen> {
+  final AIInsightsService _aiInsightsService = AIInsightsService();
+  final NotificationService _notificationService = NotificationService();
+  final StorageService _storageService = StorageService();
+
+  bool _isLoading = true;
+  int _unreadCount = 0;
+  List<NotificationModel> _notifications = [];
+  WeeklySpendingTrendResponse? _weeklyTrend;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final userData = await _storageService.getUserData();
+      print('👤 AI Insights: User data loaded: $userData');
+
+      if (userData == null) {
+        setState(() {
+          _errorMessage = 'Vui lòng đăng nhập lại';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final userId = userData['id'] as int;
+      print('🆔 AI Insights: User ID: $userId');
+
+      // Chỉ lấy các loại thông báo liên quan đến AI insights
+      final aiNotificationTypes = [
+        'SAVINGS_SUGGESTION',
+        'ANOMALY_ALERT',
+        'SPENDING_ACHIEVEMENT',
+        'SPENDING_TIP',
+        'SMART_TIP',
+      ];
+
+      // Load data in parallel
+      print('📡 AI Insights: Loading data...');
+      final results = await Future.wait([
+        _notificationService.getUnreadCount(),
+        _notificationService.getNotifications(
+          isRead: false,
+          types: aiNotificationTypes,
+        ),
+        _aiInsightsService.getWeeklySpendingTrend(userId),
+      ]);
+
+      print('✅ AI Insights: Data loaded successfully');
+      setState(() {
+        _unreadCount = results[0] as int;
+        _notifications = results[1] as List<NotificationModel>;
+        _weeklyTrend = results[2] as WeeklySpendingTrendResponse;
+        _isLoading = false;
+      });
+    } catch (e, stackTrace) {
+      print('❌ AI Insights Error: $e');
+      print('📍 Stack trace: $stackTrace');
+      setState(() {
+        _errorMessage = 'Không thể tải dữ liệu: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _deleteNotification(int notificationId) async {
+    try {
+      print('🗑️ Deleting notification: $notificationId');
+      await _notificationService.deleteNotification(notificationId);
+
+      // Remove from local list and update count
+      setState(() {
+        _notifications.removeWhere((n) => n.id == notificationId);
+        _unreadCount = _notifications.length;
+      });
+
+      print('✅ Notification deleted successfully');
+    } catch (e) {
+      print('❌ Failed to delete notification: $e');
+      // Show error message to user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Không thể xóa thông báo: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AppBarWithDrawer.scrollable(
-      context,
-      userName: 'Nguyễn Văn A',
-      notificationCount: 3,
-      backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          children: [
-            const SizedBox(height: 16),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await BottomNavHelper.handleBackButton(context);
+      },
+      child: AppBarWithDrawer.scrollable(
+        context,
+        userName: 'Nguyễn Văn A',
+        notificationCount: _unreadCount,
+        backgroundColor: Colors.white,
+        customTitle: 'AI gợi ý',
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _errorMessage != null
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(_errorMessage!),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadData,
+                      child: const Text('Thử lại'),
+                    ),
+                  ],
+                ),
+              )
+            : Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 16),
 
-            // AI Assistant Card
-            _buildAIAssistantCard(),
+                    // AI Assistant Card
+                    _buildAIAssistantCard(),
 
-            const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-            // Alert Cards
-            _buildAlertCard(
-              type: AlertType.warning,
-              title: 'Cảnh báo chi tiêu',
-              message:
-                  'Bạn đã chi 70% hạn mức "Ăn uống" của tháng này, chỉ còn 10 ngày nữa là hết tháng.',
-              category: 'Ăn uống',
-              action: 'Xem chi tiết →',
-            ),
+                    // Alert Cards from API
+                    ..._notifications
+                        .take(4)
+                        .map(
+                          (notification) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _buildAlertCardFromNotification(
+                              notification,
+                            ),
+                          ),
+                        ),
 
-            const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
-            _buildAlertCard(
-              type: AlertType.suggestion,
-              title: 'Gợi ý tiết kiệm',
-              message:
-                  'FinPal nhận thấy bạn chi trung bình 200.000đ cho "Trà sữa" mỗi tuần. Nếu bạn giảm còn 100.000đ, bạn sẽ tiết kiệm được 400.000đ/tháng.',
-              category: 'Ăn uống',
-              action: 'Đặt mục tiêu →',
-            ),
+                    // Weekly Trend Card
+                    _buildWeeklyTrendCard(),
 
-            const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
-            _buildAlertCard(
-              type: AlertType.anomaly,
-              title: 'Phát hiện bất thường',
-              message:
-                  'Hóa đơn tiền điện tháng này của bạn (500.000đ) cao hơn 30% so với trung bình (350.000đ).',
-              category: 'Hóa đơn',
-              action: 'Xem lịch sử →',
-            ),
-
-            const SizedBox(height: 12),
-
-            _buildAlertCard(
-              type: AlertType.achievement,
-              title: 'Thành tích',
-              message:
-                  'Chúc mừng! Bạn đã tiết kiệm được 500.000đ so với tháng trước.',
-              category: 'Tiết kiệm',
-              action: 'Xem báo cáo →',
-            ),
-
-            const SizedBox(height: 16),
-
-            // Weekly Trend Card
-            _buildWeeklyTrendCard(),
-
-            const SizedBox(height: 16),
-
-            // Category Analysis Card
-            _buildCategoryAnalysisCard(),
-
-            const SizedBox(height: 16), // Bottom navigation spacing
-          ],
+                    // Category Analysis Card
+                    // _buildCategoryAnalysisCard(),
+                    const SizedBox(height: 16), // Bottom navigation spacing
+                  ],
+                ),
+              ),
+        bottomNavigationBar: CustomBottomNavBar(
+          currentIndex: 3,
+          onTap: (index) {
+            BottomNavHelper.navigateToIndex(context, index, 3);
+          },
         ),
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 3,
-        onTap: (index) {
-          BottomNavHelper.navigateToIndex(context, index, 3);
-        },
       ),
     );
   }
@@ -112,24 +210,20 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
           Container(
             width: 48,
             height: 48,
-            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
-            child: SvgPicture.asset(
-              'assets/icons/thongbao.svg',
-              color: Colors.white,
-              width: 24,
-              height: 24,
+            child: Center(
+              child: Icon(MdiIcons.robot, color: Colors.white, size: 24),
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Trợ lý AI',
                   style: TextStyle(
                     color: Colors.white,
@@ -137,10 +231,10 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
                     fontWeight: FontWeight.w400,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  'Có 4 thông báo mới',
-                  style: TextStyle(
+                  'Gợi ý dành cho bạn',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w400,
@@ -154,12 +248,61 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
     );
   }
 
+  Widget _buildAlertCardFromNotification(NotificationModel notification) {
+    final type = _getAlertTypeFromNotification(notification.type);
+    return _buildAlertCard(
+      type: type,
+      title: notification.title,
+      message: notification.content,
+      category: _getCategoryFromType(notification.type),
+      notificationId: notification.id,
+    );
+  }
+
+  AlertType _getAlertTypeFromNotification(String type) {
+    switch (type) {
+      case 'BUDGET_WARNING':
+      case 'BUDGET_EXCEEDED':
+        return AlertType.warning;
+      case 'SAVINGS_SUGGESTION':
+        return AlertType.savingsSuggestion;
+      case 'SPENDING_TIP':
+        return AlertType.spendingTip;
+      case 'ANOMALY_ALERT':
+        return AlertType.anomaly;
+      case 'GOAL_COMPLETED':
+      case 'SPENDING_ACHIEVEMENT':
+        return AlertType.achievement;
+      default:
+        return AlertType.spendingTip;
+    }
+  }
+
+  String _getCategoryFromType(String type) {
+    switch (type) {
+      case 'BUDGET_WARNING':
+      case 'BUDGET_EXCEEDED':
+        return 'Ngân sách';
+      case 'SAVINGS_SUGGESTION':
+        return 'Tiết kiệm';
+      case 'SPENDING_TIP':
+        return 'Chi tiêu';
+      case 'ANOMALY_ALERT':
+        return 'Bất thường';
+      case 'GOAL_COMPLETED':
+      case 'SPENDING_ACHIEVEMENT':
+        return 'Thành tích';
+      default:
+        return 'Thông báo';
+    }
+  }
+
   Widget _buildAlertCard({
     required AlertType type,
     required String title,
     required String message,
     required String category,
-    required String action,
+    int? notificationId,
   }) {
     final config = _getAlertConfig(type);
 
@@ -193,7 +336,9 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
               ),
               IconButton(
                 icon: Icon(Icons.close, color: config.textColor, size: 16),
-                onPressed: () {},
+                onPressed: notificationId != null
+                    ? () => _deleteNotification(notificationId)
+                    : null,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
@@ -214,7 +359,7 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
 
           const SizedBox(height: 8),
 
-          // Category and Action
+          // Category
           Row(
             children: [
               Container(
@@ -231,20 +376,6 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              InkWell(
-                onTap: () {},
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  child: Text(
-                    action,
-                    style: TextStyle(color: config.textColor, fontSize: 12),
-                  ),
-                ),
-              ),
             ],
           ),
         ],
@@ -253,11 +384,25 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
   }
 
   Widget _buildWeeklyTrendCard() {
+    if (_weeklyTrend == null) {
+      return const SizedBox.shrink();
+    }
+
+    final dailySpending = _weeklyTrend!.dailySpending;
+    final maxAmount = dailySpending.isEmpty
+        ? 1.0
+        : dailySpending
+              .map((d) => d.totalSpending)
+              .reduce((a, b) => a > b ? a : b);
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: Colors.black.withOpacity(0.1), width: 1.145),
+        border: Border.all(
+          color: Colors.black.withValues(alpha: 0.1),
+          width: 1.145,
+        ),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -271,56 +416,66 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
               color: Color(0xFF030213),
             ),
           ),
-
           const SizedBox(height: 24),
 
-          // Weekly spending items
-          _buildWeeklyItem('T2', '☕', '150.000đ', 0.36),
-          const SizedBox(height: 12),
-          _buildWeeklyItem('T3', '🍜', '280.000đ', 0.67),
-          const SizedBox(height: 12),
-          _buildWeeklyItem('T4', '🚗', '95.000đ', 0.23),
-          const SizedBox(height: 12),
-          _buildWeeklyItem('T5', '🛍️', '420.000đ', 1.0),
-          const SizedBox(height: 12),
-          _buildWeeklyItem('T6', '🍕', '320.000đ', 0.76),
-          const SizedBox(height: 12),
-          _buildWeeklyItem('T7', '🎬', '180.000đ', 0.43),
-          const SizedBox(height: 12),
-          _buildWeeklyItem('CN', '☕', '230.000đ', 0.55),
+          // Weekly spending items from API
+          ...dailySpending.asMap().entries.map((entry) {
+            final daily = entry.value;
+            final progress = maxAmount > 0
+                ? daily.totalSpending / maxAmount
+                : 0.0;
+            final formatter = NumberFormat('#,###', 'vi_VN');
+            final emoji = CategoryIconHelper.getEmoji(daily.topCategory?.icon);
+
+            return Column(
+              children: [
+                if (entry.key > 0) const SizedBox(height: 12),
+                _buildWeeklyItem(
+                  daily.dayName,
+                  emoji,
+                  '${formatter.format(daily.totalSpending.toDouble())}đ',
+                  progress,
+                ),
+              ],
+            );
+          }),
 
           const SizedBox(height: 16),
 
-          // Info box
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFDBEAFE),
-              border: Border.all(color: const Color(0xFFBEDBFF), width: 1.145),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.info_outline,
-                  color: Color(0xFF193CB8),
-                  size: 16,
+          // Info box with insight from API
+          if (_weeklyTrend!.insight.message.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFDBEAFE),
+                border: Border.all(
+                  color: const Color(0xFFBEDBFF),
+                  width: 1.145,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: const Text(
-                    'Bạn thường chi nhiều nhất vào thứ 5. Hãy lập kế hoạch chi tiêu cẩn thận hơn vào ngày này.',
-                    style: TextStyle(
-                      color: Color(0xFF193CB8),
-                      fontSize: 14,
-                      height: 1.4,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.info_outline,
+                    color: Color(0xFF193CB8),
+                    size: 16,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _weeklyTrend!.insight.message,
+                      style: const TextStyle(
+                        color: Color(0xFF193CB8),
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -370,152 +525,152 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
     );
   }
 
-  Widget _buildCategoryAnalysisCard() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.black.withOpacity(0.1), width: 1.145),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Phân tích theo danh mục',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-              color: Color(0xFF030213),
-            ),
-          ),
-          const SizedBox(height: 24),
-          _buildCategoryItem(
-            iconAsset: 'assets/icons/anuong.svg',
-            iconColor: const Color(0xFFFB2C36),
-            bgColor: const Color(0xFFFEF2F2),
-            title: 'Ăn uống',
-            subtitle: '3.5M / 5M đ',
-            percentage: '70%',
-            badgeColor: const Color(0xFFD4183D),
-            progress: 0.7,
-            progressBg: const Color(0xFFFFC9C9),
-            progressColor: const Color(0xFFFB2C36),
-          ),
-          const SizedBox(height: 12),
-          _buildCategoryItem(
-            iconAsset: 'assets/icons/muasam.svg',
-            iconColor: const Color(0xFF00C950),
-            bgColor: const Color(0xFFF0FDF4),
-            title: 'Mua sắm',
-            subtitle: '2M / 4M đ',
-            percentage: '50%',
-            badgeColor: const Color(0xFFB9F8CF),
-            badgeTextColor: const Color(0xFF016630),
-            progress: 0.5,
-            progressBg: const Color(0xFFB9F8CF),
-            progressColor: const Color(0xFF00C950),
-          ),
-          const SizedBox(height: 12),
-          _buildCategoryItem(
-            iconAsset: 'assets/icons/hoadon.svg',
-            iconColor: const Color(0xFFFF6900),
-            bgColor: const Color(0xFFFFFBEB),
-            title: 'Hóa đơn',
-            subtitle: '950K / 1M đ',
-            percentage: '95%',
-            badgeColor: const Color(0xFFFFD6A8),
-            badgeTextColor: const Color(0xFF9F2D00),
-            progress: 0.95,
-            progressBg: const Color(0xFFFFD6A8),
-            progressColor: const Color(0xFFFF6900),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildCategoryAnalysisCard() {
+  //   return Container(
+  //     padding: const EdgeInsets.all(24),
+  //     decoration: BoxDecoration(
+  //       color: Colors.white,
+  //       border: Border.all(color: Colors.black.withOpacity(0.1), width: 1.145),
+  //       borderRadius: BorderRadius.circular(14),
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         const Text(
+  //           'Phân tích theo danh mục',
+  //           style: TextStyle(
+  //             fontSize: 16,
+  //             fontWeight: FontWeight.w400,
+  //             color: Color(0xFF030213),
+  //           ),
+  //         ),
+  //         const SizedBox(height: 24),
+  //         _buildCategoryItem(
+  //           iconAsset: 'assets/icons/anuong.svg',
+  //           iconColor: const Color(0xFFFB2C36),
+  //           bgColor: const Color(0xFFFEF2F2),
+  //           title: 'Ăn uống',
+  //           subtitle: '3.5M / 5M đ',
+  //           percentage: '70%',
+  //           badgeColor: const Color(0xFFD4183D),
+  //           progress: 0.7,
+  //           progressBg: const Color(0xFFFFC9C9),
+  //           progressColor: const Color(0xFFFB2C36),
+  //         ),
+  //         const SizedBox(height: 12),
+  //         _buildCategoryItem(
+  //           iconAsset: 'assets/icons/muasam.svg',
+  //           iconColor: const Color(0xFF00C950),
+  //           bgColor: const Color(0xFFF0FDF4),
+  //           title: 'Mua sắm',
+  //           subtitle: '2M / 4M đ',
+  //           percentage: '50%',
+  //           badgeColor: const Color(0xFFB9F8CF),
+  //           badgeTextColor: const Color(0xFF016630),
+  //           progress: 0.5,
+  //           progressBg: const Color(0xFFB9F8CF),
+  //           progressColor: const Color(0xFF00C950),
+  //         ),
+  //         const SizedBox(height: 12),
+  //         _buildCategoryItem(
+  //           iconAsset: 'assets/icons/hoadon.svg',
+  //           iconColor: const Color(0xFFFF6900),
+  //           bgColor: const Color(0xFFFFFBEB),
+  //           title: 'Hóa đơn',
+  //           subtitle: '950K / 1M đ',
+  //           percentage: '95%',
+  //           badgeColor: const Color(0xFFFFD6A8),
+  //           badgeTextColor: const Color(0xFF9F2D00),
+  //           progress: 0.95,
+  //           progressBg: const Color(0xFFFFD6A8),
+  //           progressColor: const Color(0xFFFF6900),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
-  Widget _buildCategoryItem({
-    IconData? icon,
-    String? iconAsset,
-    required Color iconColor,
-    required Color bgColor,
-    required String title,
-    required String subtitle,
-    required String percentage,
-    required Color badgeColor,
-    Color badgeTextColor = Colors.white,
-    required double progress,
-    required Color progressBg,
-    required Color progressColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              iconAsset != null
-                  ? SvgPicture.asset(
-                      iconAsset,
-                      color: iconColor,
-                      width: 20,
-                      height: 20,
-                    )
-                  : Icon(icon, color: iconColor, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF030213),
-                      ),
-                    ),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF4A5565),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                decoration: BoxDecoration(
-                  color: badgeColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  percentage,
-                  style: TextStyle(color: badgeTextColor, fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(100),
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: progressBg,
-              valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-              minHeight: 8,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildCategoryItem({
+  //   IconData? icon,
+  //   String? iconAsset,
+  //   required Color iconColor,
+  //   required Color bgColor,
+  //   required String title,
+  //   required String subtitle,
+  //   required String percentage,
+  //   required Color badgeColor,
+  //   Color badgeTextColor = Colors.white,
+  //   required double progress,
+  //   required Color progressBg,
+  //   required Color progressColor,
+  // }) {
+  //   return Container(
+  //     padding: const EdgeInsets.all(12),
+  //     decoration: BoxDecoration(
+  //       color: bgColor,
+  //       borderRadius: BorderRadius.circular(10),
+  //     ),
+  //     child: Column(
+  //       children: [
+  //         Row(
+  //           children: [
+  //             iconAsset != null
+  //                 ? SvgPicture.asset(
+  //                     iconAsset,
+  //                     color: iconColor,
+  //                     width: 20,
+  //                     height: 20,
+  //                   )
+  //                 : Icon(icon, color: iconColor, size: 20),
+  //             const SizedBox(width: 12),
+  //             Expanded(
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   Text(
+  //                     title,
+  //                     style: const TextStyle(
+  //                       fontSize: 14,
+  //                       color: Color(0xFF030213),
+  //                     ),
+  //                   ),
+  //                   Text(
+  //                     subtitle,
+  //                     style: const TextStyle(
+  //                       fontSize: 12,
+  //                       color: Color(0xFF4A5565),
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //             Container(
+  //               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+  //               decoration: BoxDecoration(
+  //                 color: badgeColor,
+  //                 borderRadius: BorderRadius.circular(8),
+  //               ),
+  //               child: Text(
+  //                 percentage,
+  //                 style: TextStyle(color: badgeTextColor, fontSize: 12),
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 8),
+  //         ClipRRect(
+  //           borderRadius: BorderRadius.circular(100),
+  //           child: LinearProgressIndicator(
+  //             value: progress,
+  //             backgroundColor: progressBg,
+  //             valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+  //             minHeight: 8,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   AlertConfig _getAlertConfig(AlertType type) {
     switch (type) {
@@ -526,12 +681,19 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
           textColor: const Color(0xFF9F0712),
           icon: Icons.warning_amber_rounded,
         );
-      case AlertType.suggestion:
+      case AlertType.savingsSuggestion:
         return AlertConfig(
           bgColor: const Color(0xFFFFFBEB),
           borderColor: const Color(0xFFFEE685),
           textColor: const Color(0xFF973C00),
           icon: Icons.lightbulb_outline,
+        );
+      case AlertType.spendingTip:
+        return AlertConfig(
+          bgColor: const Color(0xFFE3F2FD),
+          borderColor: const Color(0xFFBBDEFB),
+          textColor: const Color(0xFF1565C0),
+          icon: Icons.info_outline,
         );
       case AlertType.anomaly:
         return AlertConfig(
@@ -551,7 +713,7 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
   }
 }
 
-enum AlertType { warning, suggestion, anomaly, achievement }
+enum AlertType { warning, savingsSuggestion, spendingTip, anomaly, achievement }
 
 class AlertConfig {
   final Color bgColor;

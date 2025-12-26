@@ -1,7 +1,7 @@
 import 'api_service.dart';
 import 'storage_service.dart';
 import 'firebase_push_handler.dart';
-
+import'';
 class AuthService {
   final ApiService _apiService = ApiService();
   final StorageService _storageService = StorageService();
@@ -55,10 +55,36 @@ class AuthService {
       rethrow;
     }
   }
+  Future<Map<String, dynamic>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      // Send multiple common field names so backend using different keys still works
+      final response = await _apiService.put(
+        '/auth/change-password',
+        {
+          "currentPassword": currentPassword,
+          "newPassword": newPassword,
+          // alternate field names some backends expect
+          "oldPassword": currentPassword,
+          "password": newPassword,
+        },
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
 
   Future<void> logout() async {
     // Hủy đăng ký FCM token trước khi logout
-    await _fcmHandler.unregisterToken();
+    try {
+      await _fcmHandler.unregisterToken();
+    } catch (e) {
+      print('⚠️ Failed to unregister FCM token during logout: $e');
+    }
+    // Luôn clear data dù unregister có lỗi hay không
     await _storageService.clearAll();
   }
 

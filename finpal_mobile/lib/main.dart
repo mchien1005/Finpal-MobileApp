@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'presentation/screens/splash/splash_screen.dart';
 import 'data/services/firebase_push_handler.dart';
+import 'core/utils/bottom_nav_helper.dart';
 
 /// Background message handler - phải là top-level function
 @pragma('vm:entry-point')
@@ -23,6 +24,9 @@ void main() async {
   // Initialize push handler
   final pushHandler = FirebasePushHandler();
   await pushHandler.initialize();
+
+  // Reset back press time khi app khởi động
+  BottomNavHelper.resetBackPressTime();
 
   runApp(const MyApp());
 }

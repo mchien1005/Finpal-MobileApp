@@ -277,7 +277,7 @@ const CategoryManagementPage = () => {
             icon={<EditOutlined />}
             onClick={() => handleEditCategory(record)}
             style={{
-              color: '#6a7282',
+              color: '#f59e0b',
             }}
           />
           <Button
@@ -297,52 +297,52 @@ const CategoryManagementPage = () => {
   ];
 
   // Table data
-  const dataSource = [
-    {
-      key: '1',
-      id: 'CAT001',
-      icon: '🍽️',
-      iconBg: 'rgba(59, 130, 246, 0.13)',
-      name: 'Ăn uống',
-      description: 'Chi phí ăn uống, nhà hàng, quán cà phê',
-      keywords: 15,
-      transactions: 3456,
-      type: 'Mặc định',
-    },
-    {
-      key: '2',
-      id: 'CAT002',
-      icon: '🚗',
-      iconBg: 'rgba(16, 185, 129, 0.13)',
-      name: 'Di chuyển',
-      description: 'Xăng xe, Grab, taxi, phương tiện công cộng',
-      keywords: 12,
-      transactions: 2891,
-      type: 'Mặc định',
-    },
-    {
-      key: '3',
-      id: 'CAT003',
-      icon: '🛍️',
-      iconBg: 'rgba(245, 158, 11, 0.13)',
-      name: 'Mua sắm',
-      description: 'Quần áo, giày dép, mỹ phẩm',
-      keywords: 20,
-      transactions: 2134,
-      type: 'Mặc định',
-    },
-    {
-      key: '4',
-      id: 'CAT004',
-      icon: '🎬',
-      iconBg: 'rgba(239, 68, 68, 0.13)',
-      name: 'Giải trí',
-      description: 'Phim, game, du lịch, hoạt động vui chơi',
-      keywords: 18,
-      transactions: 1567,
-      type: 'Mặc định',
-    },
-  ];
+  // const dataSource = [
+  //   {
+  //     key: '1',
+  //     id: 'CAT001',
+  //     icon: '🍽️',
+  //     iconBg: 'rgba(59, 130, 246, 0.13)',
+  //     name: 'Ăn uống',
+  //     description: 'Chi phí ăn uống, nhà hàng, quán cà phê',
+  //     keywords: 15,
+  //     transactions: 3456,
+  //     type: 'Mặc định',
+  //   },
+  //   {
+  //     key: '2',
+  //     id: 'CAT002',
+  //     icon: '🚗',
+  //     iconBg: 'rgba(16, 185, 129, 0.13)',
+  //     name: 'Di chuyển',
+  //     description: 'Xăng xe, Grab, taxi, phương tiện công cộng',
+  //     keywords: 12,
+  //     transactions: 2891,
+  //     type: 'Mặc định',
+  //   },
+  //   {
+  //     key: '3',
+  //     id: 'CAT003',
+  //     icon: '🛍️',
+  //     iconBg: 'rgba(245, 158, 11, 0.13)',
+  //     name: 'Mua sắm',
+  //     description: 'Quần áo, giày dép, mỹ phẩm',
+  //     keywords: 20,
+  //     transactions: 2134,
+  //     type: 'Mặc định',
+  //   },
+  //   {
+  //     key: '4',
+  //     id: 'CAT004',
+  //     icon: '🎬',
+  //     iconBg: 'rgba(239, 68, 68, 0.13)',
+  //     name: 'Giải trí',
+  //     description: 'Phim, game, du lịch, hoạt động vui chơi',
+  //     keywords: 18,
+  //     transactions: 1567,
+  //     type: 'Mặc định',
+  //   },
+  // ];
 
   return (
     <div style={{ 
@@ -554,8 +554,24 @@ const CategoryManagementPage = () => {
                   }}
                 />
               </Form.Item>
+              
             </Col>
           </Row>
+          <Form.Item
+            label="Mô tả"
+            name="description"
+            rules={[{ required: true, message: 'Vui lòng nhập mô tả' }]}
+          >
+            <Input.TextArea
+              placeholder="VD: Chi phí ăn uống, nhà hàng, quán cà phê..."
+              rows={3}
+              style={{
+                borderRadius: 8,
+                background: '#F3F4F6',
+                border: '1px solid transparent',
+              }}
+            />
+          </Form.Item>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
             <Button
@@ -629,6 +645,22 @@ const CategoryManagementPage = () => {
               placeholder="VD: Ăn uống, Di chuyển..."
               style={{
                 height: 40,
+                borderRadius: 8,
+                background: '#F3F4F6',
+                border: '1px solid transparent',
+              }}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Mô tả"
+            name="description"
+            rules={[{ required: true, message: 'Vui lòng nhập mô tả' }]}
+          >
+            <Input.TextArea
+              placeholder="VD: Chi phí ăn uống, nhà hàng, quán cà phê..."
+              rows={3}
+              style={{
                 borderRadius: 8,
                 background: '#F3F4F6',
                 border: '1px solid transparent',

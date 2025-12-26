@@ -1,5 +1,5 @@
 //Bảo mật và nhật ký audit
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Row, Col, Card } from 'antd';
 import { CheckCircleOutlined, WarningOutlined, ThunderboltOutlined, LockOutlined } from '@ant-design/icons';
 import AdminSidebar from '../../components/admin/AdminSidebar';
@@ -7,12 +7,27 @@ import { useSidebar } from '../../contexts/SidebarContext';
 import AuditLogTab from './security-audit/AuditLogTab';
 import PermissionTab from './security-audit/PermissionTab';
 import DataPrivacyTab from './security-audit/DataPrivacyTab';
+import * as userRequestService from '../../services/userRequestService';
 
 const tabs = ['Nhật ký Audit', 'Phân quyền', 'Quyền riêng tư Dữ liệu'];
 
 const SecurityAndAuditPage = () => {
   const { collapsed } = useSidebar();
   const [activeTab, setActiveTab] = useState(0);
+  const [pendingCount, setPendingCount] = useState(null);
+
+  useEffect(() => {
+    const fetchPending = async () => {
+      try {
+        const count = await userRequestService.countPendingRequests();
+        setPendingCount(Number(count) || 0);
+      } catch (err) {
+        console.error('Error fetching pending count:', err);
+      }
+    };
+
+    fetchPending();
+  }, []);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#F9FAFB' }}>
@@ -196,7 +211,7 @@ const SecurityAndAuditPage = () => {
                     Yêu cầu Dữ liệu
                   </p>
                   <h3 style={{ fontSize: 24, fontWeight: 600, color: '#111827', margin: 0 }}>
-                    3 chờ xử lý
+                    {pendingCount !== null ? `${pendingCount} chờ xử lý` : '...'}
                   </h3>
                 </div>
               </div>

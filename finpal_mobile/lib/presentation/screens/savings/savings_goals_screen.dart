@@ -7,6 +7,10 @@ import 'widgets/add_goal_dialog.dart';
 import 'widgets/edit_goal_dialog.dart';
 import 'widgets/contribute_goal.dart';
 import '../../../core/widgets/success_notification_dialog.dart';
+import '../../../core/widgets/confirmation_dialog.dart';
+import '../../../data/services/savings_goal_service.dart';
+import '../../../data/services/notification_service.dart';
+import '../../../data/models/savings_goal_model.dart';
 
 class SavingsGoalsScreen extends StatefulWidget {
   const SavingsGoalsScreen({super.key});
@@ -16,91 +20,178 @@ class SavingsGoalsScreen extends StatefulWidget {
 }
 
 class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
+  final NotificationService _notificationService = NotificationService();
+  List<SavingsGoalResponse> _goals = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+  int _unreadCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGoals();
+  }
+
+  Future<void> _loadGoals() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final results = await Future.wait([
+        SavingsGoalService.getAllSavingsGoals(),
+        _notificationService.getUnreadCount(),
+      ]);
+      setState(() {
+        _goals = results[0] as List<SavingsGoalResponse>;
+        _unreadCount = results[1] as int;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading goals: $e'); // Debug log
+      setState(() {
+        // Improved error message
+        if (e.toString().contains('connection')) {
+          _errorMessage =
+              'Không thể kết nối đến server.\nVui lòng kiểm tra kết nối mạng.';
+        } else {
+          _errorMessage = e.toString();
+        }
+        _isLoading = false;
+      });
+    }
+  }
+
+  double get _totalTarget {
+    return _goals.fold(0, (sum, goal) => sum + goal.targetAmount);
+  }
+
+  double get _totalCurrent {
+    return _goals.fold(0, (sum, goal) => sum + goal.currentAmount);
+  }
+
+  double get _overallProgress {
+    if (_totalTarget == 0) return 0;
+    return _totalCurrent / _totalTarget;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AppBarWithDrawer.scrollable(
-      context,
-      userName: 'Nguyễn Văn A',
-      notificationCount: 3,
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Summary Card
-              _buildSummaryCard(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await BottomNavHelper.handleBackButton(context);
+      },
+      child: AppBarWithDrawer.scrollable(
+        context,
+        userName: 'Nguyễn Văn A',
+        notificationCount: _unreadCount,
+        backgroundColor: Colors.white,
+        customTitle: 'Theo dõi mục tiêu tiết kiệm',
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _errorMessage != null
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Lỗi tải dữ liệu',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        _errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadGoals,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD7006E),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                      ),
+                      child: const Text(
+                        'Thử lại',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Summary Card
+                      _buildSummaryCard(),
 
-              const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-              // Add Goal Button
-              _buildAddGoalButton(),
+                      // Add Goal Button
+                      _buildAddGoalButton(),
 
-              const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-              // Goals List
-              _buildGoalCard(
-                iconAsset: 'assets/icons/tainghe.svg',
-                iconColor: Colors.white,
-                iconBgColor: const Color(0xFF2196F3),
-                title: 'Tai nghe Sony WH-1000XM5',
-                daysLeft: 40,
-                deadline: '31/12/2025',
-                currentAmount: 850000,
-                targetAmount: 3000000,
-                remainingAmount: 2150000,
-                monthlyContribution: 350000,
-                progress: 0.283,
+                      // Goals List - Dynamic from API
+                      if (_goals.isEmpty)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: Text(
+                              'Chưa có mục tiêu nào.\nHãy tạo mục tiêu đầu tiên!',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        ..._goals
+                            .map(
+                              (goal) => Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: _buildGoalCardFromApi(goal),
+                              ),
+                            )
+                            .toList(),
+
+                      const SizedBox(height: 16),
+
+                      // AI Suggestion Card
+                      _buildAISuggestionCard(),
+
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
               ),
-
-              const SizedBox(height: 16),
-
-              _buildGoalCard(
-                iconAsset: 'assets/icons/maybay.svg',
-                iconColor: Colors.white,
-                iconBgColor: const Color(0xFF4CAF50),
-                title: 'Du lịch Đà Lạt',
-                daysLeft: 55,
-                deadline: '15/1/2026',
-                currentAmount: 2500000,
-                targetAmount: 5000000,
-                remainingAmount: 2500000,
-                monthlyContribution: 200000,
-                progress: 0.5,
-              ),
-
-              const SizedBox(height: 16),
-
-              _buildGoalCard(
-                iconAsset: 'assets/icons/laptop.svg',
-                iconColor: Colors.white,
-                iconBgColor: const Color(0xFF9810FA),
-                title: 'Laptop MacBook Air',
-                daysLeft: 221,
-                deadline: '30/6/2026',
-                currentAmount: 8000000,
-                targetAmount: 25000000,
-                remainingAmount: 17000000,
-                monthlyContribution: 2000000,
-                progress: 0.32,
-              ),
-
-              const SizedBox(height: 16),
-
-              // AI Suggestion Card
-              _buildAISuggestionCard(),
-
-              const SizedBox(height: 24),
-            ],
-          ),
+        bottomNavigationBar: CustomBottomNavBar(
+          currentIndex: 4,
+          onTap: (index) {
+            BottomNavHelper.navigateToIndex(context, index, 4);
+          },
         ),
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 4,
-        onTap: (index) {
-          BottomNavHelper.navigateToIndex(context, index, 4);
-        },
       ),
     );
   }
@@ -154,9 +245,9 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      '12.3M / 33.0M đ',
-                      style: TextStyle(
+                    Text(
+                      '${_formatCurrencyShort(_totalCurrent)} / ${_formatCurrencyShort(_totalTarget)}',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -171,7 +262,7 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
           ClipRRect(
             borderRadius: BorderRadius.circular(100),
             child: LinearProgressIndicator(
-              value: 0.37,
+              value: _overallProgress,
               backgroundColor: Colors.white.withOpacity(0.3),
               valueColor: const AlwaysStoppedAnimation<Color>(
                 Color.fromRGBO(205, 5, 135, 1),
@@ -181,298 +272,11 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Đã đạt 37% mục tiêu tổng thể',
+            'Đã đạt ${(_overallProgress * 100).toInt()}% mục tiêu tổng thể',
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
               fontSize: 11,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGoalCard({
-    IconData? icon,
-    String? iconAsset,
-    required Color iconColor,
-    required Color iconBgColor,
-    required String title,
-    required int daysLeft,
-    required String deadline,
-    required double currentAmount,
-    required double targetAmount,
-    required double remainingAmount,
-    required double monthlyContribution,
-    required double progress,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with icon and title
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: iconBgColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: iconAsset != null
-                    ? SvgPicture.asset(
-                        iconAsset,
-                        color: iconColor,
-                        width: 28,
-                        height: 28,
-                      )
-                    : Icon(icon, color: iconColor, size: 28),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF111827),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(
-                          '$daysLeft ngày',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF6B7280),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Text(
-                          deadline,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF6B7280),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Progress section
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Tiến độ',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF6B7280),
-                ),
-              ),
-              Text(
-                '${(progress * 100).toInt()}%',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: iconBgColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(100),
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: const Color(0xFFE5E7EB),
-              valueColor: AlwaysStoppedAnimation<Color>(iconBgColor),
-              minHeight: 6,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _formatCurrencyShort(currentAmount),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF111827),
-                ),
-              ),
-              Text(
-                _formatCurrencyShort(targetAmount),
-                style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Details section
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Còn thiếu',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _formatCurrencyShort(remainingAmount),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF111827),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text(
-                      'Góp mỗi tháng',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      monthlyContribution > 0
-                          ? _formatCurrencyShort(monthlyContribution)
-                          : '-',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF111827),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Action buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () async {
-                    final result = await showDialog(
-                      context: context,
-                      builder: (context) => EditGoalDialog(
-                        goalName: title,
-                        targetAmount: targetAmount,
-                        savedAmount: currentAmount,
-                        deadline: DateTime.now().add(Duration(days: daysLeft)),
-                        monthlyContribution: monthlyContribution,
-                      ),
-                    );
-
-                    if (result != null && mounted) {
-                      // TODO: Handle the updated goal data
-                      await showDialog(
-                        context: context,
-                        builder: (context) => const SuccessNotificationDialog(
-                          message: 'Cập nhật thành công!',
-                        ),
-                      );
-                    }
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFE5E7EB)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text(
-                    'Chỉnh sửa',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF374151),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final result = await showDialog(
-                      context: context,
-                      builder: (context) => ContributeGoalDialog(
-                        goalName: title,
-                        currentAmount: currentAmount,
-                        targetAmount: targetAmount,
-                        monthlyContribution: monthlyContribution,
-                      ),
-                    );
-
-                    if (result != null && mounted) {
-                      // TODO: Handle the contribution data
-                      await showDialog(
-                        context: context,
-                        builder: (context) => const SuccessNotificationDialog(
-                          message: 'Cập nhật thành công!',
-                        ),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10B981),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text(
-                    'Góp tiền',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -488,13 +292,13 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
         );
 
         if (result != null && mounted) {
-          // TODO: Handle the saved goal data
           await showDialog(
             context: context,
             builder: (context) => const SuccessNotificationDialog(
               message: 'Thêm mục tiêu thành công!',
             ),
           );
+          _loadGoals(); // Reload goals after adding
         }
       },
       borderRadius: BorderRadius.circular(12),
@@ -637,5 +441,345 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
       return '${(amount / 1000).toInt()}.000 đ';
     }
     return '${amount.toStringAsFixed(0)} đ';
+  }
+
+  Widget _buildGoalCardFromApi(SavingsGoalResponse goal) {
+    // Determine icon and color based on goal name or status
+    String iconAsset = 'assets/icons/muctieu_icon.svg';
+    Color iconBgColor = const Color(0xFF2196F3);
+
+    // You can customize icon based on goal name
+    if (goal.name.toLowerCase().contains('điện thoại') ||
+        goal.name.toLowerCase().contains('phone') ||
+        goal.name.toLowerCase().contains('iphone')) {
+      iconAsset = 'assets/icons/tainghe.svg';
+      iconBgColor = const Color(0xFF2196F3);
+    } else if (goal.name.toLowerCase().contains('du lịch') ||
+        goal.name.toLowerCase().contains('travel')) {
+      iconAsset = 'assets/icons/maybay.svg';
+      iconBgColor = const Color(0xFF4CAF50);
+    } else if (goal.name.toLowerCase().contains('laptop') ||
+        goal.name.toLowerCase().contains('máy tính')) {
+      iconAsset = 'assets/icons/laptop.svg';
+      iconBgColor = const Color(0xFF9810FA);
+    }
+
+    final monthlyContribution =
+        goal.remainingAmount / (goal.daysRemaining / 30).ceil();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with icon, title and delete button
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: SvgPicture.asset(
+                  iconAsset,
+                  width: 28,
+                  height: 28,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      goal.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF111827),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.access_time,
+                          size: 14,
+                          color: Color(0xFF6B7280),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Còn ${goal.daysRemaining} ngày • ${goal.deadline}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Delete (X) button
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: const Icon(
+                  Icons.close,
+                  size: 18,
+                  color: Color(0xFF6B7280),
+                ),
+                onPressed: () async {
+                  final confirmed = await ConfirmationDialog.show(
+                    context,
+                    title: 'Xóa mục tiêu',
+                    message:
+                        'Bạn có chắc muốn xóa mục tiêu "${goal.name}" không? Hành động này không thể hoàn tác.',
+                    confirmText: 'Xóa',
+                    cancelText: 'Hủy',
+                    confirmColor: Colors.red,
+                    icon: Icons.delete,
+                    iconColor: Colors.red,
+                  );
+
+                  if (confirmed == true) {
+                    try {
+                      await SavingsGoalService.deleteSavingsGoal(goal.id);
+                      if (!mounted) return;
+                      await showDialog(
+                        context: context,
+                        builder: (context) => const SuccessNotificationDialog(
+                          message: 'Xóa mục tiêu thành công!',
+                        ),
+                      );
+                      _loadGoals();
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Không thể xóa mục tiêu: ${e.toString()}',
+                          ),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Progress section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Tiến độ',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF6B7280),
+                ),
+              ),
+              Text(
+                '${goal.progressPercentage.toInt()}%',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: iconBgColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(100),
+            child: LinearProgressIndicator(
+              value: goal.progressPercentage / 100,
+              backgroundColor: const Color(0xFFE5E7EB),
+              valueColor: AlwaysStoppedAnimation<Color>(iconBgColor),
+              minHeight: 6,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _formatCurrencyShort(goal.currentAmount),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF111827),
+                ),
+              ),
+              Text(
+                _formatCurrencyShort(goal.targetAmount),
+                style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Details section
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Còn lại',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatCurrency(goal.remainingAmount),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF111827),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'Góp mỗi tháng',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatCurrency(monthlyContribution),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF111827),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Action buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () async {
+                    final result = await showDialog(
+                      context: context,
+                      builder: (context) => EditGoalDialog(
+                        goalId: goal.id,
+                        goalName: goal.name,
+                        targetAmount: goal.targetAmount,
+                        savedAmount: goal.currentAmount,
+                        deadline: DateTime.parse(goal.deadline),
+                        monthlyContribution: monthlyContribution,
+                      ),
+                    );
+
+                    if (result != null && mounted) {
+                      await showDialog(
+                        context: context,
+                        builder: (context) => const SuccessNotificationDialog(
+                          message: 'Cập nhật mục tiêu thành công!',
+                        ),
+                      );
+                      _loadGoals();
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFE5E7EB)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Chỉnh sửa',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF374151),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final result = await showDialog(
+                      context: context,
+                      builder: (context) => ContributeGoalDialog(
+                        goalId: goal.id,
+                        goalName: goal.name,
+                        currentAmount: goal.currentAmount,
+                        targetAmount: goal.targetAmount,
+                        monthlyContribution: monthlyContribution,
+                      ),
+                    );
+
+                    if (result != null && mounted) {
+                      await showDialog(
+                        context: context,
+                        builder: (context) => const SuccessNotificationDialog(
+                          message: 'Góp tiền thành công!',
+                        ),
+                      );
+                      _loadGoals();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: iconBgColor,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Góp tiền',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

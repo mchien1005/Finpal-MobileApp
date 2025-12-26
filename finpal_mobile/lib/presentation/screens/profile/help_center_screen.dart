@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../data/models/faq.dart';
+import '../../../data/services/faq_service.dart';
+import '../../../data/services/api_service.dart';
 
 class HelpCenterScreen extends StatefulWidget {
   const HelpCenterScreen({super.key});
@@ -9,12 +12,107 @@ class HelpCenterScreen extends StatefulWidget {
 
 class _HelpCenterScreenState extends State<HelpCenterScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final FaqService _faqService = FaqService();
+
   String _expandedFaqId = '';
+  List<Faq> _allFaqs = [];
+  List<Faq> _filteredFaqs = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFaqs();
+    _searchController.addListener(_filterFaqs);
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadFaqs() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final faqs = await _faqService.getAllFaqs();
+      setState(() {
+        _allFaqs = faqs;
+        _filteredFaqs = faqs;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e is ApiException ? e.message : 'Không thể tải FAQs';
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _filterFaqs() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredFaqs = _allFaqs;
+      } else {
+        _filteredFaqs = _allFaqs.where((faq) {
+          return faq.question.toLowerCase().contains(query) ||
+              faq.answer.toLowerCase().contains(query);
+        }).toList();
+      }
+    });
+  }
+
+  Future<void> _submitFeedback(int faqId, bool isHelpful) async {
+    try {
+      await _faqService.submitFeedback(faqId, isHelpful);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isHelpful
+                  ? 'Cảm ơn phản hồi của bạn!'
+                  : 'Chúng tôi sẽ cải thiện câu trả lời này',
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is ApiException ? e.message : 'Không thể gửi phản hồi',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Map<String, List<Faq>> _groupFaqsByCategory() {
+    final Map<String, List<Faq>> grouped = {};
+    for (var faq in _filteredFaqs) {
+      if (!grouped.containsKey(faq.category)) {
+        grouped[faq.category] = [];
+      }
+      grouped[faq.category]!.add(faq);
+    }
+    // Sort FAQs by displayOrder within each category
+    for (var category in grouped.keys) {
+      grouped[category]!.sort(
+        (a, b) => a.displayOrder.compareTo(b.displayOrder),
+      );
+    }
+    return grouped;
   }
 
   @override
@@ -112,266 +210,173 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
 
           // Content
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Contact section
-                  const Text(
-                    'Liên hệ hỗ trợ',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Live chat
-                  _buildContactCard(
-                    icon: Icons.chat_bubble_outline,
-                    iconColor: const Color(0xFF2196F3),
-                    title: 'Chat trực tiếp',
-                    subtitle: 'Phản hồi trong vài phút',
-                    onTap: () {
-                      // TODO: Open live chat
-                    },
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Email
-                  _buildContactCard(
-                    icon: Icons.email_outlined,
-                    iconColor: const Color(0xFF00A63E),
-                    title: 'Email',
-                    subtitle: 'support@finpal.vn',
-                    onTap: () {
-                      // TODO: Open email
-                    },
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Hotline
-                  _buildContactCard(
-                    icon: Icons.phone_outlined,
-                    iconColor: const Color(0xFFFF9800),
-                    title: 'Hotline',
-                    subtitle: '1900-xxxx (8h-22h)',
-                    onTap: () {
-                      // TODO: Open phone dialer
-                    },
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // FAQ section
-                  const Text(
-                    'Câu hỏi thường gặp',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Bắt đầu',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _errorMessage != null
+                ? Center(
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _buildFaqItem(
-                          id: 'faq1',
-                          question: 'FinPal là gì?',
-                          answer:
-                              'FinPal là ứng dụng quản lý tài chính cá nhân thông minh, giúp bạn theo dõi thu chi, lập kế hoạch tiết kiệm và đạt được mục tiêu tài chính của mình.',
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.grey[400],
                         ),
-                        const Divider(height: 1),
-                        _buildFaqItem(
-                          id: 'faq2',
-                          question: 'Làm sao để bắt đầu sử dụng FinPal?',
-                          answer:
-                              'Bạn chỉ cần tải ứng dụng, đăng ký tài khoản và bắt đầu ghi chép các giao dịch của mình. FinPal sẽ tự động phân loại và phân tích chi tiêu của bạn.',
+                        const SizedBox(height: 16),
+                        Text(
+                          _errorMessage!,
+                          style: TextStyle(color: Colors.grey[600]),
+                          textAlign: TextAlign.center,
                         ),
-                        const Divider(height: 1),
-                        _buildFaqItem(
-                          id: 'faq3',
-                          question: 'FinPal có miễn phí không?',
-                          answer:
-                              'FinPal có phiên bản miễn phí với đầy đủ tính năng cơ bản. Chúng tôi cũng có gói Premium với các tính năng nâng cao cho người dùng có nhu cầu cao hơn.',
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadFaqs,
+                          child: const Text('Thử lại'),
                         ),
                       ],
                     ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Security & Privacy section
-                  Text(
-                    'Bảo mật & Quyền riêng tư',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
+                  )
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildFaqItem(
-                          id: 'faq4',
-                          question: 'Dữ liệu của tôi có an toàn không?',
-                          answer:
-                              'Dữ liệu của bạn được mã hóa AES-256 và lưu trữ an toàn trên máy chủ. Chúng tôi không chia sẻ thông tin cá nhân của bạn với bên thứ ba.',
+                        // Contact section
+                        const Text(
+                          'Liên hệ hỗ trợ',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0A0A0A),
+                          ),
                         ),
-                        const Divider(height: 1),
-                        _buildFaqItem(
-                          id: 'faq5',
-                          question:
-                              'FinPal có chia sẻ thông tin của tôi không?',
-                          answer:
-                              'Không, chúng tôi cam kết bảo vệ quyền riêng tư của bạn. Thông tin cá nhân chỉ được sử dụng để cải thiện trải nghiệm sử dụng ứng dụng.',
+                        const SizedBox(height: 12),
+
+                        // Live chat
+                        _buildContactCard(
+                          icon: Icons.chat_bubble_outline,
+                          iconColor: const Color(0xFF2196F3),
+                          title: 'Chat trực tiếp',
+                          subtitle: 'Phản hồi trong vài phút',
+                          onTap: () {
+                            // TODO: Open live chat
+                          },
                         ),
-                        const Divider(height: 1),
-                        _buildFaqItem(
-                          id: 'faq6',
-                          question: 'Làm sao để bảo vệ tài khoản tốt hơn?',
-                          answer:
-                              'Bạn nên sử dụng mật khẩu mạnh, bật xác thực hai yếu tố và không chia sẻ thông tin đăng nhập với người khác.',
+
+                        const SizedBox(height: 12),
+
+                        // Email
+                        _buildContactCard(
+                          icon: Icons.email_outlined,
+                          iconColor: const Color(0xFF00A63E),
+                          title: 'Email',
+                          subtitle: 'support@finpal.vn',
+                          onTap: () {
+                            // TODO: Open email
+                          },
                         ),
+
+                        const SizedBox(height: 12),
+
+                        // Hotline
+                        _buildContactCard(
+                          icon: Icons.phone_outlined,
+                          iconColor: const Color(0xFFFF9800),
+                          title: 'Hotline',
+                          subtitle: '1900-xxxx (8h-22h)',
+                          onTap: () {
+                            // TODO: Open phone dialer
+                          },
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // FAQ section title
+                        const Text(
+                          'Câu hỏi thường gặp',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0A0A0A),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Display FAQs grouped by category
+                        ..._buildFaqSections(),
+
+                        const SizedBox(height: 24),
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 24),
-
-                  // Features section
-                  Text(
-                    'Tính năng',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        _buildFaqItem(
-                          id: 'faq7',
-                          question:
-                              'AI phân loại giao dịch hoạt động như thế nào?',
-                          answer:
-                              'AI của FinPal sẽ tự động phân tích và phân loại các giao dịch của bạn dựa trên nội dung SMS, lịch sử giao dịch và mẫu chi tiêu.',
-                        ),
-                        const Divider(height: 1),
-                        _buildFaqItem(
-                          id: 'faq8',
-                          question: 'Tôi có thể chỉnh sửa giao dịch không?',
-                          answer:
-                              'Có, bạn có thể chỉnh sửa bất kỳ giao dịch nào bao gồm danh mục, số tiền, ghi chú và ngày tháng.',
-                        ),
-                        const Divider(height: 1),
-                        _buildFaqItem(
-                          id: 'faq9',
-                          question: 'Làm sao để đặt mục tiêu tiết kiệm?',
-                          answer:
-                              'Vào mục Tiết kiệm, nhấn nút thêm mục tiêu mới, nhập tên, số tiền và thời gian mong muốn. FinPal sẽ giúp bạn theo dõi tiến độ.',
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Troubleshooting section
-                  Text(
-                    'Khắc phục sự cố',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        _buildFaqItem(
-                          id: 'faq10',
-                          question: 'App không đọc được SMS từ ngân hàng?',
-                          answer:
-                              'Hãy kiểm tra quyền đọc SMS trong cài đặt điện thoại. Nếu vẫn không được, hãy thử khởi động lại ứng dụng hoặc liên hệ hỗ trợ.',
-                        ),
-                        const Divider(height: 1),
-                        _buildFaqItem(
-                          id: 'faq11',
-                          question: 'Giao dịch bị phân loại sai?',
-                          answer:
-                              'Bạn có thể chỉnh sửa phân loại cho giao dịch đó. AI sẽ học từ thay đổi của bạn để cải thiện độ chính xác cho lần sau.',
-                        ),
-                        const Divider(height: 1),
-                        _buildFaqItem(
-                          id: 'faq12',
-                          question: 'Quên mật khẩu thì làm sao?',
-                          answer:
-                              'Tại màn hình đăng nhập, nhấn "Quên mật khẩu" và làm theo hướng dẫn để đặt lại mật khẩu qua email hoặc số điện thoại.',
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
           ),
         ],
       ),
     );
+  }
+
+  List<Widget> _buildFaqSections() {
+    if (_filteredFaqs.isEmpty) {
+      return [
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              children: [
+                Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
+                const SizedBox(height: 16),
+                Text(
+                  'Không tìm thấy câu hỏi phù hợp',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ];
+    }
+
+    final groupedFaqs = _groupFaqsByCategory();
+    final List<Widget> sections = [];
+
+    groupedFaqs.forEach((category, faqs) {
+      sections.add(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              category,
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  for (int i = 0; i < faqs.length; i++) ...[
+                    _buildFaqItem(faq: faqs[i]),
+                    if (i < faqs.length - 1) const Divider(height: 1),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      );
+    });
+
+    return sections;
   }
 
   Widget _buildContactCard({
@@ -436,17 +441,13 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     );
   }
 
-  Widget _buildFaqItem({
-    required String id,
-    required String question,
-    required String answer,
-  }) {
-    final isExpanded = _expandedFaqId == id;
+  Widget _buildFaqItem({required Faq faq}) {
+    final isExpanded = _expandedFaqId == faq.id.toString();
 
     return InkWell(
       onTap: () {
         setState(() {
-          _expandedFaqId = isExpanded ? '' : id;
+          _expandedFaqId = isExpanded ? '' : faq.id.toString();
         });
       },
       child: Padding(
@@ -459,7 +460,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    question,
+                    faq.question,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
@@ -478,12 +479,50 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
             if (isExpanded) ...[
               const SizedBox(height: 12),
               Text(
-                answer,
+                faq.answer,
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[700],
                   height: 1.5,
                 ),
+              ),
+              const SizedBox(height: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Câu trả lời này có hữu ích không?',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton.icon(
+                          onPressed: () => _submitFeedback(faq.id, true),
+                          icon: const Icon(Icons.thumb_up_outlined, size: 16),
+                          label: const Text('Có'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.green,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextButton.icon(
+                          onPressed: () => _submitFeedback(faq.id, false),
+                          icon: const Icon(Icons.thumb_down_outlined, size: 16),
+                          label: const Text('Không'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ],
