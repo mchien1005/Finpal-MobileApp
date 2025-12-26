@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/widgets/custom_bottom_nav_bar.dart';
 import '../../../core/utils/bottom_nav_helper.dart';
 import '../../../core/utils/app_bar_with_drawer.dart';
+import '../../../core/utils/category_icon_helper.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../data/services/ai_insights_service.dart';
 import '../../../data/services/notification_service.dart';
@@ -9,6 +10,7 @@ import '../../../data/services/storage_service.dart';
 import '../../../data/models/weekly_spending_trend_model.dart';
 import '../../../data/models/notification_model.dart';
 import 'package:intl/intl.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AIInsightsScreen extends StatefulWidget {
   const AIInsightsScreen({super.key});
@@ -127,7 +129,7 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
       child: AppBarWithDrawer.scrollable(
         context,
         userName: 'Nguyễn Văn A',
-        notificationCount: 3,
+        notificationCount: _unreadCount,
         backgroundColor: Colors.white,
         customTitle: 'AI gợi ý',
         body: _isLoading
@@ -208,19 +210,12 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
           Container(
             width: 48,
             height: 48,
-            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
-            child: SvgPicture.asset(
-              'assets/icons/thongbao.svg',
-              colorFilter: const ColorFilter.mode(
-                Colors.white,
-                BlendMode.srcIn,
-              ),
-              width: 24,
-              height: 24,
+            child: Center(
+              child: Icon(MdiIcons.robot, color: Colors.white, size: 24),
             ),
           ),
           const SizedBox(width: 12),
@@ -238,7 +233,7 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Có $_unreadCount thông báo mới',
+                  'Gợi ý dành cho bạn',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -260,7 +255,6 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
       title: notification.title,
       message: notification.content,
       category: _getCategoryFromType(notification.type),
-      action: 'Xem chi tiết →',
       notificationId: notification.id,
     );
   }
@@ -271,15 +265,16 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
       case 'BUDGET_EXCEEDED':
         return AlertType.warning;
       case 'SAVINGS_SUGGESTION':
+        return AlertType.savingsSuggestion;
       case 'SPENDING_TIP':
-        return AlertType.suggestion;
+        return AlertType.spendingTip;
       case 'ANOMALY_ALERT':
         return AlertType.anomaly;
       case 'GOAL_COMPLETED':
       case 'SPENDING_ACHIEVEMENT':
         return AlertType.achievement;
       default:
-        return AlertType.suggestion;
+        return AlertType.spendingTip;
     }
   }
 
@@ -307,7 +302,6 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
     required String title,
     required String message,
     required String category,
-    required String action,
     int? notificationId,
   }) {
     final config = _getAlertConfig(type);
@@ -365,7 +359,7 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
 
           const SizedBox(height: 8),
 
-          // Category and Action
+          // Category
           Row(
             children: [
               Container(
@@ -379,20 +373,6 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
                   style: const TextStyle(
                     color: Color(0xFF030213),
                     fontSize: 12,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              InkWell(
-                onTap: () {},
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  child: Text(
-                    action,
-                    style: TextStyle(color: config.textColor, fontSize: 12),
                   ),
                 ),
               ),
@@ -445,13 +425,14 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
                 ? daily.totalSpending / maxAmount
                 : 0.0;
             final formatter = NumberFormat('#,###', 'vi_VN');
+            final emoji = CategoryIconHelper.getEmoji(daily.topCategory?.icon);
 
             return Column(
               children: [
                 if (entry.key > 0) const SizedBox(height: 12),
                 _buildWeeklyItem(
                   daily.dayName,
-                  daily.emoji,
+                  emoji,
                   '${formatter.format(daily.totalSpending.toDouble())}đ',
                   progress,
                 ),
@@ -700,12 +681,19 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
           textColor: const Color(0xFF9F0712),
           icon: Icons.warning_amber_rounded,
         );
-      case AlertType.suggestion:
+      case AlertType.savingsSuggestion:
         return AlertConfig(
           bgColor: const Color(0xFFFFFBEB),
           borderColor: const Color(0xFFFEE685),
           textColor: const Color(0xFF973C00),
           icon: Icons.lightbulb_outline,
+        );
+      case AlertType.spendingTip:
+        return AlertConfig(
+          bgColor: const Color(0xFFE3F2FD),
+          borderColor: const Color(0xFFBBDEFB),
+          textColor: const Color(0xFF1565C0),
+          icon: Icons.info_outline,
         );
       case AlertType.anomaly:
         return AlertConfig(
@@ -725,7 +713,7 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
   }
 }
 
-enum AlertType { warning, suggestion, anomaly, achievement }
+enum AlertType { warning, savingsSuggestion, spendingTip, anomaly, achievement }
 
 class AlertConfig {
   final Color bgColor;

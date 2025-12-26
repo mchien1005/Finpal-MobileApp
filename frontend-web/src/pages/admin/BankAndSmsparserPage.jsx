@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   Row, 
@@ -10,8 +10,11 @@ import {
   Progress,
   Modal,
   Form,
-  Input 
+  Input,
+  message,
+  Spin 
 } from 'antd';
+import * as smsParserService from '../../services/smsParserService';
 import { 
   PlusOutlined, 
   PlayCircleOutlined, 
@@ -39,9 +42,40 @@ const BankAndSmsparserPage = () => {
   const [testResult, setTestResult] = useState(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deletingBank, setDeletingBank] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [bankTemplatesData, setBankTemplatesData] = useState([]);
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
   const [testForm] = Form.useForm();
+
+  // Fetch parsers on mount
+  useEffect(() => {
+    fetchParsers();
+  }, []);
+
+  // Fetch all parsers from API
+  const fetchParsers = async () => {
+    try {
+      setLoading(true);
+      const data = await smsParserService.getAllParsers();
+      // Transform API response to table format
+      const formattedData = data.map((parser, index) => ({
+        key: parser.id?.toString() || index.toString(),
+        id: parser.id,
+        icon: '🏦',
+        name: parser.bankName || parser.bankCode,
+        code: parser.bankCode,
+        template: parser.fieldMappings,
+        regex: parser.regexPattern,
+      }));
+      setBankTemplatesData(formattedData);
+    } catch (error) {
+      message.error('Không thể tải danh sách ngân hàng');
+      console.error('Error fetching parsers:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handler to open edit modal
   const handleEditBank = (bank) => {
@@ -56,52 +90,71 @@ const BankAndSmsparserPage = () => {
   };
 
   // Handler to update bank
-  const handleUpdateBank = (values) => {
-    console.log('Update bank:', editingBank.key, values);
-    // TODO: Call API to update bank
-    setIsEditBankModalOpen(false);
-    editForm.resetFields();
-    setEditingBank(null);
-    setSuccessMessage('Cập nhật ngân hàng thành công!');
-    setIsSuccessModalOpen(true);
-  };
-
-  // Handler to test SMS parser
-  const handleTestParser = (values) => {
-    const smsText = values.smsText;
-    console.log('Testing SMS:', smsText);
-    
-    // Mock parsing logic - in production this would call API
-    // Example: "TK 1234567890 GD: -500,000d 24/03 GRAB. SD: 15,234,567d"
-    const vcbPattern = /TK\s+(\d+)\s+GD:\s+-([\d,]+)d?\s+(\d{2}\/\d{2})\s+(.+?)\s*\.\s*SD:\s+([\d,]+)d?/;
-    const match = smsText.match(vcbPattern);
-    
-    if (match) {
-      setTestResult({
-        success: true,
-        bank: 'VCB',
-        data: {
-          account: match[1],
-          amount: match[2],
-          date: match[3] + '/2024',
-          description: match[4],
-          balance: match[5],
-        },
+  const handleUpdateBank = async (values) => {
+    try {
+      setLoading(true);
+      await smsParserService.updateParser(editingBank.id, {
+        bankCode: values.code,
+        bankName: values.name,
+        senderNumber: values.code,
+        regexPattern: values.regex,
+        fieldMappings: values.template,
+        isActive: true,
+        priority: 1,
       });
-    } else {
-      setTestResult({
-        success: false,
-        error: 'Không thể parse SMS - format không khớp với template nào',
-      });
+      setIsEditBankModalOpen(false);
+      editForm.resetFields();
+      setEditingBank(null);
+      setSuccessMessage('Cập nhật ngân hàng thành công!');
+      setIsSuccessModalOpen(true);
+      // Refresh list
+      await fetchParsers();
+    } catch (error) {
+      message.error('Không thể cập nhật ngân hàng');
+      console.error('Error updating parser:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handler to update pattern from failed case
-  const handleUpdatePattern = (failCase) => {
-    // Find the bank from bankTemplatesData based on the bank code
-    const bank = bankTemplatesData.find(b => b.code === failCase.bank);
-    if (bank) {
-      handleEditBank(bank);
+  // Handler to test SMS parser
+  const handleTestParser = async (values) => {
+    try {
+      setLoading(true);
+      const smsText = values.smsText;
+      const response = await smsParserService.testParserSimple(smsText);
+      
+      console.log('API Response:', response); // Debug log
+      
+      // Response structure: { matched, message, extractedFields, parsedData }
+      if (response && response.matched === true && response.extractedFields) {
+        setTestResult({
+          success: true,
+          bank: response.extractedFields._bankCode || response.extractedFields._bankName || 'Unknown',
+          data: {
+            account: response.extractedFields.account || 'N/A',
+            amount: response.extractedFields.amount || 'N/A',
+            date: response.extractedFields.date || 'N/A',
+            description: response.extractedFields.merchant || response.extractedFields.description || 'N/A',
+            balance: response.extractedFields.balance || 'N/A',
+          },
+        });
+      } else {
+        // Parsing failed
+        const errorMsg = response?.message || 'Không thể parse SMS - format không khớp với template nào';
+        setTestResult({
+          success: false,
+          error: errorMsg,
+        });
+      }
+    } catch (error) {
+      console.error('Test Parser Error:', error); // Debug log
+      setTestResult({
+        success: false,
+        error: error.response?.data?.message || error.message || 'Lỗi khi test SMS parser',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -112,263 +165,29 @@ const BankAndSmsparserPage = () => {
   };
 
   // Handler to confirm delete
-  const handleConfirmDelete = () => {
-    console.log('Delete bank:', deletingBank);
-    // TODO: Call API to delete bank
-    setIsDeleteConfirmOpen(false);
-    setDeletingBank(null);
-    setSuccessMessage('Xóa ngân hàng thành công!');
-    setIsSuccessModalOpen(true);
+  const handleConfirmDelete = async () => {
+    try {
+      setLoading(true);
+      await smsParserService.deleteParser(deletingBank.id);
+      setIsDeleteConfirmOpen(false);
+      setDeletingBank(null);
+      setSuccessMessage('Xóa ngân hàng thành công!');
+      setIsSuccessModalOpen(true);
+      // Refresh list
+      await fetchParsers();
+    } catch (error) {
+      message.error('Không thể xóa ngân hàng');
+      console.error('Error deleting parser:', error);
+      setIsDeleteConfirmOpen(false);
+      setDeletingBank(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Stats data
-  const statsCards = [
-    {
-      title: 'Tổng ngân hàng',
-      value: '15',
-      description: 'Đã cấu hình',
-      color: '#4F46E5',
-    },
-    {
-      title: 'Tỷ lệ thành công',
-      value: '96.8%',
-      description: '+0.5% tuần này',
-      descColor: '#00a63e',
-      color: '#10B981',
-    },
-    {
-      title: 'SMS xử lý hôm nay',
-      value: '5,482',
-      description: '128 thất bại',
-      color: '#F59E0B',
-    },
-    {
-      title: 'Cần xem xét',
-      value: '23',
-      description: 'Failed cases',
-      descColor: '#e7000b',
-      color: '#EF4444',
-    },
-  ];
 
-  // Parser statistics data
-  const parserData = [
-    {
-      key: '1',
-      icon: '🏦',
-      bank: 'VCB',
-      totalSMS: '1,234',
-      success: '1,216',
-      failed: 18,
-      successRate: 98.5,
-      status: 'Excellent',
-      statusColor: '#dcfce7',
-      statusTextColor: '#008236',
-      progressColor: '#00c950',
-    },
-    {
-      key: '2',
-      icon: '🏦',
-      bank: 'TCB',
-      totalSMS: '1,089',
-      success: '1,065',
-      failed: 24,
-      successRate: 97.8,
-      status: 'Good',
-      statusColor: '#fef9c2',
-      statusTextColor: '#a65f00',
-      progressColor: '#f0b100',
-    },
-    {
-      key: '3',
-      icon: '🏦',
-      bank: 'ACB',
-      totalSMS: '876',
-      success: '843',
-      failed: 33,
-      successRate: 96.2,
-      status: 'Good',
-      statusColor: '#fef9c2',
-      statusTextColor: '#a65f00',
-      progressColor: '#f0b100',
-    },
-    {
-      key: '4',
-      icon: '🏦',
-      bank: 'VTB',
-      totalSMS: '654',
-      success: '624',
-      failed: 30,
-      successRate: 95.4,
-      status: 'Good',
-      statusColor: '#fef9c2',
-      statusTextColor: '#a65f00',
-      progressColor: '#f0b100',
-    },
-    {
-      key: '5',
-      icon: '🏦',
-      bank: 'MBB',
-      totalSMS: '543',
-      success: '511',
-      failed: 32,
-      successRate: 94.1,
-      status: 'Needs Review',
-      statusColor: '#ffe2e2',
-      statusTextColor: '#c10007',
-      progressColor: '#fb2c36',
-    },
-  ];
 
-  // Parser columns
-  const parserColumns = [
-    {
-      title: 'Ngân hàng',
-      dataIndex: 'bank',
-      key: 'bank',
-      width: 150,
-      render: (text, record) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 10,
-              background: '#dbeafe',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 18,
-            }}
-          >
-            {record.icon}
-          </div>
-          <Text strong>{text}</Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Tổng SMS',
-      dataIndex: 'totalSMS',
-      key: 'totalSMS',
-      width: 130,
-    },
-    {
-      title: 'Thành công',
-      dataIndex: 'success',
-      key: 'success',
-      width: 130,
-      render: (text) => <Text style={{ color: '#00a63e' }}>{text}</Text>,
-    },
-    {
-      title: 'Thất bại',
-      dataIndex: 'failed',
-      key: 'failed',
-      width: 100,
-      render: (text) => <Text style={{ color: '#e7000b' }}>{text}</Text>,
-    },
-    {
-      title: 'Tỷ lệ thành công',
-      dataIndex: 'successRate',
-      key: 'successRate',
-      width: 200,
-      render: (rate, record) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Progress
-            percent={rate}
-            strokeColor={record.progressColor}
-            showInfo={false}
-            style={{ width: 100 }}
-          />
-          <Text>{rate}%</Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      width: 150,
-      render: (text, record) => (
-        <Tag
-          color={record.statusColor}
-          style={{
-            border: 'none',
-            borderRadius: 8,
-            color: record.statusTextColor,
-          }}
-        >
-          {text}
-        </Tag>
-      ),
-    },
-  ];
-
-  // Bank templates data
-  const bankTemplatesData = [
-    {
-      key: '1',
-      icon: '🏦',
-      name: 'Vietcombank',
-      code: 'VCB',
-      template: 'TK {account} GD: -{amount}d {date} {description}. SD: {balance}d',
-      users: '3,245',
-      successRate: 98.5,
-      failedToday: 12,
-      successRateColor: '#dcfce7',
-      successRateTextColor: '#008236',
-    },
-    {
-      key: '2',
-      icon: '🏦',
-      name: 'Techcombank',
-      code: 'TCB',
-      template: 'Tai khoan {account} -{amount}VND {date} {description}',
-      users: '2,891',
-      successRate: 97.8,
-      failedToday: 18,
-      successRateColor: '#fef9c2',
-      successRateTextColor: '#a65f00',
-    },
-    {
-      key: '3',
-      icon: '🏦',
-      name: 'ACB Bank',
-      code: 'ACB',
-      template: '{account} GD -{amount} {date} tai {description}',
-      users: '2,134',
-      successRate: 96.2,
-      failedToday: 34,
-      failedColor: '#e7000b',
-      successRateColor: '#fef9c2',
-      successRateTextColor: '#a65f00',
-    },
-    {
-      key: '4',
-      icon: '🏦',
-      name: 'Vietinbank',
-      code: 'VTB',
-      template: 'TK {account} tru {amount}VND {date} {description}',
-      users: '1,678',
-      successRate: 95.4,
-      failedToday: 28,
-      successRateColor: '#fef9c2',
-      successRateTextColor: '#a65f00',
-    },
-    {
-      key: '5',
-      icon: '🏦',
-      name: 'MB Bank',
-      code: 'MBB',
-      template: 'GD {account}: -{amount}d ngay {date}. ND: {description}',
-      users: '1,456',
-      successRate: 94.1,
-      failedToday: 45,
-      failedColor: '#e7000b',
-      successRateColor: '#ffe2e2',
-      successRateTextColor: '#c10007',
-    },
-  ];
+  // Bank templates data is now fetched from API and stored in state
 
   // Bank templates columns
   const bankTemplatesColumns = [
@@ -376,7 +195,7 @@ const BankAndSmsparserPage = () => {
       title: 'Ngân hàng',
       dataIndex: 'name',
       key: 'name',
-      width: 150,
+      width: 200,
       render: (text, record) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div
@@ -400,18 +219,22 @@ const BankAndSmsparserPage = () => {
       ),
     },
     {
-      title: 'SMS Template',
+      title: 'Field Mappings',
       dataIndex: 'template',
       key: 'template',
-      width: 450,
+      width: 430,
       render: (text) => (
         <div
           style={{
             background: '#f3f4f6',
-            padding: '4px 8px',
+            padding: '8px 12px',
             borderRadius: 4,
             fontFamily: 'Cousine, monospace',
             fontSize: 12,
+            maxWidth: 430,
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            overflow: 'hidden',
           }}
         >
           {text}
@@ -419,55 +242,47 @@ const BankAndSmsparserPage = () => {
       ),
     },
     {
-      title: 'Người dùng',
-      dataIndex: 'users',
-      key: 'users',
-      width: 100,
-    },
-    {
-      title: 'Success Rate',
-      dataIndex: 'successRate',
-      key: 'successRate',
-      width: 100,
-      render: (rate, record) => (
-        <Tag
-          color={record.successRateColor}
+      title: 'Regex Pattern',
+      dataIndex: 'regex',
+      key: 'regex',
+      width: 430,
+      render: (text) => (
+        <div
           style={{
-            border: 'none',
-            borderRadius: 8,
-            color: record.successRateTextColor,
+            background: '#f3f4f6',
+            padding: '8px 12px',
+            borderRadius: 4,
+            fontFamily: 'Cousine, monospace',
+            fontSize: 12,
+            maxWidth: 430,
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            overflow: 'hidden',
           }}
         >
-          {rate}%
-        </Tag>
-      ),
-    },
-    {
-      title: 'Failed Today',
-      dataIndex: 'failedToday',
-      key: 'failedToday',
-      width: 100,
-      render: (text, record) => (
-        <Text style={{ color: record.failedColor || '#4a5565' }}>{text}</Text>
+          {text}
+        </div>
       ),
     },
     {
       title: 'Thao tác',
       key: 'action',
-      width: 100,
+      width: 120,
       align: 'right',
+      fixed: 'right',
       render: (_, record) => (
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           <Button
             type="text"
             icon={<EditOutlined />}
             onClick={() => handleEditBank(record)}
-            style={{ color: '#6a7282' }}
+            style={{ color: '#f59e0b' }}
           />
           <Button
             type="text"
             icon={<DeleteOutlined />}
-            style={{ color: '#6a7282' }}
+            onClick={() => handleDeleteBank(record)}
+            style={{ color: '#e7000b' }}
           />
         </div>
       ),
@@ -573,59 +388,7 @@ const BankAndSmsparserPage = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <Row gutter={[24, 24]} style={{ marginBottom: 24 }}>
-          {statsCards.map((card, index) => (
-            <Col xs={24} sm={12} lg={6} key={index}>
-              <Card
-                style={{
-                  borderRadius: 14,
-                  border: '1px solid rgba(0,0,0,0.1)',
-                }}
-                bodyStyle={{ padding: '24px' }}
-              >
-                <Text
-                  type="secondary"
-                  style={{ fontSize: 14, display: 'block', marginBottom: 32 }}
-                >
-                  {card.title}
-                </Text>
-                <Title level={3} style={{ margin: '0 0 32px 0' }}>
-                  {card.value}
-                </Title>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: card.descColor || '#6a7282',
-                  }}
-                >
-                  {card.description}
-                </Text>
-              </Card>
-            </Col>
-          ))}
-        </Row>
 
-        {/* Parser Statistics */}
-        <Card
-          title="Thống kê Parser (Hôm nay)"
-          style={{
-            marginBottom: 24,
-            borderRadius: 14,
-            border: '1px solid rgba(0,0,0,0.1)',
-          }}
-          headStyle={{
-            borderBottom: '1px solid rgba(0,0,0,0.1)',
-            fontSize: 18,
-          }}
-        >
-          <Table
-            columns={parserColumns}
-            dataSource={parserData}
-            pagination={false}
-            scroll={{ x: 1000 }}
-          />
-        </Card>
 
         {/* Bank Templates List */}
         <Card
@@ -640,128 +403,17 @@ const BankAndSmsparserPage = () => {
             fontSize: 18,
           }}
         >
-          <Table
-            columns={bankTemplatesColumns}
-            dataSource={bankTemplatesData}
-            pagination={false}
-            scroll={{ x: 1200 }}
-          />
+          <Spin spinning={loading}>
+            <Table
+              columns={bankTemplatesColumns}
+              dataSource={bankTemplatesData}
+              pagination={false}
+              scroll={{ x: 1100 }}
+            />
+          </Spin>
         </Card>
 
-        {/* Failed Parsing Cases */}
-        <Card
-          title={
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ fontSize: 16 }}>Failed Parsing Cases</Text>
-              <Tag
-                color="#ffe2e2"
-                style={{
-                  border: 'none',
-                  borderRadius: 8,
-                  color: '#c10007',
-                }}
-              >
-                3 cases cần xem xét
-              </Tag>
-            </div>
-          }
-          style={{
-            borderRadius: 14,
-            border: '1px solid rgba(0,0,0,0.1)',
-          }}
-          headStyle={{
-            borderBottom: '1px solid rgba(0,0,0,0.1)',
-          }}
-          bodyStyle={{ padding: '24px' }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {failedCases.map((failCase) => (
-              <div
-                key={failCase.key}
-                style={{
-                  background: '#fef2f2',
-                  border: '1px solid #ffc9c9',
-                  borderRadius: 10,
-                  padding: '16px',
-                }}
-              >
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <WarningOutlined
-                    style={{ color: '#e7000b', fontSize: 20, marginTop: 4 }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    {/* Header */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: 8,
-                      }}
-                    >
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <Text strong>{failCase.bank}</Text>
-                        <Tag
-                          color={failCase.priorityColor}
-                          style={{
-                            border: 'none',
-                            borderRadius: 8,
-                            color: failCase.priorityTextColor,
-                          }}
-                        >
-                          {failCase.priority}
-                        </Tag>
-                      </div>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        {failCase.time}
-                      </Text>
-                    </div>
 
-                    {/* SMS Content */}
-                    <div
-                      style={{
-                        background: 'white',
-                        border: '1px solid rgba(0,0,0,0.1)',
-                        borderRadius: 4,
-                        padding: '12px',
-                        marginBottom: 8,
-                        fontFamily: 'Cousine, monospace',
-                        fontSize: 12,
-                      }}
-                    >
-                      {failCase.smsContent}
-                    </div>
-
-                    {/* Error Message */}
-                    <Text style={{ color: '#e7000b', marginBottom: 8, display: 'block' }}>
-                      <Text strong style={{ color: '#e7000b' }}>Error: </Text>
-                      {failCase.error}
-                    </Text>
-
-                    {/* Action Buttons */}
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <Button
-                        size="small"
-                        style={{
-                          borderRadius: 8,
-                          border: '1px solid rgba(0,0,0,0.1)',
-                        }}
-                      >
-                        Update Pattern
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
       </div>
 
       {/* Add Bank Modal */}
@@ -792,13 +444,31 @@ const BankAndSmsparserPage = () => {
         <Form
           form={form}
           layout="vertical"
-          onFinish={(values) => {
-            console.log('Add bank:', values);
-            // TODO: Call API to add bank
-            setIsAddBankModalOpen(false);
-            form.resetFields();
-            setSuccessMessage('Thêm ngân hàng thành công!');
-            setIsSuccessModalOpen(true);
+          onFinish={async (values) => {
+            try {
+              setLoading(true);
+              await smsParserService.createParser({
+                bankCode: values.code,
+                bankName: values.name,
+                senderNumber: values.code,
+                regexPattern: values.regex,
+                fieldMappings: values.template,
+                sampleSms: '',
+                isActive: true,
+                priority: 1,
+              });
+              setIsAddBankModalOpen(false);
+              form.resetFields();
+              setSuccessMessage('Thêm ngân hàng thành công!');
+              setIsSuccessModalOpen(true);
+              // Refresh list
+              await fetchParsers();
+            } catch (error) {
+              message.error('Không thể thêm ngân hàng');
+              console.error('Error creating parser:', error);
+            } finally {
+              setLoading(false);
+            }
           }}
         >
           <Row gutter={16}>
@@ -839,9 +509,9 @@ const BankAndSmsparserPage = () => {
           </Row>
 
           <Form.Item
-            label="SMS Template"
+            label="Field Mappings"
             name="template"
-            rules={[{ required: true, message: 'Vui lòng nhập SMS template' }]}
+            rules={[{ required: true, message: 'Vui lòng nhập Field Mappings' }]}
           >
             <TextArea
               placeholder="TK {account} GD: -{amount}d {date} {description}. SD: {balance}d"
@@ -979,9 +649,9 @@ const BankAndSmsparserPage = () => {
           </Row>
 
           <Form.Item
-            label="SMS Template"
+            label="Field Mappings"
             name="template"
-            rules={[{ required: true, message: 'Vui lòng nhập SMS template' }]}
+            rules={[{ required: true, message: 'Vui lòng nhập Field Mappings' }]}
           >
             <TextArea
               placeholder="TK {account} GD: -{amount}d {date} {description}. SD: {balance}d"
@@ -1167,10 +837,6 @@ const BankAndSmsparserPage = () => {
                       <Col span={12}>
                         <Text type="secondary" style={{ fontSize: 12 }}>Date:</Text>
                         <div style={{ fontWeight: 500 }}>{testResult.data.date}</div>
-                      </Col>
-                      <Col span={12}>
-                        <Text type="secondary" style={{ fontSize: 12 }}>Balance:</Text>
-                        <div style={{ fontWeight: 500 }}>₫{testResult.data.balance}</div>
                       </Col>
                       <Col span={24}>
                         <Text type="secondary" style={{ fontSize: 12 }}>Description:</Text>

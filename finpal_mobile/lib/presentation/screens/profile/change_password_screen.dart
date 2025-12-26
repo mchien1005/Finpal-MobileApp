@@ -1,7 +1,11 @@
 
 import 'package:flutter/material.dart';
 import '../../../core/widgets/success_notification_dialog.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../data/services/auth_service.dart';
+import '../auth/login_screen.dart';
+import '../../../core/theme/app_theme.dart';
+// ...existing code...
+
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
 
@@ -14,11 +18,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   bool _obscureCurrentPassword = true;
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
-  
+
   bool _isValid = false;
   bool _isLoading = false;
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
@@ -61,33 +65,39 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     setState(() {
       _autovalidateMode = AutovalidateMode.onUserInteraction;
     });
-    
+
     if (_formKey.currentState!.validate() && _isValid) {
       setState(() {
         _isLoading = true;
       });
 
       try {
-        // TODO: Replace with actual API call
-        // Simulate API call
-        await Future.delayed(const Duration(seconds: 2));
-        
-        // Example API call:
-        // await _authRepository.changePassword(
-        //   currentPassword: _currentPasswordController.text,
-        //   newPassword: _newPasswordController.text,
-        // );
+        final authService = AuthService();
+        final resp = await authService.changePassword(
+          currentPassword: _currentPasswordController.text.trim(),
+          newPassword: _newPasswordController.text.trim(),
+        );
 
         if (mounted) {
           setState(() {
             _isLoading = false;
           });
 
-          SuccessNotificationDialog.show(
+          // Show server message if available for debugging
+          final serverMessage = resp['message'] as String?;
+
+          // Show success dialog using shared widget
+          await SuccessNotificationDialog.show(
             context,
-            message: 'Đổi mật khẩu thành công',
-            onConfirm: () {
-              Navigator.pop(context);
+            message: serverMessage ?? 'Đổi mật khẩu thành công',
+            onConfirm: () async {
+              await AuthService().logout();
+              if (!mounted) return;
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
+              );
             },
           );
         }

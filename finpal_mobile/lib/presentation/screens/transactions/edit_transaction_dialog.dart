@@ -6,15 +6,17 @@ import '../../../data/services/category_cache_service.dart';
 
 class EditTransactionDialog extends StatefulWidget {
   final String title;
-  final String amount;
+  final double amount;
   final String category;
+  final int? categoryId;
   final String account;
-  final String date;
+  final DateTime date;
   final bool isIncome;
   final Function({
-    required String amount,
+    required double amount,
     required String source,
     required String category,
+    required int? categoryId,
     required String description,
     required DateTime date,
   })
@@ -26,6 +28,7 @@ class EditTransactionDialog extends StatefulWidget {
     required this.title,
     required this.amount,
     required this.category,
+    this.categoryId,
     required this.account,
     required this.date,
     required this.isIncome,
@@ -43,6 +46,7 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
   late TextEditingController _dateController;
   String? _selectedSource;
   String? _selectedCategory;
+  int? _selectedCategoryId;
   DateTime? _selectedDate;
 
   final CategoryCacheService _categoryCacheService =
@@ -74,7 +78,28 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
 
     _selectedCategory = widget.category;
     
-    // Parse date from "11-13 09:00" format
+    // Add account to sources list if not exists
+    if (widget.account.isNotEmpty && !_sources.contains(widget.account)) {
+      _sources.add(widget.account);
+    }
+    _selectedSource = widget.account.isNotEmpty ? widget.account : null;
+    
+    _selectedCategory = widget.category;
+    _selectedCategoryId = widget.categoryId;
+    _selectedDate = widget.date;
+    _dateController = TextEditingController(
+      text: DateFormat('dd/MM/yyyy').format(_selectedDate!),
+    );
+
+    // Load categories from API
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    setState(() {
+      _isLoadingCategories = true;
+    });
+
     try {
       // Sử dụng cache service - lấy từ cache nếu đã có
       final categories = await _categoryCacheService.getCategories(
@@ -116,10 +141,12 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
         });
       }
     } catch (e) {
-      _selectedDate = DateTime.now();
-      _dateController = TextEditingController(
-        text: DateFormat('dd/MM/yyyy').format(_selectedDate!),
-      );
+      if (mounted) {
+        setState(() {
+          _isLoadingCategories = false;
+        });
+      }
+      print('❌ Error loading categories: $e');
     }
   }
 
@@ -223,9 +250,7 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFFD91656),
-            ),
+            colorScheme: const ColorScheme.light(primary: Color(0xFFD91656)),
           ),
           child: child!,
         );
@@ -254,6 +279,17 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
       return;
     }
 
+    final amountValue = double.tryParse(amountText);
+    if (amountValue == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Số tiền không hợp lệ'),
+          backgroundColor: Color(0xFFE7000B),
+        ),
+      );
+      return;
+    }
+
     if (_selectedSource == null || _selectedSource!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -264,21 +300,15 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
       return;
     }
 
-    if (_selectedCategory == null || _selectedCategory!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng chọn danh mục'),
-          backgroundColor: Color(0xFFE7000B),
-        ),
-      );
-      return;
-    }
+    // Category logic
+    final categoryToSave = _selectedCategory ?? widget.category;
+    final categoryIdToSave = _selectedCategoryId ?? widget.categoryId;
 
-    // Call onSave with updated data
     widget.onSave(
-      amount: _amountController.text.trim(),
+      amount: amountValue,
       source: _selectedSource!,
-      category: _selectedCategory!,
+      category: categoryToSave,
+      categoryId: categoryIdToSave,
       description: _descriptionController.text.trim(),
       date: _selectedDate ?? DateTime.now(),
     );
@@ -288,9 +318,7 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 400),
@@ -305,7 +333,6 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header with title and close button
                 Row(
                   children: [
                     const Expanded(
@@ -335,7 +362,7 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Cập nhật thông tin giao dịch. Phần hồi của bạn giúp \nAI học và cải thiện độ chính xác.',
+                  'Cập nhật thông tin giao dịch. Phản hồi của bạn giúp AI học và cải thiện độ chính xác.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,

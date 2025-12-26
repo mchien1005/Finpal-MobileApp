@@ -119,6 +119,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     }
   }
 
+  Future<void> _loadUnreadCount() async {
+    try {
+      final count = await _notificationService.getUnreadCount();
+      if (mounted) {
+        setState(() {
+          _unreadCount = count;
+        });
+      }
+    } catch (e) {
+      // Ignore errors for notification count
+    }
+  }
+
   /// Xử lý thay đổi loại giao dịch
   void _onTransactionTypeChanged(String type) {
     setState(() {
@@ -137,8 +150,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       },
       child: AppBarWithDrawer.scrollable(
         context,
-        userName: 'Nguyễn Văn A',
-        notificationCount: 3,
+        notificationCount: _unreadCount,
         backgroundColor: AppColors.background,
         customTitle: 'Thêm giao dịch, ngân sách',
         body: Builder(

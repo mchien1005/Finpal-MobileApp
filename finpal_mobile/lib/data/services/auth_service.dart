@@ -1,7 +1,7 @@
 import 'api_service.dart';
 import 'storage_service.dart';
 import 'firebase_push_handler.dart';
-
+import'';
 class AuthService {
   final ApiService _apiService = ApiService();
   final StorageService _storageService = StorageService();
@@ -50,6 +50,27 @@ class AuthService {
         'fullName': fullName,
         'password': password,
       });
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+  Future<Map<String, dynamic>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      // Send multiple common field names so backend using different keys still works
+      final response = await _apiService.put(
+        '/auth/change-password',
+        {
+          "currentPassword": currentPassword,
+          "newPassword": newPassword,
+          // alternate field names some backends expect
+          "oldPassword": currentPassword,
+          "password": newPassword,
+        },
+      );
       return response;
     } catch (e) {
       rethrow;
