@@ -6,6 +6,9 @@ import '../../../core/utils/bottom_nav_helper.dart';
 import '../../../core/utils/app_bar_with_drawer.dart';
 import '../../../core/widgets/success_notification_dialog.dart';
 import '../../../core/widgets/confirmation_dialog.dart';
+import '../../../core/utils/category_icon_helper.dart';
+import 'dart:async';
+import '../../../core/services/transaction_event_bus.dart';
 import '../../../data/models/transaction.dart';
 import '../../../data/services/transaction_service.dart';
 import '../../../data/services/notification_service.dart';
@@ -24,6 +27,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   late TabController _tabController;
   final TransactionService _transactionService = TransactionService();
   final NotificationService _notificationService = NotificationService();
+  late final StreamSubscription<void> _eventSub;
 
   // Transaction data
   List<Transaction> _transactions = [];
@@ -44,6 +48,38 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     });
     _loadTransactions();
     _loadUnreadNotificationCount();
+    _eventSub = TransactionEventBus.instance.onUpdated.listen((transactionId) async {
+      if (!mounted) return;
+
+      // Reload transactions from server
+      await _loadTransactions();
+
+      if (!mounted) return;
+
+      // If an updated transaction id was provided, ensure it appears at the top
+      if (transactionId != null) {
+        final idx = _transactions.indexWhere((t) => t.id == transactionId);
+        if (idx > 0) {
+          setState(() {
+            final updatedTx = _transactions.removeAt(idx);
+            _transactions.insert(0, updatedTx);
+          });
+        } else if (idx == -1) {
+          // Item not found in the loaded page — fetch it individually and insert
+          try {
+            final resp = await _transactionService.getTransactionById(transactionId);
+            final tx = Transaction.fromJson(resp);
+            if (mounted) {
+              setState(() {
+                _transactions.insert(0, tx);
+              });
+            }
+          } catch (_) {
+            // Ignore fetch errors — best effort to show updated item
+          }
+        }
+      }
+    });
   }
 
   /// Load số lượng thông báo chưa đọc
@@ -131,6 +167,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
   @override
   void dispose() {
+    _eventSub.cancel();
     _tabController.dispose();
     super.dispose();
   }
@@ -161,6 +198,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     try {
       await _transactionService.deleteTransaction(id);
       await _loadTransactions();
+      TransactionEventBus.instance.notifyUpdated(id);
     } catch (e) {
       rethrow;
     }
@@ -177,6 +215,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       child: AppBarWithDrawer.scrollable(
         context,
         notificationCount: _unreadCount,
+        showSearchAction: true,
         customTitle: 'Giao dịch của bạn',
         body: Container(
           decoration: const BoxDecoration(
@@ -372,38 +411,14 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     return widgets;
   }
 
-  IconData _getCategoryIcon(String? categoryName) {
-    if (categoryName == null) return Icons.receipt;
-    switch (categoryName.toLowerCase()) {
-      case 'ăn uống':
-        return Icons.restaurant;
-      case 'di chuyển':
-        return Icons.directions_car;
-      case 'mua sắm':
-        return Icons.shopping_bag;
-      case 'giải trí':
-        return Icons.movie;
-      case 'y tế':
-        return Icons.medical_services;
-      case 'học tập':
-        return Icons.school;
-      case 'hóa đơn':
-        return Icons.receipt_long;
-      case 'lương':
-        return Icons.account_balance_wallet;
-      case 'thưởng':
-        return Icons.card_giftcard;
-      case 'đầu tư':
-        return Icons.trending_up;
-      case 'kinh doanh':
-        return Icons.business;
-      default:
-        return Icons.receipt;
-    }
-  }
+  
 
   Widget _buildTransactionItem(Transaction transaction) {
-    final icon = _getCategoryIcon(transaction.category?.name);
+    final Widget iconWidget = CategoryIconHelper.emojiWidgetWithFallback(
+      transaction.category?.icon,
+      transaction.category?.name,
+      size: 20,
+    );
     final iconBg = transaction.isIncome
         ? const Color(0xFFDCFCE7)
         : const Color(0xFFFFE2E2);
@@ -415,7 +430,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         ? '+${NumberFormat('#,###', 'vi_VN').format(transaction.amount)}đ'
         : '-${NumberFormat('#,###', 'vi_VN').format(transaction.amount)}đ';
     final dateFormatted = DateFormat(
-      'MM-dd HH:mm',
+      'dd/MM/yyyy HH:mm',
     ).format(transaction.transactionDate);
     final isIncome = transaction.isIncome;
 
@@ -436,11 +451,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   color: iconBg,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: isIncome ? Colors.green : Colors.red,
-                ),
+                child: Center(child: iconWidget),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -609,6 +620,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                                   parentContext,
                                   message: 'Đã cập nhật giao dịch thành công',
                                 );
+                                TransactionEventBus.instance.notifyUpdated(transaction.id);
                               } catch (e) {
                                 if (!mounted) return;
 

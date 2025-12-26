@@ -52,7 +52,7 @@ class Transaction {
       categoryId: json['categoryId'] as int?,
       description: json['description'] as String?,
       merchant: json['merchant'] as String?,
-      transactionDate: DateTime.parse(json['transactionDate'] as String),
+      transactionDate: _parseDateTime(json['transactionDate'] as String),
       isAuto: json['isAuto'] as bool? ?? false,
       category: json['category'] != null
           ? TransactionCategory.fromJson(
@@ -78,8 +78,6 @@ class Transaction {
   }
 }
 
-<<<<<<< Updated upstream
-=======
 DateTime _parseDateTime(String ts) {
   // If the timestamp contains timezone info (Z or +/-) parse and convert to local.
   // If it lacks timezone information, assume the server already returned a local
@@ -109,7 +107,6 @@ DateTime _parseDateTime(String ts) {
   return DateTime.parse(ts);
 }
 
->>>>>>> Stashed changes
 class TransactionCategory {
   final int id;
   final String name;
