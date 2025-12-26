@@ -10,6 +10,7 @@ import '../../../data/services/storage_service.dart';
 import '../../../data/models/weekly_spending_trend_model.dart';
 import '../../../data/models/notification_model.dart';
 import 'package:intl/intl.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AIInsightsScreen extends StatefulWidget {
   const AIInsightsScreen({super.key});
@@ -209,19 +210,12 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
           Container(
             width: 48,
             height: 48,
-            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
-            child: SvgPicture.asset(
-              'assets/icons/thongbao.svg',
-              colorFilter: const ColorFilter.mode(
-                Colors.white,
-                BlendMode.srcIn,
-              ),
-              width: 24,
-              height: 24,
+            child: Center(
+              child: Icon(MdiIcons.robot, color: Colors.white, size: 24),
             ),
           ),
           const SizedBox(width: 12),
