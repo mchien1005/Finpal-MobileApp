@@ -2,20 +2,25 @@
 Auto Retrain Service - Tự động train lại models hằng ngày
 
 Service này chạy background task để:
-1. Train lại models vào lúc 9:30 AM mỗi ngày (giờ Việt Nam)
+1. Train lại models vào lúc 9:30 AM mỗi ngày (giờ Việt Nam UTC+7)
 2. Kiểm tra accuracy và ghi log
 3. Gửi thông báo nếu accuracy giảm đáng kể
+
+Lưu ý: Server ở Singapore (UTC+8), nên cần convert timezone chính xác.
 """
 
 import asyncio
 import logging
-from datetime import datetime, time
+from datetime import datetime, time, timedelta, timezone
 from typing import Optional
 import threading
 
 # Setup logging
 logger = logging.getLogger("auto_retrain")
 logger.setLevel(logging.INFO)
+
+# Timezone Việt Nam (UTC+7)
+VIETNAM_TZ = timezone(timedelta(hours=7))
 
 # Global state
 _retrain_task: Optional[asyncio.Task] = None
@@ -108,24 +113,28 @@ async def retrain_all_models():
 
 def get_seconds_until_target(target_hour: int = 9, target_minute: int = 30) -> float:
     """
-    Tính số giây cho đến thời điểm target
+    Tính số giây cho đến thời điểm target theo giờ Việt Nam (UTC+7)
     
     Args:
-        target_hour: Giờ target (0-23), mặc định 9 (9:30 AM)
+        target_hour: Giờ target theo VN time (0-23), mặc định 9 (9:30 AM)
         target_minute: Phút target (0-59), mặc định 30
         
     Returns:
         Số giây cần chờ
+        
+    Lưu ý: Server có thể ở Singapore (UTC+8), nên cần convert về VN time (UTC+7)
     """
-    now = datetime.now()
-    target_time = now.replace(hour=target_hour, minute=target_minute, second=0, microsecond=0)
+    # Lấy thời gian hiện tại theo UTC+7 (Việt Nam)
+    now_vn = datetime.now(VIETNAM_TZ)
+    
+    # Tạo target time hôm nay theo VN timezone
+    target_time = now_vn.replace(hour=target_hour, minute=target_minute, second=0, microsecond=0)
     
     # Nếu đã qua thời điểm target hôm nay, chờ đến ngày mai
-    if now >= target_time:
-        from datetime import timedelta
+    if now_vn >= target_time:
         target_time += timedelta(days=1)
     
-    return (target_time - now).total_seconds()
+    return (target_time - now_vn).total_seconds()
 
 
 async def auto_retrain_loop(retrain_hour: int = 9, retrain_minute: int = 30):
@@ -219,15 +228,19 @@ def is_scheduler_running() -> bool:
 
 def get_scheduler_status() -> dict:
     """Lấy trạng thái của scheduler"""
-    next_run = None
+    next_run_vn = None
+    now_vn = datetime.now(VIETNAM_TZ)
+    
     if _is_running:
         seconds = get_seconds_until_target(9, 30)
-        next_run = datetime.now().timestamp() + seconds
+        next_run_vn = now_vn + timedelta(seconds=seconds)
     
     return {
         "is_running": is_scheduler_running(),
-        "next_run_at": datetime.fromtimestamp(next_run).isoformat() if next_run else None,
+        "next_run_at": next_run_vn.strftime("%Y-%m-%d %H:%M:%S") if next_run_vn else None,
+        "timezone": "Vietnam (UTC+7)",
         "retrain_hour": 9,
         "retrain_minute": 30,
-        "description": "Daily auto-retrain at 9:30 AM (Vietnam Time)"
+        "description": "Daily auto-retrain at 9:30 AM (Vietnam Time UTC+7)"
     }
+
