@@ -41,11 +41,26 @@ class ApiService {
   }) async {
     try {
       final headers = await _getHeaders(includeAuth: includeAuth);
+
+      // Debug logging: request details
+      final url = '$baseUrl$endpoint';
+      try {
+        print('📡 POST: $url');
+        print('🔑 Headers: $headers');
+        print('🧾 Body: ${jsonEncode(body)}');
+      } catch (_) {}
+
       final response = await http.post(
-        Uri.parse('$baseUrl$endpoint'),
+        Uri.parse(url),
         headers: headers,
         body: jsonEncode(body),
       );
+
+      // Debug logging: response details
+      try {
+        print('📊 Response Status: ${response.statusCode}');
+        print('📄 Response Body: ${response.body}');
+      } catch (_) {}
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body) as Map<String, dynamic>;
@@ -128,11 +143,26 @@ class ApiService {
   }) async {
     try {
       final headers = await _getHeaders(includeAuth: includeAuth);
+
+      // Debug logging: request details for PUT
+      final url = '$baseUrl$endpoint';
+      try {
+        print('📡 PUT: $url');
+        print('🔑 Headers: $headers');
+        print('🧾 Body: ${jsonEncode(body)}');
+      } catch (_) {}
+
       final response = await http.put(
-        Uri.parse('$baseUrl$endpoint'),
+        Uri.parse(url),
         headers: headers,
         body: jsonEncode(body),
       );
+
+      // Debug logging: response details
+      try {
+        print('📊 Response Status: ${response.statusCode}');
+        print('📄 Response Body: ${response.body}');
+      } catch (_) {}
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);

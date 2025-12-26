@@ -3,7 +3,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/custom_bottom_nav_bar.dart';
 import '../../../core/utils/app_bar_with_drawer.dart';
 import '../../../core/utils/bottom_nav_helper.dart';
-import '../../../data/services/transaction_service.dart';
+import '../../../data/services/category_cache_service.dart';
+import '../../../data/services/notification_service.dart';
 import '../../../data/models/category.dart';
 import 'widgets/add_transaction_tab.dart';
 import 'widgets/add_budget_tab.dart';
@@ -24,12 +25,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   // Tab Controller
   late TabController _tabController;
 
-  // Transaction Service
-  final _transactionService = TransactionService();
+  // Services
+  final _categoryCacheService = CategoryCacheService.instance;
+  final _notificationService = NotificationService();
 
   // Categories
   List<Category> _categories = [];
   bool _isCategoriesLoading = true;
+  int _unreadCount = 0;
 
   // Transaction type cho tab giao dịch
   String _transactionType = 'expense';
@@ -42,7 +45,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       vsync: this,
       initialIndex: widget.initialTabIndex,
     );
-    _loadCategories();
+    // Preload tất cả danh mục (EXPENSE và INCOME) khi vào màn hình
+    _preloadAndLoadCategories();
+    _loadUnreadCount();
   }
 
   @override
@@ -51,19 +56,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     super.dispose();
   }
 
-  /// Tải danh mục từ API
-  Future<void> _loadCategories() async {
+  /// Preload tất cả danh mục và load danh mục hiện tại
+  Future<void> _preloadAndLoadCategories() async {
     setState(() {
       _isCategoriesLoading = true;
     });
 
     try {
-      final type = _transactionType == 'expense' ? 'EXPENSE' : 'INCOME';
-      final categories = await _transactionService.getCategories(type: type);
-      setState(() {
-        _categories = categories;
-        _isCategoriesLoading = false;
-      });
+      // Preload cả EXPENSE và INCOME song song để cache sẵn
+      await _categoryCacheService.preloadAllCategories();
+
+      // Load danh mục cho loại hiện tại
+      await _loadCategories();
     } catch (e) {
       setState(() {
         _isCategoriesLoading = false;
@@ -76,6 +80,42 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           ),
         );
       }
+    }
+  }
+
+  /// Tải danh mục từ cache (đã được preload)
+  Future<void> _loadCategories() async {
+    final type = _transactionType == 'expense' ? 'EXPENSE' : 'INCOME';
+
+    setState(() {
+      _isCategoriesLoading = true;
+    });
+
+    try {
+      // Lấy từ cache service (sẽ dùng cache nếu đã có)
+      final categories = await _categoryCacheService.getCategories(type);
+
+      setState(() {
+        _categories = categories;
+        _isCategoriesLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isCategoriesLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadUnreadCount() async {
+    try {
+      final count = await _notificationService.getUnreadCount();
+      if (mounted) {
+        setState(() {
+          _unreadCount = count;
+        });
+      }
+    } catch (e) {
+      // Ignore errors for notification count
     }
   }
 
@@ -97,37 +137,43 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       },
       child: AppBarWithDrawer.scrollable(
         context,
-        userName: 'Nguyễn Văn A',
-        notificationCount: 3,
+        notificationCount: _unreadCount,
         backgroundColor: AppColors.background,
         customTitle: 'Thêm giao dịch, ngân sách',
-        body: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Tab Bar
-            _buildTabBar(),
+        body: Builder(
+          builder: (context) {
+            // Tính chiều cao một lần dựa trên screen size
+            final screenHeight = MediaQuery.sizeOf(context).height;
+            final contentHeight =
+                screenHeight - 250; // Trừ AppBar, TabBar, BottomNav
 
-            // Tab Content - Sử dụng SizedBox với chiều cao cố định hoặc LayoutBuilder
-            SizedBox(
-              height:
-                  MediaQuery.of(context).size.height -
-                  250, // Trừ đi AppBar và BottomNav
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  // Tab 1: Thêm giao dịch
-                  AddTransactionTab(
-                    categories: _categories,
-                    isCategoriesLoading: _isCategoriesLoading,
-                    transactionType: _transactionType,
-                    onTransactionTypeChanged: _onTransactionTypeChanged,
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Tab Bar
+                _buildTabBar(),
+
+                // Tab Content
+                SizedBox(
+                  height: contentHeight > 300 ? contentHeight : 300,
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // Tab 1: Thêm giao dịch
+                      AddTransactionTab(
+                        categories: _categories,
+                        isCategoriesLoading: _isCategoriesLoading,
+                        transactionType: _transactionType,
+                        onTransactionTypeChanged: _onTransactionTypeChanged,
+                      ),
+                      // Tab 2: Thêm ngân sách
+                      const AddBudgetTab(),
+                    ],
                   ),
-                  // Tab 2: Thêm ngân sách
-                  const AddBudgetTab(),
-                ],
-              ),
-            ),
-          ],
+                ),
+              ],
+            );
+          },
         ),
         bottomNavigationBar: CustomBottomNavBar(
           currentIndex: 2,
@@ -152,7 +198,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

@@ -277,7 +277,7 @@ const CategoryManagementPage = () => {
             icon={<EditOutlined />}
             onClick={() => handleEditCategory(record)}
             style={{
-              color: '#6a7282',
+              color: '#f59e0b',
             }}
           />
           <Button
@@ -554,8 +554,24 @@ const CategoryManagementPage = () => {
                   }}
                 />
               </Form.Item>
+              
             </Col>
           </Row>
+          <Form.Item
+            label="Mô tả"
+            name="description"
+            rules={[{ required: true, message: 'Vui lòng nhập mô tả' }]}
+          >
+            <Input.TextArea
+              placeholder="VD: Chi phí ăn uống, nhà hàng, quán cà phê..."
+              rows={3}
+              style={{
+                borderRadius: 8,
+                background: '#F3F4F6',
+                border: '1px solid transparent',
+              }}
+            />
+          </Form.Item>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
             <Button
@@ -629,6 +645,22 @@ const CategoryManagementPage = () => {
               placeholder="VD: Ăn uống, Di chuyển..."
               style={{
                 height: 40,
+                borderRadius: 8,
+                background: '#F3F4F6',
+                border: '1px solid transparent',
+              }}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Mô tả"
+            name="description"
+            rules={[{ required: true, message: 'Vui lòng nhập mô tả' }]}
+          >
+            <Input.TextArea
+              placeholder="VD: Chi phí ăn uống, nhà hàng, quán cà phê..."
+              rows={3}
+              style={{
                 borderRadius: 8,
                 background: '#F3F4F6',
                 border: '1px solid transparent',

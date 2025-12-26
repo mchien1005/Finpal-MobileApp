@@ -3,6 +3,27 @@ import 'package:flutter/material.dart';
 /// Utility class để map icon string từ API sang Emoji hoặc IconData
 /// Ưu tiên sử dụng Emoji đa màu sắc sinh động
 class CategoryIconHelper {
+  /// Parse mã màu hex từ API (VD: #FF7043) thành Color
+  /// Trả về null nếu không parse được
+  static Color? parseHexColor(String? hexColor) {
+    if (hexColor == null || hexColor.isEmpty) return null;
+
+    try {
+      // Loại bỏ # ở đầu nếu có
+      String hex = hexColor.replaceFirst('#', '');
+
+      // Thêm alpha channel nếu chỉ có 6 ký tự (RGB)
+      if (hex.length == 6) {
+        hex = 'FF$hex';
+      }
+
+      // Parse thành int và tạo Color
+      return Color(int.parse(hex, radix: 16));
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// Lấy Emoji đa màu cho danh mục (khuyên dùng)
   static String getEmoji(String? iconString) {
     if (iconString == null || iconString.isEmpty) {
@@ -557,8 +578,18 @@ class CategoryIconHelper {
     return Icons.category;
   }
 
-  /// Lấy màu cho danh mục dựa trên icon string
-  static Color getColor(String? iconString, String? name) {
+  /// Lấy màu cho danh mục
+  /// Ưu tiên sử dụng màu từ API (colorFromApi) nếu có
+  /// Nếu không có sẽ fallback về màu dựa trên icon/name
+  static Color getColor(
+    String? iconString,
+    String? name, {
+    String? colorFromApi,
+  }) {
+    // Ưu tiên sử dụng màu từ API nếu có
+    final apiColor = parseHexColor(colorFromApi);
+    if (apiColor != null) return apiColor;
+
     final key = (iconString ?? name ?? '').toLowerCase().trim();
 
     switch (key) {

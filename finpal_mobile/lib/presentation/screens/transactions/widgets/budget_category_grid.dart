@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/category_icon_helper.dart';
 import '../../../../data/models/category.dart';
-import '../../../../data/services/transaction_service.dart';
+import '../../../../data/services/category_cache_service.dart';
 
 /// Widget hiển thị grid các danh mục ngân sách để chọn
 class BudgetCategoryGrid extends StatefulWidget {
@@ -27,7 +27,8 @@ class BudgetCategoryGrid extends StatefulWidget {
 }
 
 class _BudgetCategoryGridState extends State<BudgetCategoryGrid> {
-  final _transactionService = TransactionService();
+  // Sử dụng CategoryCacheService tập trung
+  final _categoryCacheService = CategoryCacheService.instance;
 
   List<Category> _categories = [];
   bool _isLoading = true;
@@ -38,7 +39,7 @@ class _BudgetCategoryGridState extends State<BudgetCategoryGrid> {
     _loadCategories();
   }
 
-  /// Tải danh mục chi tiêu từ API
+  /// Tải danh mục chi tiêu từ cache service
   Future<void> _loadCategories() async {
     setState(() {
       _isLoading = true;
@@ -46,9 +47,9 @@ class _BudgetCategoryGridState extends State<BudgetCategoryGrid> {
 
     try {
       // Ngân sách chỉ áp dụng cho chi tiêu (EXPENSE)
-      final categories = await _transactionService.getCategories(
-        type: 'EXPENSE',
-      );
+      // Sử dụng cache service - nếu đã được preload thì lấy từ cache
+      final categories = await _categoryCacheService.getCategories('EXPENSE');
+
       setState(() {
         _categories = categories;
         _isLoading = false;
@@ -166,7 +167,11 @@ class _BudgetCategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Lấy emoji và màu từ API thông qua CategoryIconHelper
     final emoji = CategoryIconHelper.getEmoji(category.icon);
-    final iconColor = CategoryIconHelper.getColor(category.icon, category.name);
+    final iconColor = CategoryIconHelper.getColor(
+      category.icon,
+      category.name,
+      colorFromApi: category.color,
+    );
     final bgColor = CategoryIconHelper.getBackgroundColor(iconColor);
 
     return InkWell(

@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../../core/widgets/success_notification_dialog.dart';
 import 'package:finpal_mobile/core/constants/app_colors.dart';
+import 'package:finpal_mobile/data/services/notification_settings_service.dart';
+import 'package:finpal_mobile/data/models/notification_settings.dart';
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -9,20 +12,61 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
+  final NotificationSettingsService _service = NotificationSettingsService();
+  bool _isLoading = true;
+
   // Notification Channel Settings
-  bool _smsNotifications = true;
-  bool _emailNotifications = true;
   bool _pushNotifications = true;
+  bool _pushEnabled = true;
 
   // Notification Type Settings
   bool _transactionAlerts = true;
   bool _budgetAlerts = true;
   bool _goalReminders = true;
   bool _securityAlerts = true;
+  bool _savingsTips = true;
+  bool _spendingInsights = true;
 
   // Periodic Reports
   bool _weeklyReports = false;
   bool _monthlyReports = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      final NotificationSettings settings = await _service.getSettings();
+      setState(() {
+        _pushNotifications = settings.pushNotifications;
+        _pushEnabled = settings.pushEnabled;
+
+        _transactionAlerts = settings.transactionAlerts;
+        _budgetAlerts = settings.budgetAlerts;
+        _goalReminders = settings.goalReminders;
+        _securityAlerts = settings.securityAlerts;
+        _savingsTips = settings.savingsTips;
+        _spendingInsights = settings.spendingInsights;
+
+        _weeklyReports = settings.weeklyReports;
+        _monthlyReports = settings.monthlyReports;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi tải cài đặt: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,11 +155,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
               // Content
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                       // Notification Channels Section
                       const Padding(
                         padding: EdgeInsets.only(left: 8, bottom: 12),
@@ -148,31 +194,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         child: Column(
                           children: [
                             _buildNotificationItem(
-                              icon: Icons.message_outlined,
-                              iconColor: const Color(0xFF10B981),
-                              title: 'Thông báo SMS',
-                              subtitle: 'Nhận thông báo qua tin nhắn',
-                              value: _smsNotifications,
+                              icon: Icons.notifications_active_outlined,
+                              iconColor: const Color(0xFF111827),
+                              title: 'Tất cả thông báo',
+                              subtitle: 'Bật/tắt tất cả các thông báo',
+                              value: _pushEnabled,
                               onChanged: (value) {
                                 setState(() {
-                                  _smsNotifications = value;
+                                  _pushEnabled = value;
+                                  // when turning off, disable all channels and types
+                                  _pushNotifications = value;
+                                  _transactionAlerts = value;
+                                  _budgetAlerts = value;
+                                  _goalReminders = value;
+                                  _securityAlerts = value;
+                                  _savingsTips = value;
+                                  _spendingInsights = value;
+                                  _weeklyReports = value;
+                                  _monthlyReports = value;
                                 });
                               },
                               showDivider: true,
                             ),
-                            _buildNotificationItem(
-                              icon: Icons.email_outlined,
-                              iconColor: const Color(0xFF3B82F6),
-                              title: 'Thông báo Email',
-                              subtitle: 'Nhận thông báo qua email',
-                              value: _emailNotifications,
-                              onChanged: (value) {
-                                setState(() {
-                                  _emailNotifications = value;
-                                });
-                              },
-                              showDivider: true,
-                            ),
+                            // SMS and Email notification channels removed
                             _buildNotificationItem(
                               icon: Icons.notifications_outlined,
                               iconColor: const Color(0xFFA855F7),
@@ -257,6 +301,32 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               onChanged: (value) {
                                 setState(() {
                                   _goalReminders = value;
+                                });
+                              },
+                              showDivider: true,
+                            ),
+                            _buildNotificationItem(
+                              icon: Icons.lightbulb_outline,
+                              iconColor: const Color(0xFF06B6D4),
+                              title: 'Gợi ý tiết kiệm thông minh',
+                              subtitle: 'Gợi ý cách tiết kiệm và mục tiêu',
+                              value: _savingsTips,
+                              onChanged: (value) {
+                                setState(() {
+                                  _savingsTips = value;
+                                });
+                              },
+                              showDivider: true,
+                            ),
+                            _buildNotificationItem(
+                              icon: Icons.analytics_outlined,
+                              iconColor: const Color(0xFFEF4444),
+                              title: 'Phân tích chi tiêu',
+                              subtitle: 'Insights và phân tích chi tiêu của bạn',
+                              value: _spendingInsights,
+                              onChanged: (value) {
+                                setState(() {
+                                  _spendingInsights = value;
                                 });
                               },
                               showDivider: true,
@@ -365,9 +435,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           ),
                         ),
                       ),
+
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 36,
+                        child: TextButton(
+                          onPressed: _handleResetSettings,
+                          child: const Text('Reset về mặc định'),
+                        ),
+                      ),
                     ],
-                  ),
-                ),
+                        ),
+                      ),
               ),
             ],
           ),
@@ -452,10 +532,80 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _handleSaveSettings() {
-    // TODO: Save settings to backend
-    SuccessNotificationDialog.show(
-      context,
-      message: 'Đã lưu cài đặt thành công',
+    _saveSettings();
+  }
+
+  Future<void> _saveSettings() async {
+    final settings = NotificationSettings(
+      pushNotifications: _pushNotifications,
+      pushEnabled: _pushEnabled,
+      transactionAlerts: _transactionAlerts,
+      budgetAlerts: _budgetAlerts,
+      goalReminders: _goalReminders,
+      securityAlerts: _securityAlerts,
+      savingsTips: _savingsTips,
+      spendingInsights: _spendingInsights,
+      weeklyReports: _weeklyReports,
+      monthlyReports: _monthlyReports,
     );
+    final body = settings.toJson();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      print('🔁 Sending notification settings');
+      await _service.updateSettings(settings);
+      Navigator.of(context).pop(); // close loading
+      SuccessNotificationDialog.show(
+        context,
+        message: 'Đã lưu cài đặt thành công',
+      );
+    } catch (e) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi lưu cài đặt: $e')),
+      );
+    }
+  }
+
+  Future<void> _handleResetSettings() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xác nhận'),
+        content: const Text('Bạn có muốn reset cài đặt về mặc định không?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Hủy')),
+          TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Xác nhận')),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      await _service.resetSettings();
+      Navigator.of(context).pop();
+      await _loadSettings();
+      SuccessNotificationDialog.show(
+        context,
+        message: 'Đã reset về mặc định',
+      );
+    } catch (e) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi reset cài đặt: $e')),
+      );
+    }
   }
 }

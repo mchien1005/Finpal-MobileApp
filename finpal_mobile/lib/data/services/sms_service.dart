@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'auth_service.dart';
 
-/// Model for parsed SMS transaction data
+/// Model chứa dữ liệu giao dịch được parse từ SMS
 class ParsedSmsTransaction {
   final String? type;
   final double? amount;
@@ -25,7 +25,7 @@ class ParsedSmsTransaction {
   });
 
   factory ParsedSmsTransaction.fromJson(Map<String, dynamic> json) {
-    // Parse amount from various possible formats
+    // Parse số tiền từ các định dạng khác nhau
     double? parsedAmount;
     if (json['amount'] != null) {
       if (json['amount'] is int) {
@@ -39,7 +39,7 @@ class ParsedSmsTransaction {
       }
     }
 
-    // Consider valid if we have amount and type
+    // Xem như hợp lệ nếu có số tiền và loại giao dịch
     final hasValidData = parsedAmount != null && parsedAmount > 0;
 
     return ParsedSmsTransaction(
@@ -68,7 +68,7 @@ class ParsedSmsTransaction {
   }
 }
 
-/// Result of SMS scan operation
+/// Kết quả của thao tác quét SMS
 class SmsScanResult {
   final int totalSmsScanned;
   final int validTransactions;
@@ -87,11 +87,12 @@ class SmsScanResult {
   });
 }
 
+/// Service xử lý quét và parse SMS ngân hàng
 class SmsService {
   final String _baseUrl = 'http://175.41.150.228:8080/api';
   final AuthService _authService = AuthService();
 
-  /// List of known bank sender addresses
+  /// Danh sách các địa chỉ gửi SMS ngân hàng đã biết
   static const List<String> bankSenders = [
     'Vietcombank',
     'VCB',
@@ -137,19 +138,19 @@ class SmsService {
     'ShopeePay',
   ];
 
-  /// Check if an SMS sender is from a bank
-  /// Also checks message body for bank keywords (useful for testing)
+  /// Kiểm tra xem SMS có phải từ ngân hàng không
+  /// Cũng kiểm tra nội dung tin nhắn để tìm từ khóa ngân hàng
   bool isBankSms(String sender, {String? messageBody}) {
     final senderLower = sender.toLowerCase();
     final bodyLower = (messageBody ?? '').toLowerCase();
 
-    // Check sender name/address
+    // Kiểm tra tên/địa chỉ người gửi
     final isSenderBank = bankSenders.any(
       (bank) => senderLower.contains(bank.toLowerCase()),
     );
 
-    // Also check if message body contains bank name pattern (for testing with regular phone numbers)
-    // Look for patterns like "BIDV:", "VCB:", or message starting with bank name
+    // Kiểm tra nội dung tin nhắn có chứa tên ngân hàng không
+    // Tìm các pattern như "BIDV:", "VCB:", hoặc tin nhắn bắt đầu bằng tên ngân hàng
     final isBodyFromBank = bankSenders.any((bank) {
       final bankLower = bank.toLowerCase();
       return bodyLower.startsWith(bankLower) ||
@@ -159,24 +160,24 @@ class SmsService {
     });
 
     print(
-      '🔍 isBankSms check - Sender: $sender, isSenderBank: $isSenderBank, isBodyFromBank: $isBodyFromBank',
+      '🔍 Kiểm tra SMS ngân hàng - Người gửi: $sender, isSenderBank: $isSenderBank, isBodyFromBank: $isBodyFromBank',
     );
     return isSenderBank || isBodyFromBank;
   }
 
-  /// Extract bank name from message body or sender
-  /// Returns the bank name if found, otherwise returns the original sender
+  /// Trích xuất tên ngân hàng từ nội dung tin nhắn hoặc người gửi
+  /// Trả về tên ngân hàng nếu tìm thấy, ngược lại trả về người gửi gốc
   String getBankNameFromMessage(String sender, String messageBody) {
     final bodyLower = messageBody.toLowerCase();
 
-    // First check if sender is already a bank name
+    // Kiểm tra người gửi có phải tên ngân hàng không
     for (final bank in bankSenders) {
       if (sender.toLowerCase().contains(bank.toLowerCase())) {
         return bank;
       }
     }
 
-    // Check message body for bank name
+    // Kiểm tra nội dung tin nhắn để tìm tên ngân hàng
     for (final bank in bankSenders) {
       final bankLower = bank.toLowerCase();
       if (bodyLower.startsWith(bankLower) ||
@@ -187,11 +188,11 @@ class SmsService {
       }
     }
 
-    // Return original sender if no bank name found
+    // Trả về người gửi gốc nếu không tìm thấy tên ngân hàng
     return sender;
   }
 
-  /// Send SMS to API for parsing
+  /// Gửi SMS đến API để parse
   Future<ParsedSmsTransaction?> parseSms({
     required String sender,
     required String message,
@@ -201,7 +202,7 @@ class SmsService {
       final url = Uri.parse('$_baseUrl/sms/receive');
       final token = await _authService.getToken();
 
-      // Use correct field names as expected by the API
+      // Sử dụng đúng tên field theo API yêu cầu
       final requestBody = {
         'senderPhone': sender,
         'smsContent': message,
@@ -214,9 +215,9 @@ class SmsService {
         headers['Authorization'] = 'Bearer $token';
       }
 
-      print('📱 Parsing SMS from: $sender');
+      print('📱 Đang parse SMS từ: $sender');
       print(
-        '📝 Message: ${message.length > 100 ? '${message.substring(0, 100)}...' : message}',
+        '📝 Nội dung: ${message.length > 100 ? '${message.substring(0, 100)}...' : message}',
       );
 
       final response = await http.post(
@@ -225,39 +226,39 @@ class SmsService {
         body: jsonEncode(requestBody),
       );
 
-      print('📊 Parse SMS API Status: ${response.statusCode}');
-      print('📄 Response body: ${response.body}');
+      print('📊 Trạng thái API Parse SMS: ${response.statusCode}');
+      print('📄 Phản hồi: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final jsonResponse = jsonDecode(response.body);
-        print('📋 Parsed JSON: $jsonResponse');
+        print('📋 JSON đã parse: $jsonResponse');
         final transaction = ParsedSmsTransaction.fromJson(jsonResponse);
         print(
-          '✅ Transaction parsed - Type: ${transaction.type}, Amount: ${transaction.amount}, isValid: ${transaction.isValid}',
+          '✅ Đã parse giao dịch - Loại: ${transaction.type}, Số tiền: ${transaction.amount}, isValid: ${transaction.isValid}',
         );
         return transaction;
       } else {
-        print('❌ Failed to parse SMS: ${response.body}');
+        print('❌ Parse SMS thất bại: ${response.body}');
         return null;
       }
     } catch (e) {
-      print('❌ Error parsing SMS: $e');
+      print('❌ Lỗi parse SMS: $e');
       return null;
     }
   }
 
-  /// Add parsed transaction to the system
+  /// Thêm giao dịch đã parse vào hệ thống
   Future<bool> addParsedTransaction(ParsedSmsTransaction transaction) async {
     try {
       if (!transaction.isValid || transaction.amount == null) {
-        print('⚠️ Invalid transaction, skipping');
+        print('⚠️ Giao dịch không hợp lệ, bỏ qua');
         return false;
       }
 
       final url = Uri.parse('$_baseUrl/transactions');
       final token = await _authService.getToken();
 
-      // Determine transaction source based on bank name
+      // Xác định nguồn giao dịch dựa trên tên ngân hàng
       String transactionSource = 'Ngân hàng';
       if (transaction.bankName != null) {
         final bankLower = transaction.bankName!.toLowerCase();
@@ -287,7 +288,7 @@ class SmsService {
       }
 
       print(
-        '💾 Adding transaction: ${transaction.type} - ${transaction.amount}',
+        '💾 Đang thêm giao dịch: ${transaction.type} - ${transaction.amount}',
       );
 
       final response = await http.post(
@@ -297,19 +298,19 @@ class SmsService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print('✅ Transaction added successfully');
+        print('✅ Thêm giao dịch thành công');
         return true;
       } else {
-        print('❌ Failed to add transaction: ${response.body}');
+        print('❌ Thêm giao dịch thất bại: ${response.body}');
         return false;
       }
     } catch (e) {
-      print('❌ Error adding transaction: $e');
+      print('❌ Lỗi thêm giao dịch: $e');
       return false;
     }
   }
 
-  /// Scan and process multiple SMS messages
+  /// Quét và xử lý nhiều tin nhắn SMS
   Future<SmsScanResult> scanAndProcessSms(
     List<Map<String, dynamic>> smsMessages,
   ) async {
@@ -320,7 +321,7 @@ class SmsService {
     List<ParsedSmsTransaction> transactions = [];
     List<String> errors = [];
 
-    // Track processed messages to avoid duplicates
+    // Theo dõi các tin nhắn đã xử lý để tránh trùng lặp
     Set<String> processedMessages = {};
 
     for (final sms in smsMessages) {
@@ -329,12 +330,12 @@ class SmsService {
         final message = sms['message'] as String? ?? '';
         final date = sms['date'] as DateTime? ?? DateTime.now();
 
-        // Create a unique key for this message to detect duplicates
+        // Tạo key duy nhất cho tin nhắn để phát hiện trùng lặp
         final messageKey = '${message.hashCode}_${date.millisecondsSinceEpoch}';
 
-        // Skip if already processed
+        // Bỏ qua nếu đã xử lý
         if (processedMessages.contains(messageKey)) {
-          print('⏭️ Skipping duplicate SMS');
+          print('⏭️ Bỏ qua SMS trùng lặp');
           continue;
         }
         processedMessages.add(messageKey);
@@ -349,8 +350,8 @@ class SmsService {
         if (parsed != null && parsed.isValid) {
           validCount++;
           transactions.add(parsed);
-          // Note: Transaction is already added by /api/sms/receive endpoint
-          // No need to call addParsedTransaction() again
+          // Giao dịch đã được thêm bởi endpoint /api/sms/receive
+          // Không cần gọi addParsedTransaction() nữa
           addedCount++;
         }
       } catch (e) {

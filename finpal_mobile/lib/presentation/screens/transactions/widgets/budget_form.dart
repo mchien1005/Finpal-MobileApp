@@ -4,7 +4,7 @@ import '../../../../core/utils/category_icon_helper.dart';
 import '../../../../data/models/category.dart';
 import '../../../../data/models/budget_model.dart';
 import '../../../../data/services/budget_service.dart';
-import '../../../../data/services/transaction_service.dart';
+import '../../../../data/services/category_cache_service.dart';
 import '../../../../core/widgets/success_notification_dialog.dart';
 
 /// Widget form tạo/sửa ngân sách
@@ -44,7 +44,7 @@ class _BudgetFormState extends State<BudgetForm> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
-  final _transactionService = TransactionService();
+  final _categoryCacheService = CategoryCacheService.instance;
 
   String? _selectedPeriod;
   DateTime? _startDate;
@@ -87,6 +87,7 @@ class _BudgetFormState extends State<BudgetForm> {
         name: budget.categoryName ?? budget.name,
         type: 'EXPENSE',
         icon: budget.categoryIcon,
+        color: budget.categoryColor, // Sử dụng màu từ CSDL
         isSystem: true,
         displayOrder: 0,
       );
@@ -104,9 +105,8 @@ class _BudgetFormState extends State<BudgetForm> {
     });
 
     try {
-      final categories = await _transactionService.getCategories(
-        type: 'EXPENSE',
-      );
+      // Sử dụng cache service - lấy từ cache nếu đã có
+      final categories = await _categoryCacheService.getCategories('EXPENSE');
       setState(() {
         _categories = categories;
         _isLoadingCategories = false;
@@ -273,9 +273,13 @@ class _BudgetFormState extends State<BudgetForm> {
       return _buildCategorySelector();
     }
 
-    // Lấy emoji và màu từ CategoryIconHelper
+    // Lấy emoji và màu từ CategoryIconHelper (sử dụng màu từ API)
     final emoji = CategoryIconHelper.getEmoji(_categoryIcon);
-    final iconColor = CategoryIconHelper.getColor(_categoryIcon, _categoryName);
+    final iconColor = CategoryIconHelper.getColor(
+      _categoryIcon,
+      _categoryName,
+      colorFromApi: _currentCategory?.color,
+    );
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -641,7 +645,11 @@ class _BudgetFormState extends State<BudgetForm> {
   /// Build item danh mục
   Widget _buildCategoryItem(Category category, bool isSelected) {
     final emoji = CategoryIconHelper.getEmoji(category.icon);
-    final iconColor = CategoryIconHelper.getColor(category.icon, category.name);
+    final iconColor = CategoryIconHelper.getColor(
+      category.icon,
+      category.name,
+      colorFromApi: category.color,
+    );
     final bgColor = CategoryIconHelper.getBackgroundColor(iconColor);
 
     return InkWell(
