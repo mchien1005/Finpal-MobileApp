@@ -31,6 +31,11 @@ RUN apt-get update && \
 # Copy JAR file từ build stage
 COPY --from=build /app/target/*.jar app.jar
 
+# Set timezone to Vietnam (UTC+7)
+# Quan trọng: Server ở Singapore (UTC+8), nhưng cần chạy theo giờ Việt Nam
+ENV TZ=Asia/Ho_Chi_Minh
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 # Expose port
 EXPOSE 8080
 
@@ -38,5 +43,6 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
 
-# Run application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Run application với timezone Vietnam
+ENTRYPOINT ["java", "-Duser.timezone=Asia/Ho_Chi_Minh", "-jar", "app.jar"]
+
