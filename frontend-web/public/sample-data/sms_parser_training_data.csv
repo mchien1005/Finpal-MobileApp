@@ -1,0 +1,51 @@
+sms_text,transaction_type,amount,merchant,category
+"VCB: TK 1234567890 -500,000 VND. So du: 2,500,000 VND. GD: VINMART Q1",expense,500000,VINMART,shopping
+"VCB: TK 1234567890 +15,000,000 VND. So du: 17,500,000 VND. GD: Luong thang 12",income,15000000,Luong thang 12,salary
+"Techcombank: GD thanh toan 1,200,000 VND tai GRAB. SD kha dung: 3,800,000 VND",expense,1200000,GRAB,transportation
+"MB Bank: Ban vua chi tieu 350,000 VND tai THE COFFEE HOUSE. So du TK: 1,650,000 VND",expense,350000,THE COFFEE HOUSE,food_drink
+"VPBank: +8,500,000 VND vao TK. Noi dung: Chuyen khoan tu NGUYEN VAN A",income,8500000,NGUYEN VAN A,transfer
+"BIDV: Giao dich -2,000,000 VND. Noi dung: Thanh toan hoa don dien EVN",expense,2000000,EVN,utilities
+"Vietcombank: TK *7890 -150,000 VND GD SHOPEE. SD: 4,350,000 VND",expense,150000,SHOPEE,shopping
+"ACB: Ban da nhan +3,200,000 VND tu LE THI B. So du hien tai: 7,550,000 VND",income,3200000,LE THI B,transfer
+"Sacombank: Chi tieu 89,000 VND tai CIRCLE K Q3. SD con lai: 2,911,000 VND",expense,89000,CIRCLE K,food_drink
+"TPBank: -450,000 VND thanh toan NETFLIX. So du: 1,050,000 VND",expense,450000,NETFLIX,entertainment
+"VCB: +25,000,000 VND. ND: Thuong cuoi nam 2024",income,25000000,Thuong cuoi nam,bonus
+"MB: Thanh toan 1,500,000 VND - Hoa don nuoc SAWACO thang 11",expense,1500000,SAWACO,utilities
+"Techcombank: -3,500,000 VND GD LAZADA. SD: 6,500,000 VND",expense,3500000,LAZADA,shopping
+"VPBank: Nhan 12,000,000 VND tu cong ty ABC. Luong thang 11/2024",income,12000000,Cong ty ABC,salary
+"BIDV: Chi 750,000 VND - BE di san bay. SD: 2,250,000 VND",expense,750000,BE,transportation
+"ACB: +5,000,000 VND tu TRAN VAN C. ND: Tra no",income,5000000,TRAN VAN C,transfer
+"Vietcombank: -120,000 VND SPOTIFY. SD: 3,880,000 VND",expense,120000,SPOTIFY,entertainment
+"Sacombank: Thanh toan 2,800,000 VND - Hoa don internet VNPT",expense,2800000,VNPT,utilities
+"TPBank: +7,500,000 VND. Noi dung: Freelance project payment",income,7500000,Freelance,other_income
+"VCB: -680,000 VND tai PHARMACITY. SD: 4,320,000 VND",expense,680000,PHARMACITY,health
+"MB Bank: Chi 1,800,000 VND - LOT Fitness Club thang 12",expense,1800000,LOT Fitness,health
+"Techcombank: +20,000,000 VND. ND: Tien cho thue nha thang 12",income,20000000,Tien thue nha,rental
+"VPBank: -950,000 VND GD TIKI. SD: 5,050,000 VND",expense,950000,TIKI,shopping
+"BIDV: Thanh toan 45,000 VND - VinaSun Taxi. SD: 1,955,000 VND",expense,45000,VinaSun,transportation
+"ACB: -250,000 VND tai CGV Cinema. SD: 2,750,000 VND",expense,250000,CGV,entertainment
+"Vietcombank: +4,000,000 VND tu PHAM THI D. ND: Tra tien hang",income,4000000,PHAM THI D,transfer
+"Sacombank: Chi 1,200,000 VND - California Fitness thang 12",expense,1200000,California Fitness,health
+"TPBank: -380,000 VND HIGHLAND COFFEE. SD: 2,620,000 VND",expense,380000,HIGHLAND COFFEE,food_drink
+"VCB: Thanh toan 15,000,000 VND - Hoc phi dai hoc HK1",expense,15000000,Hoc phi,education
+"MB: +10,000,000 VND. ND: Hoan thue TNCN 2024",income,10000000,Hoan thue,other_income
+"Techcombank: -560,000 VND PIZZA HUT. SD: 3,440,000 VND",expense,560000,PIZZA HUT,food_drink
+"VPBank: Chi 2,500,000 VND - Bao hiem Prudential thang 12",expense,2500000,Prudential,insurance
+"BIDV: +18,000,000 VND. Luong + phu cap thang 12",income,18000000,Luong phu cap,salary
+"ACB: -1,100,000 VND SENDO. SD: 4,900,000 VND",expense,1100000,SENDO,shopping
+"Vietcombank: Thanh toan 3,200,000 VND - Ve may bay VietJet",expense,3200000,VietJet,travel
+"Sacombank: +6,500,000 VND tu HOANG VAN E. ND: Chia tien di choi",income,6500000,HOANG VAN E,transfer
+"TPBank: -75,000 VND 7-ELEVEN. SD: 1,925,000 VND",expense,75000,7-ELEVEN,food_drink
+"VCB: Chi 8,000,000 VND - Khoa hoc IELTS 3 thang",expense,8000000,Khoa hoc IELTS,education
+"MB Bank: +2,000,000 VND. ND: Tien thuong KPI thang 11",income,2000000,Thuong KPI,bonus
+"Techcombank: -420,000 VND GONG CHA. SD: 2,580,000 VND",expense,420000,GONG CHA,food_drink
+"VPBank: Thanh toan 650,000 VND - Guardian. SD: 5,350,000 VND",expense,650000,Guardian,health
+"BIDV: +9,000,000 VND. ND: Tien ban do cu",income,9000000,Ban do cu,other_income
+"ACB: -1,850,000 VND LOTTE Mart. SD: 3,150,000 VND",expense,1850000,LOTTE Mart,shopping
+"Vietcombank: Chi 4,500,000 VND - Dich vu spa Zen",expense,4500000,Zen Spa,personal_care
+"Sacombank: +14,000,000 VND. Luong thang 12/2024",income,14000000,Luong,salary
+"TPBank: -280,000 VND PHUC LONG. SD: 2,720,000 VND",expense,280000,PHUC LONG,food_drink
+"VCB: Thanh toan 1,900,000 VND - Hoa don gas PETROLIMEX",expense,1900000,PETROLIMEX,utilities
+"MB: +5,500,000 VND tu DAO THI F. ND: Chuyen khoan",income,5500000,DAO THI F,transfer
+"Techcombank: -95,000 VND MINISTOP. SD: 1,905,000 VND",expense,95000,MINISTOP,food_drink
+"VPBank: Chi 12,500,000 VND - iPhone 15 tra gop ky 1",expense,12500000,iPhone tra gop,shopping

@@ -17,6 +17,9 @@ class NotificationSettingsService {
 
   Future<NotificationSettings> updateSettings(NotificationSettings settings) async {
     final body = settings.toJson();
+    try {
+      print('🔁 updateSettings payload: ${body}');
+    } catch (_) {}
     final res = await _api.put('/notifications/settings', body);
     Map<String, dynamic> data = {};
     if (res.containsKey('data') && res['data'] is Map) {
@@ -24,6 +27,9 @@ class NotificationSettingsService {
     } else {
       data = Map<String, dynamic>.from(res);
     }
+    try {
+      print('🔁 updateSettings response: $data');
+    } catch (_) {}
     return NotificationSettings.fromJson(data);
   }
 

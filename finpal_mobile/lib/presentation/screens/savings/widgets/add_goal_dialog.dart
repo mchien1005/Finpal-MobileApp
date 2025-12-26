@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../data/models/savings_goal_model.dart';
+import '../../../../data/services/savings_goal_service.dart';
 
 class AddGoalDialog extends StatefulWidget {
   const AddGoalDialog({super.key});
@@ -14,6 +16,7 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
   final _amountController = TextEditingController();
   final _dateController = TextEditingController();
   DateTime? _selectedDate;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -249,15 +252,7 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
 
                     // Nút Tạo mục tiêu
                     ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          Navigator.of(context).pop({
-                            'name': _nameController.text,
-                            'amount': int.parse(_amountController.text),
-                            'deadline': _selectedDate,
-                          });
-                        }
-                      },
+                      onPressed: _isLoading ? null : _createGoal,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFD7006E),
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -266,14 +261,25 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        'Tạo mục tiêu',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Text(
+                              'Tạo mục tiêu',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
                     ),
                   ],
                 ),
@@ -294,5 +300,49 @@ class _AddGoalDialogState extends State<AddGoalDialog> {
         ],
       ),
     );
+  }
+
+  Future<void> _createGoal() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final request = SavingsGoalRequest(
+        name: _nameController.text.trim(),
+        targetAmount: double.parse(_amountController.text.replaceAll(',', '')),
+        deadline:
+            '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
+      );
+
+      print('Creating goal with request: ${request.toJson()}');
+
+      final response = await SavingsGoalService.createSavingsGoal(request);
+
+      if (mounted) {
+        Navigator.of(context).pop(response);
+      }
+    } catch (e) {
+      print('Error creating goal: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi tạo mục tiêu: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 }

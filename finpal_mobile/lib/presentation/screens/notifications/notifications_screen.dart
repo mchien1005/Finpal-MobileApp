@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../../core/widgets/success_notification_dialog.dart';
 import 'package:finpal_mobile/core/constants/app_colors.dart';
@@ -15,15 +16,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _isLoading = true;
 
   // Notification Channel Settings
-  bool _smsNotifications = true;
-  bool _emailNotifications = true;
   bool _pushNotifications = true;
+  bool _pushEnabled = true;
 
   // Notification Type Settings
   bool _transactionAlerts = true;
   bool _budgetAlerts = true;
   bool _goalReminders = true;
   bool _securityAlerts = true;
+  bool _savingsTips = true;
+  bool _spendingInsights = true;
 
   // Periodic Reports
   bool _weeklyReports = false;
@@ -42,14 +44,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try {
       final NotificationSettings settings = await _service.getSettings();
       setState(() {
-        _smsNotifications = settings.smsNotifications;
-        _emailNotifications = settings.emailNotifications;
         _pushNotifications = settings.pushNotifications;
+        _pushEnabled = settings.pushEnabled;
 
         _transactionAlerts = settings.transactionAlerts;
         _budgetAlerts = settings.budgetAlerts;
         _goalReminders = settings.goalReminders;
         _securityAlerts = settings.securityAlerts;
+        _savingsTips = settings.savingsTips;
+        _spendingInsights = settings.spendingInsights;
 
         _weeklyReports = settings.weeklyReports;
         _monthlyReports = settings.monthlyReports;
@@ -191,31 +194,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         child: Column(
                           children: [
                             _buildNotificationItem(
-                              icon: Icons.message_outlined,
-                              iconColor: const Color(0xFF10B981),
-                              title: 'Thông báo SMS',
-                              subtitle: 'Nhận thông báo qua tin nhắn',
-                              value: _smsNotifications,
+                              icon: Icons.notifications_active_outlined,
+                              iconColor: const Color(0xFF111827),
+                              title: 'Tất cả thông báo',
+                              subtitle: 'Bật/tắt tất cả các thông báo',
+                              value: _pushEnabled,
                               onChanged: (value) {
                                 setState(() {
-                                  _smsNotifications = value;
+                                  _pushEnabled = value;
+                                  // when turning off, disable all channels and types
+                                  _pushNotifications = value;
+                                  _transactionAlerts = value;
+                                  _budgetAlerts = value;
+                                  _goalReminders = value;
+                                  _securityAlerts = value;
+                                  _savingsTips = value;
+                                  _spendingInsights = value;
+                                  _weeklyReports = value;
+                                  _monthlyReports = value;
                                 });
                               },
                               showDivider: true,
                             ),
-                            _buildNotificationItem(
-                              icon: Icons.email_outlined,
-                              iconColor: const Color(0xFF3B82F6),
-                              title: 'Thông báo Email',
-                              subtitle: 'Nhận thông báo qua email',
-                              value: _emailNotifications,
-                              onChanged: (value) {
-                                setState(() {
-                                  _emailNotifications = value;
-                                });
-                              },
-                              showDivider: true,
-                            ),
+                            // SMS and Email notification channels removed
                             _buildNotificationItem(
                               icon: Icons.notifications_outlined,
                               iconColor: const Color(0xFFA855F7),
@@ -300,6 +301,32 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               onChanged: (value) {
                                 setState(() {
                                   _goalReminders = value;
+                                });
+                              },
+                              showDivider: true,
+                            ),
+                            _buildNotificationItem(
+                              icon: Icons.lightbulb_outline,
+                              iconColor: const Color(0xFF06B6D4),
+                              title: 'Gợi ý tiết kiệm thông minh',
+                              subtitle: 'Gợi ý cách tiết kiệm và mục tiêu',
+                              value: _savingsTips,
+                              onChanged: (value) {
+                                setState(() {
+                                  _savingsTips = value;
+                                });
+                              },
+                              showDivider: true,
+                            ),
+                            _buildNotificationItem(
+                              icon: Icons.analytics_outlined,
+                              iconColor: const Color(0xFFEF4444),
+                              title: 'Phân tích chi tiêu',
+                              subtitle: 'Insights và phân tích chi tiêu của bạn',
+                              value: _spendingInsights,
+                              onChanged: (value) {
+                                setState(() {
+                                  _spendingInsights = value;
                                 });
                               },
                               showDivider: true,
@@ -510,16 +537,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _saveSettings() async {
     final settings = NotificationSettings(
-      smsNotifications: _smsNotifications,
-      emailNotifications: _emailNotifications,
       pushNotifications: _pushNotifications,
+      pushEnabled: _pushEnabled,
       transactionAlerts: _transactionAlerts,
       budgetAlerts: _budgetAlerts,
       goalReminders: _goalReminders,
       securityAlerts: _securityAlerts,
+      savingsTips: _savingsTips,
+      spendingInsights: _spendingInsights,
       weeklyReports: _weeklyReports,
       monthlyReports: _monthlyReports,
     );
+    final body = settings.toJson();
 
     showDialog(
       context: context,
@@ -528,6 +557,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
 
     try {
+      print('🔁 Sending notification settings');
       await _service.updateSettings(settings);
       Navigator.of(context).pop(); // close loading
       SuccessNotificationDialog.show(
