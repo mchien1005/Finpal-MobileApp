@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/category_icon_helper.dart';
 import '../../../../data/models/category.dart';
-import '../../../../data/services/transaction_service.dart';
+import '../../../../data/services/category_cache_service.dart';
 
 /// Widget hiển thị grid các danh mục ngân sách để chọn
 class BudgetCategoryGrid extends StatefulWidget {
@@ -27,13 +27,11 @@ class BudgetCategoryGrid extends StatefulWidget {
 }
 
 class _BudgetCategoryGridState extends State<BudgetCategoryGrid> {
-  final _transactionService = TransactionService();
+  // Sử dụng CategoryCacheService tập trung
+  final _categoryCacheService = CategoryCacheService.instance;
 
   List<Category> _categories = [];
   bool _isLoading = true;
-
-  // Cache static để lưu categories, chia sẻ giữa tất cả instances
-  static List<Category>? _cachedCategories;
 
   @override
   void initState() {
@@ -41,29 +39,16 @@ class _BudgetCategoryGridState extends State<BudgetCategoryGrid> {
     _loadCategories();
   }
 
-  /// Tải danh mục chi tiêu từ API (sử dụng cache nếu đã có)
+  /// Tải danh mục chi tiêu từ cache service
   Future<void> _loadCategories() async {
-    // Kiểm tra cache trước - nếu đã có thì dùng luôn
-    if (_cachedCategories != null && _cachedCategories!.isNotEmpty) {
-      setState(() {
-        _categories = _cachedCategories!;
-        _isLoading = false;
-      });
-      return; // Không cần gọi API
-    }
-
     setState(() {
       _isLoading = true;
     });
 
     try {
       // Ngân sách chỉ áp dụng cho chi tiêu (EXPENSE)
-      final categories = await _transactionService.getCategories(
-        type: 'EXPENSE',
-      );
-
-      // Lưu vào cache static
-      _cachedCategories = categories;
+      // Sử dụng cache service - nếu đã được preload thì lấy từ cache
+      final categories = await _categoryCacheService.getCategories('EXPENSE');
 
       setState(() {
         _categories = categories;
@@ -82,11 +67,6 @@ class _BudgetCategoryGridState extends State<BudgetCategoryGrid> {
         );
       }
     }
-  }
-
-  /// Xóa cache (gọi khi cần refresh dữ liệu)
-  static void clearCache() {
-    _cachedCategories = null;
   }
 
   @override

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/confirmation_dialog.dart';
-import '../../../core/widgets/success_notification_dialog.dart';
+import '../../../data/models/category.dart';
+import '../../../data/services/category_cache_service.dart';
+
 class EditTransactionDialog extends StatefulWidget {
   final String title;
   final String amount;
@@ -16,7 +17,8 @@ class EditTransactionDialog extends StatefulWidget {
     required String category,
     required String description,
     required DateTime date,
-  }) onSave;
+  })
+  onSave;
   final VoidCallback onCancel;
 
   const EditTransactionDialog({
@@ -43,77 +45,76 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
   String? _selectedCategory;
   DateTime? _selectedDate;
 
+  final CategoryCacheService _categoryCacheService =
+      CategoryCacheService.instance;
+  List<Category> _categories = [];
+  bool _isLoadingCategories = false;
+
   final List<String> _sources = [
     'VCB',
     'Techcombank',
     'ACB',
     'Tiền mặt',
+    'Ngân hàng',
   ];
-
-  final Map<String, Map<String, dynamic>> _categories = {
-    'Ăn uống': {
-      'icon': Icons.coffee,
-      'color': const Color(0xFFFF6B9D),
-    },
-    'Di chuyển': {
-      'icon': Icons.directions_car,
-      'color': const Color(0xFFFF4444),
-    },
-    'Mua sắm': {
-      'icon': Icons.shopping_bag,
-      'color': const Color(0xFF4D96FF),
-    },
-    'Giải trí': {
-      'icon': Icons.music_note,
-      'color': const Color(0xFFB660E0),
-    },
-    'Hóa đơn': {
-      'icon': Icons.receipt_long,
-      'color': const Color(0xFF9CA3AF),
-    },
-    'Sức khỏe': {
-      'icon': Icons.favorite,
-      'color': const Color(0xFFFF6B9D),
-    },
-    'Học tập': {
-      'icon': Icons.school,
-      'color': const Color(0xFF00D9A3),
-    },
-    'Khác': {
-      'icon': Icons.more_horiz,
-      'color': const Color(0xFFFF6B9D),
-    },
-    'Lương': {
-      'icon': Icons.account_balance_wallet,
-      'color': const Color(0xFF00D9A3),
-    },
-  };
 
   @override
   void initState() {
     super.initState();
-    // Parse amount (remove đ and commas)
-    String cleanAmount = widget.amount
-        .replaceAll('đ', '')
-        .replaceAll('.', '')
-        .replaceAll('+', '')
-        .replaceAll('-', '')
-        .trim();
-    _amountController = TextEditingController(text: cleanAmount);
+    _amountController = TextEditingController(
+      text: widget.amount.toInt().toString(),
+    );
     _descriptionController = TextEditingController(text: widget.title);
-    _selectedSource = widget.account;
+
+    // Add account to sources list if not exists
+    if (widget.account.isNotEmpty && !_sources.contains(widget.account)) {
+      _sources.add(widget.account);
+    }
+    _selectedSource = widget.account.isNotEmpty ? widget.account : null;
+
     _selectedCategory = widget.category;
     
     // Parse date from "11-13 09:00" format
     try {
-      final parts = widget.date.split(' ');
-      final dateParts = parts[0].split('-');
-      final month = int.parse(dateParts[0]);
-      final day = int.parse(dateParts[1]);
-      _selectedDate = DateTime(2025, month, day);
-      _dateController = TextEditingController(
-        text: DateFormat('dd/MM/yyyy').format(_selectedDate!),
+      // Sử dụng cache service - lấy từ cache nếu đã có
+      final categories = await _categoryCacheService.getCategories(
+        widget.isIncome ? 'INCOME' : 'EXPENSE',
       );
+      if (mounted) {
+        setState(() {
+          _categories = categories;
+          _isLoadingCategories = false;
+
+          // Check if selected category exists in loaded categories by ID or Name
+          if (_selectedCategoryId != null) {
+            final categoryExists = _categories.any(
+              (c) => c.id == _selectedCategoryId,
+            );
+            if (!categoryExists && _selectedCategory != null) {
+              // Try to find by name if ID doesn't match
+              final matchByName = _categories.cast<Category?>().firstWhere(
+                (c) =>
+                    c?.name.toLowerCase() == _selectedCategory?.toLowerCase(),
+                orElse: () => null,
+              );
+              if (matchByName != null) {
+                _selectedCategoryId = matchByName.id;
+                _selectedCategory = matchByName.name;
+              }
+            }
+          } else if (_selectedCategory != null &&
+              _selectedCategory!.isNotEmpty) {
+            final matchByName = _categories.cast<Category?>().firstWhere(
+              (c) => c?.name.toLowerCase() == _selectedCategory?.toLowerCase(),
+              orElse: () => null,
+            );
+            if (matchByName != null) {
+              _selectedCategoryId = matchByName.id;
+              _selectedCategory = matchByName.name;
+            }
+          }
+        });
+      }
     } catch (e) {
       _selectedDate = DateTime.now();
       _dateController = TextEditingController(
@@ -128,6 +129,89 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
     _descriptionController.dispose();
     _dateController.dispose();
     super.dispose();
+  }
+
+  IconData _getCategoryIcon(String? iconName, String categoryName) {
+    // Priority 1: Use icon name if available
+    if (iconName != null && iconName.isNotEmpty) {
+      switch (iconName.toLowerCase()) {
+        case 'restaurant':
+        case 'food':
+          return Icons.restaurant;
+        case 'car':
+        case 'transport':
+        case 'directions_car':
+          return Icons.directions_car;
+        case 'shopping':
+        case 'shopping_bag':
+          return Icons.shopping_bag;
+        case 'movie':
+        case 'entertainment':
+          return Icons.movie;
+        case 'health':
+        case 'medical':
+          return Icons.medical_services;
+        case 'education':
+        case 'school':
+          return Icons.school;
+        case 'bill':
+        case 'receipt':
+          return Icons.receipt_long;
+        case 'salary':
+        case 'wallet':
+          return Icons.account_balance_wallet;
+        case 'gift':
+          return Icons.card_giftcard;
+        case 'investment':
+          return Icons.trending_up;
+        case 'business':
+          return Icons.business;
+      }
+    }
+
+    // Priority 2: Fallback to category name matching (Vietnamese)
+    switch (categoryName.toLowerCase()) {
+      case 'ăn uống':
+        return Icons.restaurant;
+      case 'di chuyển':
+        return Icons.directions_car;
+      case 'mua sắm':
+        return Icons.shopping_bag;
+      case 'giải trí':
+        return Icons.movie;
+      case 'y tế':
+        return Icons.medical_services;
+      case 'học tập':
+        return Icons.school;
+      case 'hóa đơn':
+        return Icons.receipt_long;
+      case 'lương':
+        return Icons.account_balance_wallet;
+      case 'thưởng':
+        return Icons.card_giftcard;
+      case 'đầu tư':
+        return Icons.trending_up;
+      case 'kinh doanh':
+        return Icons.business;
+      default:
+        return Icons.category;
+    }
+  }
+
+  Color _getCategoryColor(String? colorHex) {
+    if (colorHex == null || colorHex.isEmpty) {
+      return const Color(0xFF9CA3AF);
+    }
+
+    try {
+      String hex = colorHex.replaceAll('#', '');
+      if (hex.length == 6) {
+        hex = 'FF$hex';
+      }
+      return Color(int.parse(hex, radix: 16));
+    } catch (e) {
+      return const Color(0xFF9CA3AF);
+    }
   }
 
   Future<void> _selectDate() async {
@@ -156,8 +240,11 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
   }
 
   void _handleSave() {
-    // Validate required fields
-    if (_amountController.text.trim().isEmpty) {
+    final amountText = _amountController.text
+        .trim()
+        .replaceAll(',', '')
+        .replaceAll('.', '');
+    if (amountText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Vui lòng nhập số tiền'),
@@ -256,371 +343,376 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
                   ),
                 ),
                 const SizedBox(height: 24),
-            
-            // Số tiền field
-            const Text(
-              'Số tiền (VNĐ)',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _amountController,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 14,
-              ),
-              decoration: InputDecoration(
-                hintText: '55000',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF9CA3AF),
-                  fontSize: 14,
-                ),
-                suffixText: 'đ',
-                suffixStyle: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF3F3F5),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD1D5DB),
-                    width: 1,
+
+                const Text(
+                  'Số tiền (VNĐ)',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
                   ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD1D5DB),
-                    width: 1,
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _amountController,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
                   ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD91656),
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            // Nguồn giao dịch dropdown
-            const Text(
-              'Nguồn giao dịch',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: _selectedSource,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 14,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Chọn nguồn',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF9CA3AF),
-                  fontSize: 14,
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF3F3F5),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD1D5DB),
-                    width: 1,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD1D5DB),
-                    width: 1,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD91656),
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-              ),
-              items: _sources.map((source) {
-                return DropdownMenuItem(
-                  value: source,
-                  child: Text(source),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedSource = value;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            
-            // Danh mục dropdown
-            const Text(
-              'Danh mục',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: _selectedCategory,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 14,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Chọn danh mục',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF9CA3AF),
-                  fontSize: 14,
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF3F3F5),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD1D5DB),
-                    width: 1,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD1D5DB),
-                    width: 1,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD91656),
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-              ),
-              items: _categories.keys.map((category) {
-                final categoryData = _categories[category]!;
-                return DropdownMenuItem(
-                  value: category,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        categoryData['icon'] as IconData,
-                        size: 20,
-                        color: categoryData['color'] as Color,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(category),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedCategory = value;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            
-            // Mô tả field
-            const Text(
-              'Mô tả',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _descriptionController,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 14,
-              ),
-              decoration: InputDecoration(
-                hintText: 'GRAB',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF9CA3AF),
-                  fontSize: 14,
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF3F3F5),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD1D5DB),
-                    width: 1,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD1D5DB),
-                    width: 1,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD91656),
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            // Ngày giao dịch field
-            const Text(
-              'Ngày giao dịch',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _dateController,
-              readOnly: true,
-              onTap: _selectDate,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 14,
-              ),
-              decoration: InputDecoration(
-                hintText: '13/12/2025',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF9CA3AF),
-                  fontSize: 14,
-                ),
-                suffixIcon: const Icon(
-                  Icons.calendar_today,
-                  size: 20,
-                  color: Color(0xFF6B7280),
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF3F3F5),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD1D5DB),
-                    width: 1,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD1D5DB),
-                    width: 1,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFD91656),
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Action buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: widget.onCancel,
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: const BorderSide(
+                  decoration: InputDecoration(
+                    hintText: '55000',
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF9CA3AF),
+                      fontSize: 14,
+                    ),
+                    suffixText: 'đ',
+                    suffixStyle: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF3F3F5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
                         color: Color(0xFFD1D5DB),
                         width: 1,
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD1D5DB),
+                        width: 1,
                       ),
                     ),
-                    child: const Text(
-                      'Hủy',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD91656),
+                        width: 2,
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _handleSave,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD91656),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'Lưu thay đổi',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
                     ),
                   ),
                 ),
-              ],
-            ),
+                const SizedBox(height: 16),
+
+                const Text(
+                  'Nguồn giao dịch',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: _selectedSource,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Chọn nguồn',
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF9CA3AF),
+                      fontSize: 14,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF3F3F5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD1D5DB),
+                        width: 1,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD1D5DB),
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD91656),
+                        width: 2,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                  ),
+                  items: _sources.map((source) {
+                    return DropdownMenuItem(value: source, child: Text(source));
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedSource = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                const Text(
+                  'Danh mục',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _isLoadingCategories
+                    ? const Center(child: CircularProgressIndicator())
+                    : DropdownButtonFormField<String>(
+                        value:
+                            _categories.any((c) => c.name == _selectedCategory)
+                            ? _selectedCategory
+                            : null,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Chọn danh mục',
+                          hintStyle: const TextStyle(
+                            color: Color(0xFF9CA3AF),
+                            fontSize: 14,
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF3F3F5),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFD1D5DB),
+                              width: 1,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFD1D5DB),
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFD91656),
+                              width: 2,
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                        ),
+                        items: _categories.map((category) {
+                          return DropdownMenuItem(
+                            value: category.name,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _getCategoryIcon(
+                                    category.icon,
+                                    category.name,
+                                  ),
+                                  size: 20,
+                                  color: _getCategoryColor(category.color),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(category.name),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            final category = _categories.firstWhere(
+                              (c) => c.name == value,
+                              orElse: () => _categories.first,
+                            );
+                            setState(() {
+                              _selectedCategory = value;
+                              _selectedCategoryId = category.id;
+                            });
+                          }
+                        },
+                      ),
+                const SizedBox(height: 16),
+
+                const Text(
+                  'Mô tả',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _descriptionController,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Mô tả giao dịch',
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF9CA3AF),
+                      fontSize: 14,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF3F3F5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD1D5DB),
+                        width: 1,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD1D5DB),
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD91656),
+                        width: 2,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                const Text(
+                  'Ngày giao dịch',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _dateController,
+                  readOnly: true,
+                  onTap: _selectDate,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'dd/mm/yyyy',
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF9CA3AF),
+                      fontSize: 14,
+                    ),
+                    suffixIcon: const Icon(
+                      Icons.calendar_today,
+                      size: 20,
+                      color: Color(0xFF6B7280),
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF3F3F5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD1D5DB),
+                        width: 1,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD1D5DB),
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD91656),
+                        width: 2,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: widget.onCancel,
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: const BorderSide(
+                            color: Color(0xFFD1D5DB),
+                            width: 1,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'Hủy',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _handleSave,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD91656),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Lưu thay đổi',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

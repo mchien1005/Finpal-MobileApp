@@ -4,7 +4,7 @@ import '../../../../core/utils/category_icon_helper.dart';
 import '../../../../data/models/category.dart';
 import '../../../../data/models/budget_model.dart';
 import '../../../../data/services/budget_service.dart';
-import '../../../../data/services/transaction_service.dart';
+import '../../../../data/services/category_cache_service.dart';
 import '../../../../core/widgets/success_notification_dialog.dart';
 
 /// Widget form tạo/sửa ngân sách
@@ -44,7 +44,7 @@ class _BudgetFormState extends State<BudgetForm> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
-  final _transactionService = TransactionService();
+  final _categoryCacheService = CategoryCacheService.instance;
 
   String? _selectedPeriod;
   DateTime? _startDate;
@@ -105,9 +105,8 @@ class _BudgetFormState extends State<BudgetForm> {
     });
 
     try {
-      final categories = await _transactionService.getCategories(
-        type: 'EXPENSE',
-      );
+      // Sử dụng cache service - lấy từ cache nếu đã có
+      final categories = await _categoryCacheService.getCategories('EXPENSE');
       setState(() {
         _categories = categories;
         _isLoadingCategories = false;
