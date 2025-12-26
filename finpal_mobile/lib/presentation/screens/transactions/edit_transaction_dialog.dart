@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/category_icon_helper.dart';
 import '../../../data/models/category.dart';
 import '../../../data/services/category_cache_service.dart';
 
@@ -549,13 +550,10 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  _getCategoryIcon(
-                                    category.icon,
-                                    category.name,
-                                  ),
+                                CategoryIconHelper.emojiWidgetWithFallback(
+                                  category.icon,
+                                  category.name,
                                   size: 20,
-                                  color: _getCategoryColor(category.color),
                                 ),
                                 const SizedBox(width: 12),
                                 Text(category.name),

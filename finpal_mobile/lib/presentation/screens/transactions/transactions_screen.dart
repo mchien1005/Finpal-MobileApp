@@ -6,6 +6,7 @@ import '../../../core/utils/bottom_nav_helper.dart';
 import '../../../core/utils/app_bar_with_drawer.dart';
 import '../../../core/widgets/success_notification_dialog.dart';
 import '../../../core/widgets/confirmation_dialog.dart';
+import '../../../core/utils/category_icon_helper.dart';
 import '../../../data/models/transaction.dart';
 import '../../../data/services/transaction_service.dart';
 import '../../../data/services/notification_service.dart';
@@ -372,38 +373,14 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     return widgets;
   }
 
-  IconData _getCategoryIcon(String? categoryName) {
-    if (categoryName == null) return Icons.receipt;
-    switch (categoryName.toLowerCase()) {
-      case 'ăn uống':
-        return Icons.restaurant;
-      case 'di chuyển':
-        return Icons.directions_car;
-      case 'mua sắm':
-        return Icons.shopping_bag;
-      case 'giải trí':
-        return Icons.movie;
-      case 'y tế':
-        return Icons.medical_services;
-      case 'học tập':
-        return Icons.school;
-      case 'hóa đơn':
-        return Icons.receipt_long;
-      case 'lương':
-        return Icons.account_balance_wallet;
-      case 'thưởng':
-        return Icons.card_giftcard;
-      case 'đầu tư':
-        return Icons.trending_up;
-      case 'kinh doanh':
-        return Icons.business;
-      default:
-        return Icons.receipt;
-    }
-  }
+  
 
   Widget _buildTransactionItem(Transaction transaction) {
-    final icon = _getCategoryIcon(transaction.category?.name);
+    final Widget iconWidget = CategoryIconHelper.emojiWidgetWithFallback(
+      transaction.category?.icon,
+      transaction.category?.name,
+      size: 20,
+    );
     final iconBg = transaction.isIncome
         ? const Color(0xFFDCFCE7)
         : const Color(0xFFFFE2E2);
@@ -436,11 +413,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                   color: iconBg,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: isIncome ? Colors.green : Colors.red,
-                ),
+                child: Center(child: iconWidget),
               ),
               const SizedBox(width: 12),
               Expanded(
