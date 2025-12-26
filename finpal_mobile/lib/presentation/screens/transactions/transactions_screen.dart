@@ -7,6 +7,8 @@ import '../../../core/utils/app_bar_with_drawer.dart';
 import '../../../core/widgets/success_notification_dialog.dart';
 import '../../../core/widgets/confirmation_dialog.dart';
 import '../../../core/utils/category_icon_helper.dart';
+import 'dart:async';
+import '../../../core/services/transaction_event_bus.dart';
 import '../../../data/models/transaction.dart';
 import '../../../data/services/transaction_service.dart';
 import '../../../data/services/notification_service.dart';
@@ -25,6 +27,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   late TabController _tabController;
   final TransactionService _transactionService = TransactionService();
   final NotificationService _notificationService = NotificationService();
+  late final StreamSubscription<void> _eventSub;
 
   // Transaction data
   List<Transaction> _transactions = [];
@@ -45,6 +48,38 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     });
     _loadTransactions();
     _loadUnreadNotificationCount();
+    _eventSub = TransactionEventBus.instance.onUpdated.listen((transactionId) async {
+      if (!mounted) return;
+
+      // Reload transactions from server
+      await _loadTransactions();
+
+      if (!mounted) return;
+
+      // If an updated transaction id was provided, ensure it appears at the top
+      if (transactionId != null) {
+        final idx = _transactions.indexWhere((t) => t.id == transactionId);
+        if (idx > 0) {
+          setState(() {
+            final updatedTx = _transactions.removeAt(idx);
+            _transactions.insert(0, updatedTx);
+          });
+        } else if (idx == -1) {
+          // Item not found in the loaded page — fetch it individually and insert
+          try {
+            final resp = await _transactionService.getTransactionById(transactionId);
+            final tx = Transaction.fromJson(resp);
+            if (mounted) {
+              setState(() {
+                _transactions.insert(0, tx);
+              });
+            }
+          } catch (_) {
+            // Ignore fetch errors — best effort to show updated item
+          }
+        }
+      }
+    });
   }
 
   /// Load số lượng thông báo chưa đọc
@@ -132,6 +167,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
   @override
   void dispose() {
+    _eventSub.cancel();
     _tabController.dispose();
     super.dispose();
   }
@@ -162,6 +198,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
     try {
       await _transactionService.deleteTransaction(id);
       await _loadTransactions();
+      TransactionEventBus.instance.notifyUpdated(id);
     } catch (e) {
       rethrow;
     }
@@ -583,6 +620,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                                   parentContext,
                                   message: 'Đã cập nhật giao dịch thành công',
                                 );
+                                TransactionEventBus.instance.notifyUpdated(transaction.id);
                               } catch (e) {
                                 if (!mounted) return;
 

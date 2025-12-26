@@ -5,7 +5,12 @@ import '../../../data/services/category_cache_service.dart';
 import '../../../data/models/transaction.dart';
 import '../../../data/models/category.dart';
 import '../../../core/utils/category_icon_helper.dart';
+import 'edit_transaction_dialog.dart';
+import '../../../core/widgets/success_notification_dialog.dart';
+import '../../../core/widgets/confirmation_dialog.dart';
+import 'dart:async';
 import 'package:intl/intl.dart';
+import '../../../core/services/transaction_event_bus.dart';
 
 class SearchTransactionScreen extends StatefulWidget {
   const SearchTransactionScreen({super.key});
@@ -19,6 +24,7 @@ class _SearchTransactionScreenState extends State<SearchTransactionScreen> {
   final TextEditingController _searchController = TextEditingController();
   final TransactionService _service = TransactionService();
   final CategoryCacheService _categoryCache = CategoryCacheService.instance;
+  late final StreamSubscription<void> _eventSub;
   bool _isLoading = false;
   List<Transaction> _results = [];
   String? _error;
@@ -29,6 +35,7 @@ class _SearchTransactionScreenState extends State<SearchTransactionScreen> {
 
   @override
   void dispose() {
+    _eventSub.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -38,6 +45,9 @@ class _SearchTransactionScreenState extends State<SearchTransactionScreen> {
     super.initState();
     // Preload categories so we can map categoryId -> category quickly
     _categoryCache.preloadAllCategories().catchError((_) {});
+    _eventSub = TransactionEventBus.instance.onUpdated.listen((_) {
+      if (mounted) _search(resetPage: true);
+    });
   }
 
   @override
@@ -269,39 +279,234 @@ class _SearchTransactionScreenState extends State<SearchTransactionScreen> {
         : '-${NumberFormat('#,###', 'vi_VN').format(tx.amount)}đ';
     final date = DateFormat('dd/MM/yyyy HH:mm').format(tx.transactionDate);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF3F4F6),
-                    borderRadius: BorderRadius.circular(8),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(child: iconWidget),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            tx.merchant ?? tx.description ?? 'Giao dịch',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text(
+                          tx.category?.name ?? 'Không phân loại',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          '•',
+                          style: TextStyle(fontSize: 12, color: Color(0xFFD1D5DC)),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          tx.transactionSource,
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    amount,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: tx.isIncome ? const Color(0xFF00A63E) : const Color(0xFFE7000B),
+                    ),
                   ),
-                  child: Center(child: iconWidget),
+                  const SizedBox(height: 4),
+                  Text(
+                    date,
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _handleEdit(tx),
+                  icon: const Icon(Icons.edit, size: 16),
+                  label: const Text('Sửa'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textPrimary,
+                    side: const BorderSide(color: Color(0xFFFFD230), width: 1.12),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(tx.merchant ?? tx.description ?? 'Giao dịch',
-                      style: const TextStyle(fontSize: 16)),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => ConfirmationDialog.show(
+                    context,
+                    title: 'Xóa giao dịch',
+                    message: 'Bạn có chắc chắn muốn xóa không? \nHành động này không thể hoàn tác.',
+                    confirmText: 'Xóa',
+                    cancelText: 'Hủy',
+                    confirmColor: const Color(0xFFD7006E),
+                    onConfirm: () async {
+                      try {
+                        await _service.deleteTransaction(tx.id);
+                        if (mounted) {
+                          SuccessNotificationDialog.show(context, message: 'Đã xóa giao dịch thành công');
+                          _search(resetPage: true);
+                          TransactionEventBus.instance.notifyUpdated(tx.id);
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}'), backgroundColor: Colors.red));
+                        }
+                      }
+                    },
+                  ),
+                  icon: const Icon(Icons.delete, size: 16),
+                  label: const Text('Xóa'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textPrimary,
+                    backgroundColor: const Color(0xFFFFFAFA),
+                    side: const BorderSide(color: Color(0xFFE7000B), width: 1.12),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
                 ),
-                Text(amount, style: const TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text('Danh mục: ${tx.category?.name ?? 'Không phân loại'}'),
-            Text('Nguồn: ${tx.transactionSource}'),
-            Text('Ngày: $date'),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
+
+  Future<void> _handleEdit(Transaction tx) async {
+    final parentContext = context;
+
+    await showDialog(
+      context: parentContext,
+      barrierDismissible: false,
+      builder: (dialogContext) => EditTransactionDialog(
+        title: tx.description ?? tx.merchant ?? 'Sửa giao dịch',
+        amount: tx.amount,
+        category: tx.category?.name ?? '',
+        categoryId: tx.categoryId,
+        account: tx.transactionSource,
+        date: tx.transactionDate,
+        isIncome: tx.isIncome,
+        onSave: ({required double amount, required String source, required String category, required int? categoryId, required String description, required DateTime date}) async {
+          Navigator.of(dialogContext).pop();
+
+          showDialog(
+            context: parentContext,
+            barrierDismissible: false,
+            builder: (_) => const Center(child: CircularProgressIndicator()),
+          );
+
+          try {
+            await _service.updateTransaction(
+              id: tx.id,
+              type: tx.type,
+              amount: amount,
+              transactionSource: source,
+              categoryId: categoryId,
+              description: description,
+              transactionDate: date,
+            );
+
+            await _search(resetPage: true);
+
+            if (!mounted) return;
+
+            Navigator.of(parentContext).pop(); // close loading
+
+            SuccessNotificationDialog.show(
+              parentContext,
+              message: 'Đã cập nhật giao dịch thành công',
+            );
+
+            TransactionEventBus.instance.notifyUpdated(tx.id);
+          } catch (e) {
+            if (!mounted) return;
+            Navigator.of(parentContext).pop();
+            ScaffoldMessenger.of(parentContext).showSnackBar(
+              SnackBar(content: Text('Lỗi khi cập nhật: ${e.toString()}')),
+            );
+          }
+        },
+        onCancel: () => Navigator.of(dialogContext).pop(),
+      ),
+    );
+  }
+
+  Future<void> _handleDelete(Transaction tx) async {
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (c) => AlertDialog(
+            title: const Text('Xác nhận'),
+            content: const Text('Bạn có chắc muốn xóa giao dịch này?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(c).pop(false), child: const Text('Hủy')),
+              TextButton(onPressed: () => Navigator.of(c).pop(true), child: const Text('Xóa')),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed) return;
+
+    try {
+      await _service.deleteTransaction(tx.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã xóa giao dịch')));
+          await _search(resetPage: true);
+          TransactionEventBus.instance.notifyUpdated(tx.id);
+        }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi khi xóa: ${e.toString()}')));
+      }
+    }
+  }
+
 }
