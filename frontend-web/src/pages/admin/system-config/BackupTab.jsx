@@ -1,49 +1,30 @@
-import React, { useState } from 'react';
-import { Button, Select, message } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Button, Select, message, Modal, Upload } from 'antd';
 import {
   CloudDownloadOutlined,
   DatabaseOutlined,
   DatabaseTwoTone,
+  UploadOutlined,
+  ExclamationCircleOutlined,
 } from '@ant-design/icons';
+import {
+  getBackupHistory,
+  createBackup,
+  restoreBackup,
+  deleteBackup,
+  downloadBackupUrl,
+  getBackupStatistics,
+  cleanupBackup,
+} from '../../../services/backupService';
 
-// Mock data for backup history
-const mockBackupHistory = [
-  {
-    id: 1,
-    date: '24/03/2024 02:00 AM',
-    type: 'auto',
-    size: '2.3 GB',
-    status: 'success',
-  },
-  {
-    id: 2,
-    date: '23/03/2024 02:00 AM',
-    type: 'auto',
-    size: '2.2 GB',
-    status: 'success',
-  },
-  {
-    id: 3,
-    date: '22/03/2024 02:00 AM',
-    type: 'auto',
-    size: '2.1 GB',
-    status: 'success',
-  },
-  {
-    id: 4,
-    date: '21/03/2024 14:30 PM',
-    type: 'manual',
-    size: '2.1 GB',
-    status: 'success',
-  },
-];
-
+// Tùy chọn tần suất backup
 const frequencyOptions = [
   { value: 'daily', label: 'Hàng ngày lúc 2:00 sáng' },
   { value: 'weekly', label: 'Hàng tuần vào Chủ nhật' },
   { value: 'monthly', label: 'Hàng tháng vào ngày 1' },
 ];
 
+// Tùy chọn thời gian lưu trữ
 const retentionOptions = [
   { value: 7, label: '7 ngày' },
   { value: 30, label: '30 ngày' },
@@ -51,69 +32,264 @@ const retentionOptions = [
   { value: 365, label: '1 năm' },
 ];
 
+// Hàm format file size
+const formatFileSize = (bytes) => {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+// Hàm format ngày giờ
+const formatDateTime = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('vi-VN') + ' ' + date.toLocaleTimeString('vi-VN', { 
+    hour: '2-digit', 
+    minute: '2-digit', 
+    hour12: true 
+  });
+};
+
 const BackupTab = () => {
   const [frequency, setFrequency] = useState('daily');
   const [retention, setRetention] = useState(30);
-  const [backupHistory, setBackupHistory] = useState(mockBackupHistory);
+  const [backupHistory, setBackupHistory] = useState([]);
   const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  // eslint-disable-next-line no-unused-vars
+  const [isRestoring, setIsRestoring] = useState(false);
+  // eslint-disable-next-line no-unused-vars
+  const [statistics, setStatistics] = useState(null);
 
-  // Handle frequency change
+  // Load dữ liệu khi component mount
+  useEffect(() => {
+    loadBackupData();
+  }, []);
+
+  // Hàm load dữ liệu backup
+  const loadBackupData = async () => {
+    setIsLoading(true);
+    try {
+      // Load lịch sử backup
+      const historyData = await getBackupHistory();
+      // Đảm bảo historyData luôn là mảng (API có thể trả về object chứa mảng)
+      let backups = [];
+      if (Array.isArray(historyData)) {
+        backups = historyData;
+      } else if (historyData && Array.isArray(historyData.data)) {
+        backups = historyData.data;
+      } else if (historyData && Array.isArray(historyData.backups)) {
+        backups = historyData.backups;
+      } else if (historyData && Array.isArray(historyData.content)) {
+        backups = historyData.content;
+      }
+      setBackupHistory(backups);
+
+      // Load thống kê backup
+      try {
+        const statsData = await getBackupStatistics();
+        setStatistics(statsData);
+      } catch (err) {
+        console.log('Không thể tải thống kê backup:', err);
+      }
+    } catch (error) {
+      console.error('Lỗi khi tải dữ liệu backup:', error);
+      message.error('Không thể tải lịch sử backup');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Xử lý thay đổi tần suất
   const handleFrequencyChange = (value) => {
     setFrequency(value);
     message.success('Đã cập nhật lịch sao lưu');
   };
 
-  // Handle retention change
+  // Xử lý thay đổi thời gian lưu trữ
   const handleRetentionChange = (value) => {
     setRetention(value);
     message.success('Đã cập nhật thời gian lưu trữ');
   };
 
-  // Handle schedule update
+  // Xử lý cập nhật lịch
   const handleUpdateSchedule = () => {
     message.success('Đã cập nhật lịch backup');
   };
 
-  // Handle database backup
+  // Xử lý tạo backup database
   const handleBackupDatabase = async () => {
     setIsBackingUp(true);
-    message.loading('Đang sao lưu cơ sở dữ liệu...');
-    setTimeout(() => {
-      const now = new Date();
-      const newBackup = {
-        id: Date.now(),
-        date: now.toLocaleDateString('vi-VN') + ' ' + now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: true }),
-        type: 'manual',
-        size: '2.4 GB',
-        status: 'success',
-      };
-      setBackupHistory([newBackup, ...backupHistory]);
-      setIsBackingUp(false);
+    const hideLoading = message.loading('Đang sao lưu cơ sở dữ liệu...', 0);
+    
+    try {
+      await createBackup();
+      hideLoading();
       message.success('Sao lưu cơ sở dữ liệu thành công!');
-    }, 2000);
+      // Reload lại danh sách backup
+      await loadBackupData();
+    } catch (error) {
+      hideLoading();
+      console.error('Lỗi khi tạo backup:', error);
+      message.error(error.response?.data?.message || 'Không thể tạo backup. Vui lòng thử lại.');
+    } finally {
+      setIsBackingUp(false);
+    }
   };
 
-  // Handle restore from backup
+  // Xử lý khôi phục từ backup (upload file)
   const handleRestoreFromBackup = () => {
-    message.info('Chọn file backup để khôi phục...');
+    // Mở modal để chọn file backup
+    Modal.confirm({
+      title: 'Khôi phục từ file Backup',
+      icon: <ExclamationCircleOutlined />,
+      content: (
+        <div>
+          <p>Bạn có chắc chắn muốn khôi phục database từ file backup?</p>
+          <p style={{ color: '#ff4d4f' }}>
+            <strong>Cảnh báo:</strong> Việc này sẽ ghi đè toàn bộ dữ liệu hiện tại!
+          </p>
+        </div>
+      ),
+      okText: 'Tiếp tục',
+      cancelText: 'Hủy',
+      onOk: () => {
+        message.info('Chức năng upload file backup đang được phát triển');
+      },
+    });
   };
 
-  // Handle export data
-  const handleExportData = () => {
-    message.success('Đang xuất toàn bộ dữ liệu (CSV/JSON)...');
+  // Xử lý xuất dữ liệu
+  const handleExportData = async () => {
+    message.info('Đang xuất toàn bộ dữ liệu...');
+    // TODO: Implement export data functionality
   };
 
-  // Handle download backup
+  // Xử lý tải xuống backup
   const handleDownload = (backup) => {
-    message.info(`Đang tải xuống backup ${backup.date}...`);
+    const downloadUrl = downloadBackupUrl(backup.id);
+    const token = localStorage.getItem('token');
+    
+    // Hiển thị thông báo đang tải
+    const hideLoading = message.loading('Đang tải xuống backup...', 0);
+    
+    // Sử dụng fetch để tải với authentication
+    fetch(downloadUrl, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Không thể tải file');
+      
+      // Lấy tên file từ Content-Disposition header hoặc từ backup.fileName
+      let fileName = backup.fileName || `backup_${backup.id}.sql`;
+      const contentDisposition = response.headers.get('Content-Disposition');
+      if (contentDisposition) {
+        const matches = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (matches && matches[1]) {
+          fileName = matches[1].replace(/['"]/g, '');
+        }
+      }
+      
+      return response.blob().then(blob => ({ blob, fileName }));
+    })
+    .then(({ blob, fileName }) => {
+      hideLoading();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      message.success('Đã tải xuống backup thành công!');
+    })
+    .catch(error => {
+      hideLoading();
+      console.error('Lỗi tải backup:', error);
+      message.error('Không thể tải xuống backup');
+    });
   };
 
-  // Handle restore backup
+  // Xử lý khôi phục backup
   const handleRestore = (backup) => {
-    message.loading(`Đang khôi phục từ backup ${backup.date}...`);
-    setTimeout(() => {
-      message.success('Khôi phục thành công!');
-    }, 2000);
+    Modal.confirm({
+      title: 'Xác nhận Khôi phục',
+      icon: <ExclamationCircleOutlined />,
+      content: (
+        <div>
+          <p>Bạn có chắc chắn muốn khôi phục từ backup ngày <strong>{formatDateTime(backup.createdAt) || backup.date}</strong>?</p>
+          <p style={{ color: '#ff4d4f' }}>
+            <strong>Cảnh báo:</strong> Việc này sẽ ghi đè toàn bộ dữ liệu hiện tại!
+          </p>
+        </div>
+      ),
+      okText: 'Khôi phục',
+      okButtonProps: { danger: true },
+      cancelText: 'Hủy',
+      onOk: async () => {
+        setIsRestoring(true);
+        const hideLoading = message.loading('Đang khôi phục database...', 0);
+        
+        try {
+          await restoreBackup({ backupId: backup.id });
+          hideLoading();
+          message.success('Khôi phục database thành công!');
+          await loadBackupData();
+        } catch (error) {
+          hideLoading();
+          console.error('Lỗi khôi phục:', error);
+          message.error(error.response?.data?.message || 'Không thể khôi phục. Vui lòng thử lại.');
+        } finally {
+          setIsRestoring(false);
+        }
+      },
+    });
+  };
+
+  // Xử lý xóa backup
+  const handleDelete = (backup) => {
+    Modal.confirm({
+      title: 'Xác nhận Xóa',
+      icon: <ExclamationCircleOutlined />,
+      content: `Bạn có chắc chắn muốn xóa backup ngày ${formatDateTime(backup.createdAt) || backup.date}?`,
+      okText: 'Xóa',
+      okButtonProps: { danger: true },
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await deleteBackup(backup.id);
+          message.success('Đã xóa backup thành công!');
+          await loadBackupData();
+        } catch (error) {
+          console.error('Lỗi xóa backup:', error);
+          message.error(error.response?.data?.message || 'Không thể xóa backup');
+        }
+      },
+    });
+  };
+
+  // Xử lý dọn dẹp backup cũ
+  const handleCleanup = async () => {
+    Modal.confirm({
+      title: 'Dọn dẹp Backup cũ',
+      icon: <ExclamationCircleOutlined />,
+      content: 'Bạn có chắc chắn muốn dọn dẹp các backup cũ? Các backup quá thời gian lưu trữ sẽ bị xóa.',
+      okText: 'Dọn dẹp',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await cleanupBackup();
+          message.success('Đã dọn dẹp backup cũ thành công!');
+          await loadBackupData();
+        } catch (error) {
+          console.error('Lỗi dọn dẹp:', error);
+          message.error(error.response?.data?.message || 'Không thể dọn dẹp backup');
+        }
+      },
+    });
   };
 
   return (
@@ -333,6 +509,9 @@ const BackupTab = () => {
           style={{
             borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
             padding: 24,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
           }}
         >
           <h3
@@ -346,11 +525,38 @@ const BackupTab = () => {
           >
             Lịch sử Sao lưu
           </h3>
+          {/* Nút dọn dẹp backup cũ */}
+          <Button
+            onClick={handleCleanup}
+            style={{
+              borderRadius: 8,
+              height: 32,
+              fontFamily: 'Arimo, sans-serif',
+              fontSize: 14,
+              fontWeight: 400,
+              borderColor: 'rgba(0, 0, 0, 0.1)',
+              color: '#0a0a0a',
+            }}
+          >
+            Dọn dẹp Backup cũ
+          </Button>
         </div>
 
         {/* Backup Items */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {backupHistory.length === 0 ? (
+          {isLoading ? (
+            <div
+              style={{
+                padding: 40,
+                textAlign: 'center',
+                color: '#6a7282',
+                fontFamily: 'Arimo, sans-serif',
+                fontSize: 14,
+              }}
+            >
+              Đang tải dữ liệu...
+            </div>
+          ) : backupHistory.length === 0 ? (
             <div
               style={{
                 padding: 40,
@@ -380,7 +586,7 @@ const BackupTab = () => {
                   {/* Icon Container */}
                   <div
                     style={{
-                      background: '#dbeafe',
+                      background: item.status === 'FAILED' ? '#fee2e2' : '#dbeafe',
                       borderRadius: 10,
                       width: 48,
                       height: 48,
@@ -391,10 +597,10 @@ const BackupTab = () => {
                     }}
                   >
                     <img
-                src="/images/admin/database_big.svg"
-                alt="Database"
-                style={{ width: 24, height: 24}}
-              />
+                      src="/images/admin/database_big.svg"
+                      alt="Database"
+                      style={{ width: 24, height: 24}}
+                    />
                   </div>
 
                   {/* Text Info */}
@@ -408,7 +614,7 @@ const BackupTab = () => {
                         fontFamily: 'Arimo, sans-serif',
                       }}
                     >
-                      {item.date}
+                      {formatDateTime(item.createdAt) || item.date || 'N/A'}
                     </p>
                     <p
                       style={{
@@ -419,7 +625,7 @@ const BackupTab = () => {
                         fontFamily: 'Arimo, sans-serif',
                       }}
                     >
-                      Sao lưu {item.type === 'auto' ? 'Tự động' : 'Thủ công'} • {item.size}
+                      Sao lưu {item.type === 'AUTO' || item.type === 'auto' ? 'Tự động' : 'Thủ công'} • {item.fileSize ? formatFileSize(item.fileSize) : item.size || 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -429,17 +635,17 @@ const BackupTab = () => {
                   {/* Status Badge */}
                   <div
                     style={{
-                      background: '#dcfce7',
+                      background: item.status === 'FAILED' || item.status === 'failed' ? '#fee2e2' : '#dcfce7',
                       border: '1px solid rgba(0, 0, 0, 0)',
                       borderRadius: 8,
                       padding: '4px 10px',
                       fontSize: 12,
-                      color: '#008236',
+                      color: item.status === 'FAILED' || item.status === 'failed' ? '#dc2626' : '#008236',
                       fontFamily: 'Arimo, sans-serif',
                       fontWeight: 400,
                     }}
                   >
-                    Hoàn thành
+                    {item.status === 'FAILED' || item.status === 'failed' ? 'Thất bại' : 'Hoàn thành'}
                   </div>
 
                   {/* Action Buttons */}
@@ -456,12 +662,13 @@ const BackupTab = () => {
                       color: '#0a0a0a',
                       background: '#FFFFFF',
                     }}
+                    disabled={item.status === 'FAILED' || item.status === 'failed'}
                   >
                     <img
-                src="/images/admin/download.svg"
-                alt="Database Backup"
-                style={{ width: 16, height: 16, marginRight: 8 }}
-              />
+                      src="/images/admin/download.svg"
+                      alt="Download Backup"
+                      style={{ width: 16, height: 16, marginRight: 8 }}
+                    />
                     Tải xuống
                   </Button>
 
@@ -478,13 +685,30 @@ const BackupTab = () => {
                       color: '#0a0a0a',
                       background: '#FFFFFF',
                     }}
+                    disabled={item.status === 'FAILED' || item.status === 'failed'}
                   >
                     <img
-                src="/images/admin/restore.svg"
-                alt="Database Backup"
-                style={{ width: 16, height: 16, marginRight: 8 }}
-              />
+                      src="/images/admin/restore.svg"
+                      alt="Restore Backup"
+                      style={{ width: 16, height: 16, marginRight: 8 }}
+                    />
                     Khôi phục
+                  </Button>
+
+                  {/* Nút xóa backup */}
+                  <Button
+                    onClick={() => handleDelete(item)}
+                    danger
+                    style={{
+                      width: 80,
+                      height: 32,
+                      borderRadius: 8,
+                      fontFamily: 'Arimo, sans-serif',
+                      fontSize: 14,
+                      fontWeight: 400,
+                    }}
+                  >
+                    Xóa
                   </Button>
                 </div>
               </div>
