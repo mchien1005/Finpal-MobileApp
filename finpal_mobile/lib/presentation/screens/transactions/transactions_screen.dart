@@ -178,6 +178,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
       child: AppBarWithDrawer.scrollable(
         context,
         notificationCount: _unreadCount,
+        showSearchAction: true,
         customTitle: 'Giao dịch của bạn',
         body: Container(
           decoration: const BoxDecoration(
