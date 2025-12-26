@@ -45,27 +45,60 @@ class _SearchTransactionScreenState extends State<SearchTransactionScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.primary,
-        title: TextField(
-          controller: _searchController,
-          autofocus: true,
-          style: const TextStyle(color: Colors.black87),
-          cursorColor: AppColors.primary,
-          keyboardType: TextInputType.text,
-          onSubmitted: (_) => _search(resetPage: true),
-          decoration: InputDecoration(
-            hintText: 'Tìm giao dịch theo mô tả, ghi chú hoặc danh mục...',
-            hintStyle: TextStyle(color: Colors.grey[600]),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide.none,
-            ),
-            suffixIcon: IconButton(
-              icon: Icon(Icons.search, color: AppColors.primary),
-              onPressed: () => _search(resetPage: true),
-            ),
+        toolbarHeight: 72,
+        title: Container(
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 8),
+              Icon(Icons.search, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  style: const TextStyle(color: Colors.black87),
+                  cursorColor: AppColors.primary,
+                  keyboardType: TextInputType.text,
+                  onChanged: (_) => setState(() {}),
+                  onSubmitted: (_) => _search(resetPage: true),
+                  decoration: InputDecoration(
+                    hintText: 'Tìm giao dịch theo mô tả, ghi chú hoặc danh mục...',
+                    hintStyle: TextStyle(color: Colors.grey[600]),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              if (_searchController.text.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  color: Colors.grey[600],
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {
+                      _results = [];
+                      _error = null;
+                    });
+                  },
+                ),
+              IconButton(
+                icon: Icon(Icons.arrow_forward, color: AppColors.primary),
+                onPressed: () => _search(resetPage: true),
+              ),
+            ],
           ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
