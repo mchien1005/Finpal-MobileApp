@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/category.dart';
-import '../../../data/services/transaction_service.dart';
+import '../../../data/services/category_cache_service.dart';
 
 class EditTransactionDialog extends StatefulWidget {
   final String title;
@@ -19,7 +19,8 @@ class EditTransactionDialog extends StatefulWidget {
     required int? categoryId,
     required String description,
     required DateTime date,
-  }) onSave;
+  })
+  onSave;
   final VoidCallback onCancel;
 
   const EditTransactionDialog({
@@ -48,17 +49,34 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
   int? _selectedCategoryId;
   DateTime? _selectedDate;
 
-  final TransactionService _transactionService = TransactionService();
+  final CategoryCacheService _categoryCacheService =
+      CategoryCacheService.instance;
   List<Category> _categories = [];
   bool _isLoadingCategories = false;
 
-  final List<String> _sources = ['VCB', 'Techcombank', 'ACB', 'Tiền mặt', 'Ngân hàng'];
+  final List<String> _sources = [
+    'VCB',
+    'Techcombank',
+    'ACB',
+    'Tiền mặt',
+    'Ngân hàng',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _amountController = TextEditingController(text: widget.amount.toInt().toString());
+    _amountController = TextEditingController(
+      text: widget.amount.toInt().toString(),
+    );
     _descriptionController = TextEditingController(text: widget.title);
+
+    // Add account to sources list if not exists
+    if (widget.account.isNotEmpty && !_sources.contains(widget.account)) {
+      _sources.add(widget.account);
+    }
+    _selectedSource = widget.account.isNotEmpty ? widget.account : null;
+
+    _selectedCategory = widget.category;
     
     // Add account to sources list if not exists
     if (widget.account.isNotEmpty && !_sources.contains(widget.account)) {
@@ -83,21 +101,25 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
     });
 
     try {
-      final categories = await _transactionService.getCategories(
-        type: widget.isIncome ? 'INCOME' : 'EXPENSE',
+      // Sử dụng cache service - lấy từ cache nếu đã có
+      final categories = await _categoryCacheService.getCategories(
+        widget.isIncome ? 'INCOME' : 'EXPENSE',
       );
       if (mounted) {
         setState(() {
           _categories = categories;
           _isLoadingCategories = false;
-          
+
           // Check if selected category exists in loaded categories by ID or Name
           if (_selectedCategoryId != null) {
-            final categoryExists = _categories.any((c) => c.id == _selectedCategoryId);
+            final categoryExists = _categories.any(
+              (c) => c.id == _selectedCategoryId,
+            );
             if (!categoryExists && _selectedCategory != null) {
               // Try to find by name if ID doesn't match
               final matchByName = _categories.cast<Category?>().firstWhere(
-                (c) => c?.name.toLowerCase() == _selectedCategory?.toLowerCase(),
+                (c) =>
+                    c?.name.toLowerCase() == _selectedCategory?.toLowerCase(),
                 orElse: () => null,
               );
               if (matchByName != null) {
@@ -105,11 +127,12 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
                 _selectedCategory = matchByName.name;
               }
             }
-          } else if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
+          } else if (_selectedCategory != null &&
+              _selectedCategory!.isNotEmpty) {
             final matchByName = _categories.cast<Category?>().firstWhere(
-                (c) => c?.name.toLowerCase() == _selectedCategory?.toLowerCase(),
-                orElse: () => null,
-              );
+              (c) => c?.name.toLowerCase() == _selectedCategory?.toLowerCase(),
+              orElse: () => null,
+            );
             if (matchByName != null) {
               _selectedCategoryId = matchByName.id;
               _selectedCategory = matchByName.name;
@@ -175,18 +198,30 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
 
     // Priority 2: Fallback to category name matching (Vietnamese)
     switch (categoryName.toLowerCase()) {
-      case 'ăn uống': return Icons.restaurant;
-      case 'di chuyển': return Icons.directions_car;
-      case 'mua sắm': return Icons.shopping_bag;
-      case 'giải trí': return Icons.movie;
-      case 'y tế': return Icons.medical_services;
-      case 'học tập': return Icons.school;
-      case 'hóa đơn': return Icons.receipt_long;
-      case 'lương': return Icons.account_balance_wallet;
-      case 'thưởng': return Icons.card_giftcard;
-      case 'đầu tư': return Icons.trending_up;
-      case 'kinh doanh': return Icons.business;
-      default: return Icons.category;
+      case 'ăn uống':
+        return Icons.restaurant;
+      case 'di chuyển':
+        return Icons.directions_car;
+      case 'mua sắm':
+        return Icons.shopping_bag;
+      case 'giải trí':
+        return Icons.movie;
+      case 'y tế':
+        return Icons.medical_services;
+      case 'học tập':
+        return Icons.school;
+      case 'hóa đơn':
+        return Icons.receipt_long;
+      case 'lương':
+        return Icons.account_balance_wallet;
+      case 'thưởng':
+        return Icons.card_giftcard;
+      case 'đầu tư':
+        return Icons.trending_up;
+      case 'kinh doanh':
+        return Icons.business;
+      default:
+        return Icons.category;
     }
   }
 
@@ -230,7 +265,10 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
   }
 
   void _handleSave() {
-    final amountText = _amountController.text.trim().replaceAll(',', '').replaceAll('.', '');
+    final amountText = _amountController.text
+        .trim()
+        .replaceAll(',', '')
+        .replaceAll('.', '');
     if (amountText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -463,7 +501,10 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
                 _isLoadingCategories
                     ? const Center(child: CircularProgressIndicator())
                     : DropdownButtonFormField<String>(
-                        value: _categories.any((c) => c.name == _selectedCategory) ? _selectedCategory : null,
+                        value:
+                            _categories.any((c) => c.name == _selectedCategory)
+                            ? _selectedCategory
+                            : null,
                         style: const TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 14,
@@ -509,7 +550,10 @@ class _EditTransactionDialogState extends State<EditTransactionDialog> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  _getCategoryIcon(category.icon, category.name),
+                                  _getCategoryIcon(
+                                    category.icon,
+                                    category.name,
+                                  ),
                                   size: 20,
                                   color: _getCategoryColor(category.color),
                                 ),
