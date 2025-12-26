@@ -371,9 +371,15 @@ public class TransactionService {
             }
             if (filter.getKeyword() != null && !filter.getKeyword().isBlank()) {
                 String keyword = "%" + filter.getKeyword().toLowerCase() + "%";
+                // Tìm trong description
                 Predicate descPredicate = cb.like(cb.lower(root.get("description")), keyword);
+                // Tìm trong notes
                 Predicate notesPredicate = cb.like(cb.lower(root.get("notes")), keyword);
-                predicates.add(cb.or(descPredicate, notesPredicate));
+                // Tìm trong tên danh mục (category name)
+                Join<Transaction, Category> categoryJoin = root.join("category", JoinType.LEFT);
+                Predicate categoryPredicate = cb.like(cb.lower(categoryJoin.get("name")), keyword);
+                // Gộp tất cả điều kiện với OR
+                predicates.add(cb.or(descPredicate, notesPredicate, categoryPredicate));
             }
         }
 
