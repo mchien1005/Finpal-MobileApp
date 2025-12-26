@@ -430,7 +430,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         ? '+${NumberFormat('#,###', 'vi_VN').format(transaction.amount)}đ'
         : '-${NumberFormat('#,###', 'vi_VN').format(transaction.amount)}đ';
     final dateFormatted = DateFormat(
-      'MM-dd HH:mm',
+      'dd/MM/yyyy HH:mm',
     ).format(transaction.transactionDate);
     final isIncome = transaction.isIncome;
 
