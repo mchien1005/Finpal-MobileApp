@@ -532,23 +532,134 @@ def train_optimized_models():
     print("=" * 60)
 
 
+def upload_to_server(server_url: str, file_path: str = "data/raw/transactions.csv"):
+    """
+    Upload training data lên server remote
+    
+    Args:
+        server_url: URL của AI backend server
+        file_path: Đường dẫn file CSV
+    """
+    import requests
+    from pathlib import Path
+    
+    file_path = Path(file_path)
+    
+    if not file_path.exists():
+        print(f"❌ File không tồn tại: {file_path}")
+        return False
+    
+    print(f"\n📤 Uploading {file_path.name} to {server_url}...")
+    
+    url = f"{server_url}/api/admin/ai/upload-training-data"
+    
+    try:
+        with open(file_path, 'rb') as f:
+            files = {'file': (file_path.name, f, 'text/csv')}
+            data = {'model_name': 'Category Classification', 'append': 'false'}
+            response = requests.post(url, files=files, data=data, timeout=120)
+        
+        if response.status_code == 200:
+            result = response.json()
+            print(f"✅ Upload thành công!")
+            print(f"   Records: {result.get('records_count', 0)}")
+            return True
+        else:
+            print(f"❌ Upload thất bại: {response.status_code}")
+            return False
+    except Exception as e:
+        print(f"❌ Lỗi: {e}")
+        return False
+
+
+def trigger_remote_retrain(server_url: str, model_names: list = None):
+    """
+    Trigger retrain trên server remote
+    
+    Args:
+        server_url: URL của AI backend server
+        model_names: List model cần retrain (None = tất cả)
+    """
+    import requests
+    
+    print(f"\n🔄 Triggering retrain on {server_url}...")
+    
+    url = f"{server_url}/api/admin/ai/retrain"
+    payload = {'model_names': model_names} if model_names else {}
+    
+    try:
+        response = requests.post(url, json=payload, timeout=300)
+        
+        if response.status_code == 200:
+            result = response.json()
+            print(f"✅ Retrain hoàn tất!")
+            for status in result.get('retrain_results', []):
+                print(f"   📊 {status['model_name']}: {status.get('new_accuracy', 'N/A')}%")
+            return True
+        else:
+            print(f"❌ Retrain thất bại: {response.status_code}")
+            return False
+    except Exception as e:
+        print(f"❌ Lỗi: {e}")
+        return False
+
+
 def main():
-    parser = argparse.ArgumentParser(description='Optimize and train ML models')
+    parser = argparse.ArgumentParser(
+        description='FinPal AI Training Script - Tạo data và train models',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Ví dụ sử dụng:
+  # Tạo dữ liệu training
+  python scripts/optimize_training.py --generate-data
+  
+  # Train tất cả models
+  python scripts/optimize_training.py --train-all
+  
+  # Tạo data và train
+  python scripts/optimize_training.py --generate-data --train-all
+  
+  # Upload lên server và retrain remote
+  python scripts/optimize_training.py --generate-data --upload --server http://175.41.150.228:8000 --retrain
+        """
+    )
+    
+    # Data generation
     parser.add_argument('--generate-data', action='store_true', 
-                        help='Generate optimized training data')
-    parser.add_argument('--train-all', action='store_true',
-                        help='Train all models')
+                        help='Tạo dữ liệu training tối ưu')
     parser.add_argument('--users', type=int, default=100,
-                        help='Number of users for data generation (default: 100)')
+                        help='Số users cho data (default: 100)')
     parser.add_argument('--months', type=int, default=12,
-                        help='Number of months of data (default: 12)')
+                        help='Số tháng data (default: 12)')
+    
+    # Local training
+    parser.add_argument('--train-all', action='store_true',
+                        help='Train tất cả models locally')
+    
+    # Remote operations
+    parser.add_argument('--server', type=str,
+                        help='URL server AI (ví dụ: http://175.41.150.228:8000)')
+    parser.add_argument('--upload', action='store_true',
+                        help='Upload data lên server')
+    parser.add_argument('--retrain', action='store_true',
+                        help='Trigger retrain trên server')
     
     args = parser.parse_args()
     
-    if not args.generate_data and not args.train_all:
+    # Validate args
+    if not any([args.generate_data, args.train_all, args.upload, args.retrain]):
         parser.print_help()
         return
     
+    if (args.upload or args.retrain) and not args.server:
+        print("❌ Cần chỉ định --server khi dùng --upload hoặc --retrain")
+        return
+    
+    print("=" * 60)
+    print("🚀 FINPAL AI TRAINING SCRIPT")
+    print("=" * 60)
+    
+    # 1. Generate data
     if args.generate_data:
         generate_optimized_data(
             num_users=args.users,
@@ -556,11 +667,23 @@ def main():
             transactions_per_month=80
         )
     
+    # 2. Train locally
     if args.train_all:
         train_optimized_models()
     
-    print("\n✨ Done!")
+    # 3. Upload to server
+    if args.upload:
+        upload_to_server(args.server)
+    
+    # 4. Trigger remote retrain
+    if args.retrain:
+        trigger_remote_retrain(args.server)
+    
+    print("\n" + "=" * 60)
+    print("✨ Done!")
+    print("=" * 60)
 
 
 if __name__ == "__main__":
     main()
+

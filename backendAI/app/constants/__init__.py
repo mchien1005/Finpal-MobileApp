@@ -16,6 +16,12 @@ from app.constants.notification_templates import (
     GOAL_DEADLINE_TODAY,
     GOAL_COMPLETED,
     MONTHLY_SUMMARY,
+    WEEKLY_SUMMARY,
+    # Prediction & Anomaly
+    ANOMALY_TRANSACTION,
+    ANOMALY_TIME,
+    PREDICTION_MONTHLY,
+    PREDICTION_CATEGORY,
     # Legacy
     LEGACY_BUDGET_ALERT,
     LEGACY_ANOMALY,
@@ -37,6 +43,11 @@ __all__ = [
     "GOAL_DEADLINE_TODAY",
     "GOAL_COMPLETED",
     "MONTHLY_SUMMARY",
+    "WEEKLY_SUMMARY",
+    "ANOMALY_TRANSACTION",
+    "ANOMALY_TIME",
+    "PREDICTION_MONTHLY",
+    "PREDICTION_CATEGORY",
     "LEGACY_BUDGET_ALERT",
     "LEGACY_ANOMALY",
     "LEGACY_SAVINGS",
@@ -44,3 +55,4 @@ __all__ = [
     "LEGACY_GOAL_REMINDER",
     "get_all_template_codes",
 ]
+

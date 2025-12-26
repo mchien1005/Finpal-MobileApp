@@ -5,124 +5,194 @@ FastAPI Main Application - Backend AI cho Finpal
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from app.config import settings
 from app.api import categorization, anomaly, prediction, insights, admin, smart_tips
 
-# Tạo ứng dụng FastAPI
-# Create FastAPI application instance với metadata và cấu hình
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan context manager - Quản lý startup và shutdown events
+    
+    Startup: Khởi động auto-retrain scheduler
+    Shutdown: Dừng scheduler
+    """
+    # Startup
+    print("🚀 Starting Finpal AI Backend...")
+    
+    # Khởi động auto-retrain scheduler (train lúc 2:00 AM hằng ngày)
+    try:
+        from app.services.auto_retrain import start_auto_retrain_scheduler
+        start_auto_retrain_scheduler(retrain_hour=2)
+        print("✅ Auto-retrain scheduler started (daily at 2:00 AM)")
+    except Exception as e:
+        print(f"⚠️ Could not start auto-retrain scheduler: {e}")
+    
+    yield
+    
+    # Shutdown
+    print("🛑 Shutting down Finpal AI Backend...")
+    try:
+        from app.services.auto_retrain import stop_auto_retrain_scheduler
+        stop_auto_retrain_scheduler()
+        print("✅ Auto-retrain scheduler stopped")
+    except Exception as e:
+        print(f"⚠️ Error stopping scheduler: {e}")
+
+
+# Tạo ứng dụng FastAPI với lifespan
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     description="AI/ML Backend for Finpal - Smart Wallet Application",
-    docs_url="/docs",      # Swagger UI documentation
-    redoc_url="/redoc"    # ReDoc documentation
+    docs_url="/docs",
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # Cấu hình CORS (Cross-Origin Resource Sharing)
-# Cho phép frontend từ các domain khác gọi API
 origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",")]
-# Thêm localhost:5173 nếu chưa có
 if "http://localhost:5173" not in origins:
     origins.append("http://localhost:5173")
 print(f"🔧 CORS Origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,          # Cho phép các origin cụ thể
-    allow_credentials=True,         # Cho phép gửi credentials (cookies, authorization headers)
-    allow_methods=["*"],            # Cho phép tất cả HTTP methods (GET, POST, PUT, DELETE, ...)
-    allow_headers=["*"],            # Cho phép tất cả headers
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Đăng ký các router (API endpoints)
-# Register API routers - mỗi router xử lý một nhóm chức năng cụ thể
-
-# Router phân loại giao dịch tự động (Transaction Categorization)
 app.include_router(
     categorization.router,
-    prefix=f"{settings.API_PREFIX}/categorization",  # /api/categorization
-    tags=["Categorization"]  # Nhóm API trong Swagger docs
+    prefix=f"{settings.API_PREFIX}/categorization",
+    tags=["Categorization"]
 )
 
-# Router phát hiện giao dịch bất thường (Anomaly Detection)
 app.include_router(
     anomaly.router,
-    prefix=f"{settings.API_PREFIX}/anomaly",  # /api/anomaly
+    prefix=f"{settings.API_PREFIX}/anomaly",
     tags=["Anomaly Detection"]
 )
 
-# Router dự đoán chi tiêu (Spending Prediction)
 app.include_router(
     prediction.router,
-    prefix=f"{settings.API_PREFIX}/prediction",  # /api/prediction
+    prefix=f"{settings.API_PREFIX}/prediction",
     tags=["Spending Prediction"]
 )
 
-# Router gợi ý thông minh từ AI (AI Insights & Suggestions)
 app.include_router(
     insights.router,
-    prefix=f"{settings.API_PREFIX}/insights",  # /api/insights
+    prefix=f"{settings.API_PREFIX}/insights",
     tags=["AI Insights"]
 )
 
-# Router quản lý AI Models cho Admin
 app.include_router(
     admin.router,
-    prefix=f"{settings.API_PREFIX}/admin/ai",  # /api/admin/ai
+    prefix=f"{settings.API_PREFIX}/admin/ai",
     tags=["Admin - AI Management"]
 )
 
-# Router gợi ý thông minh (Smart Tips)
 app.include_router(
     smart_tips.router,
-    prefix=f"{settings.API_PREFIX}/tips",  # /api/tips
+    prefix=f"{settings.API_PREFIX}/tips",
     tags=["Smart Tips"]
 )
 
 
 @app.get("/")
 async def root():
-    """
-    Root endpoint - Endpoint gốc của API
-    
-    Trả về thông tin cơ bản về ứng dụng.
-    Sử dụng để kiểm tra xem API có đang chạy không.
-    """
+    """Root endpoint - Thông tin cơ bản về API"""
     return {
         "app": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "status": "running",
-        "docs": "/docs"  # Link tới Swagger documentation
+        "docs": "/docs"
     }
 
 
 @app.get("/health")
 async def health_check():
-    """
-    Health check endpoint - Endpoint kiểm tra sức khỏe hệ thống
+    """Health check endpoint"""
+    from app.services.auto_retrain import get_scheduler_status
     
-    Được sử dụng bởi load balancer, monitoring tools để kiểm tra
-    xem service có đang hoạt động bình thường không.
-    """
+    scheduler = get_scheduler_status()
+    
     return {
         "status": "healthy",
         "app": settings.APP_NAME,
-        "version": settings.APP_VERSION
+        "version": settings.APP_VERSION,
+        "auto_retrain": scheduler
+    }
+
+
+@app.get("/health/scheduler")
+async def scheduler_status():
+    """
+    Kiểm tra trạng thái auto-retrain scheduler
+    
+    Returns:
+        Trạng thái scheduler: is_running, next_run_at, retrain_hour
+    """
+    from app.services.auto_retrain import get_scheduler_status
+    return get_scheduler_status()
+
+
+@app.post("/health/scheduler/start")
+async def start_scheduler():
+    """
+    Khởi động lại auto-retrain scheduler
+    """
+    from app.services.auto_retrain import start_auto_retrain_scheduler, get_scheduler_status
+    
+    start_auto_retrain_scheduler(retrain_hour=2)
+    
+    return {
+        "message": "Auto-retrain scheduler started",
+        "status": get_scheduler_status()
+    }
+
+
+@app.post("/health/scheduler/stop")
+async def stop_scheduler():
+    """
+    Dừng auto-retrain scheduler
+    """
+    from app.services.auto_retrain import stop_auto_retrain_scheduler, get_scheduler_status
+    
+    stop_auto_retrain_scheduler()
+    
+    return {
+        "message": "Auto-retrain scheduler stopped",
+        "status": get_scheduler_status()
+    }
+
+
+@app.post("/health/scheduler/run-now")
+async def run_retrain_now():
+    """
+    Trigger retrain ngay lập tức (không chờ đến 2:00 AM)
+    
+    Hữu ích khi muốn train lại models sau khi upload data mới.
+    """
+    from app.services.auto_retrain import retrain_all_models
+    
+    results = await retrain_all_models()
+    
+    success_count = sum(1 for r in results.values() if r.get("status") == "success")
+    
+    return {
+        "message": f"Retrain completed: {success_count}/{len(results)} models succeeded",
+        "results": results
     }
 
 
 @app.get("/health/database")
 async def database_health_check():
-    """
-    Database health check - Kiểm tra kết nối MySQL database
-    
-    Trả về:
-    - status: "connected" hoặc "disconnected"
-    - data_source: "mysql" hoặc "csv"
-    - database: tên database
-    - host: host của database
-    - pymysql_installed: True/False
-    """
+    """Database health check - Kiểm tra kết nối MySQL database"""
     from app.services.database import get_database_service, is_mysql_available, PYMYSQL_AVAILABLE
     from app.api.insights import USE_MYSQL
     
@@ -134,7 +204,6 @@ async def database_health_check():
         "pymysql_installed": PYMYSQL_AVAILABLE
     }
     
-    # Kiểm tra pymysql đã cài chưa
     if not PYMYSQL_AVAILABLE:
         result["status"] = "error"
         result["data_source"] = "csv (fallback)"
@@ -169,14 +238,7 @@ async def database_health_check():
 
 @app.get("/health/debug/{user_id}")
 async def debug_user_data(user_id: int):
-    """
-    Debug endpoint - Kiểm tra dữ liệu của user trong database
-    
-    Trả về:
-    - Số lượng transactions theo loại (INCOME/EXPENSE)
-    - Sample transactions
-    - Thông tin kết nối
-    """
+    """Debug endpoint - Kiểm tra dữ liệu của user trong database"""
     from app.services.database import get_database_service, PYMYSQL_AVAILABLE
     
     result = {
@@ -199,26 +261,21 @@ async def debug_user_data(user_id: int):
     try:
         db = get_database_service()
         
-        # Lấy TẤT CẢ transactions (không lọc theo type)
         all_transactions = db.get_user_transactions(user_id=user_id)
         result["transactions"]["total"] = len(all_transactions)
         
         if len(all_transactions) > 0:
-            # Đếm theo loại
             types_count = all_transactions['transaction_type'].value_counts().to_dict()
             result["transactions"]["types_found"] = list(types_count.keys())
             result["transactions"]["expense"] = types_count.get('EXPENSE', 0)
             result["transactions"]["income"] = types_count.get('INCOME', 0)
             
-            # Sample 5 giao dịch gần nhất
             sample = all_transactions.head(5).to_dict('records')
-            # Convert datetime to string for JSON
             for s in sample:
                 if 'timestamp' in s and s['timestamp'] is not None:
                     s['timestamp'] = str(s['timestamp'])
             result["transactions"]["sample"] = sample
         
-        # Lấy EXPENSE transactions (như insights API sử dụng)
         expense_transactions = db.get_user_expense_transactions(user_id=user_id, months=12)
         result["expense_query_result"] = len(expense_transactions)
         
@@ -229,12 +286,11 @@ async def debug_user_data(user_id: int):
 
 
 if __name__ == "__main__":
-    # Chạy server khi file được execute trực tiếp
-    # Run the application using Uvicorn ASGI server
     import uvicorn
     uvicorn.run(
-        "app.main:app",          # Module:app_instance
-        host="0.0.0.0",           # Listen trên tất cả network interfaces
-        port=settings.PORT,       # Port từ config (mặc định 8000)
-        reload=settings.DEBUG     # Auto-reload khi code thay đổi (chỉ trong debug mode)
+        "app.main:app",
+        host="0.0.0.0",
+        port=settings.PORT,
+        reload=settings.DEBUG
     )
+
