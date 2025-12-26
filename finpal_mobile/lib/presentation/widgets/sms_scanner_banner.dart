@@ -113,6 +113,7 @@ class _SmsScannerBannerState extends State<SmsScannerBanner> {
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Xác nhận quét SMS'),
+            backgroundColor: Colors.white,
             content: Text(
               'Tìm thấy ${bankMessages.length} tin nhắn từ ngân hàng.\n\n'
               'Bạn có muốn quét và thêm giao dịch tự động?',
@@ -211,6 +212,7 @@ class _SmsScannerBannerState extends State<SmsScannerBanner> {
             Expanded(child: Text('Kết quả quét SMS')),
           ],
         ),
+        backgroundColor: Colors.white,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
