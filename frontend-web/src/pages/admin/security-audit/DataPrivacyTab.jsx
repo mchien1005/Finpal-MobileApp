@@ -110,8 +110,8 @@ const DataPrivacyTab = () => {
 
       const rows = list.map((r) => {
         const key = r.id || Math.random().toString(36).slice(2);
-        const email = r.userEmail || r.email || (r.user && r.user.email) || r.username;
-        const approvedBy = r.approvedByUsername || r.approvedBy || r.admin || r.adminUsername;
+        const email = r.email || r.userEmail || (r.user && r.user.email) || r.username;
+        const approvedBy = r.approvedByAdminUsername || r.approvedByUsername || r.approvedBy || r.adminUsername || (r.admin && (r.admin.username || r.admin.email)) || 'N/A';
         return {
           key,
           id: r.id,
