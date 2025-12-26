@@ -408,7 +408,7 @@ public class NotificationService {
             // 1. Lưu notification vào database
             Notification notification = new Notification();
             notification.setUserId(user.getId());
-            notification.setType("ALERT");
+            notification.setType("ANOMALY_ALERT");
             notification.setTitle("🚨 Giao dịch Bất thường");
             notification.setContent(message);
             notification.setCreatedAt(LocalDateTime.now());
