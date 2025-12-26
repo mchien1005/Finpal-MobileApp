@@ -1,3 +1,20 @@
+/// DateTime.parse() mặc định coi là UTC, nhưng thực tế đây là local time
+/// Hàm này parse và tạo DateTime với thời gian local chính xác
+DateTime _parseLocalDateTime(String dateTimeString) {
+  // Parse chuỗi datetime
+  final parsed = DateTime.parse(dateTimeString);
+
+  // Nếu chuỗi không có timezone info ('Z' hoặc offset), DateTime.parse sẽ trả về
+  // DateTime với isUtc = false nhưng giá trị thời gian vẫn đúng
+  // Tuy nhiên nếu server gửi với 'Z' cuối, ta cần chuyển về local
+  if (parsed.isUtc) {
+    return parsed.toLocal();
+  }
+
+  // Nếu không phải UTC, giá trị đã là local time
+  return parsed;
+}
+
 class Transaction {
   final int id;
   final String type;
@@ -38,7 +55,9 @@ class Transaction {
       transactionDate: _parseDateTime(json['transactionDate'] as String),
       isAuto: json['isAuto'] as bool? ?? false,
       category: json['category'] != null
-          ? TransactionCategory.fromJson(json['category'] as Map<String, dynamic>)
+          ? TransactionCategory.fromJson(
+              json['category'] as Map<String, dynamic>,
+            )
           : null,
     );
   }
@@ -71,7 +90,9 @@ DateTime _parseDateTime(String ts) {
 
   // No timezone present. Parse components and construct a local DateTime so
   // Dart does not treat the string as UTC and shift by timezone.
-  final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?').firstMatch(ts);
+  final match = RegExp(
+    r'^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?',
+  ).firstMatch(ts);
   if (match != null) {
     final y = int.parse(match.group(1)!);
     final m = int.parse(match.group(2)!);
@@ -91,11 +112,7 @@ class TransactionCategory {
   final String name;
   final String? icon;
 
-  TransactionCategory({
-    required this.id,
-    required this.name,
-    this.icon,
-  });
+  TransactionCategory({required this.id, required this.name, this.icon});
 
   factory TransactionCategory.fromJson(Map<String, dynamic> json) {
     return TransactionCategory(
@@ -106,10 +123,6 @@ class TransactionCategory {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'icon': icon,
-    };
+    return {'id': id, 'name': name, 'icon': icon};
   }
 }

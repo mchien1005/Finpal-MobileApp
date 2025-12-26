@@ -806,6 +806,14 @@ class _BudgetFormState extends State<BudgetForm> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(primary: Color(0xFFD7006E)),
+            datePickerTheme: const DatePickerThemeData(
+              backgroundColor: Colors.white,
+              headerBackgroundColor: Color(0xFFD7006E),
+              headerForegroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              dayStyle: TextStyle(color: Colors.black),
+              yearStyle: TextStyle(color: Colors.black),
+            ),
           ),
           child: child!,
         );
