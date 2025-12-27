@@ -303,13 +303,15 @@ public class NotificationService {
      * Gọi BackendAI để lấy smart tips và gửi push notification đến điện thoại user
      * 
      * Các tips được gửi cách nhau 30 phút (hoặc theo cấu hình interval-minutes)
-     * VD: Tip 1 gửi lúc 9:20, Tip 2 gửi lúc 9:50, Tip 3 gửi lúc 10:20...
+     * 
+     * CHÚ Ý: Chỉ gửi cho USER thường, không gửi cho ADMIN
      */
     public void generateSmartTips() {
         log.info("💡 Generating Smart Tips from AI for all users (max={}, interval={}min)...",
                 maxSmartTips, tipIntervalMinutes);
 
-        List<User> allUsers = userRepository.findAll();
+        // Chỉ lấy users có role USER, bỏ qua ADMIN
+        List<User> allUsers = userRepository.findByRole(com.example.backend.model.Role.USER);
         int totalScheduled = 0;
 
         for (User user : allUsers) {
