@@ -8,14 +8,18 @@ import com.example.backend.model.Transaction;
 import com.example.backend.model.User;
 import com.example.backend.repository.NotificationRepository;
 import com.example.backend.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.annotation.PreDestroy;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -34,15 +38,56 @@ import java.util.stream.Collectors;
  */
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final AIInsightsService aiInsightsService;
     private final FcmService fcmService;
-    @Lazy
     private final NotificationSettingsService notificationSettingsService;
+
+    // Executor để lên lịch gửi tips với delay
+    private final ScheduledExecutorService smartTipsScheduler = Executors.newScheduledThreadPool(2);
+
+    // Config từ application.properties
+    @Value("${scheduler.smart-notifications.smart-tips.max-tips:10}")
+    private int maxSmartTips;
+
+    @Value("${scheduler.smart-notifications.smart-tips.interval-minutes:60}")
+    private int tipIntervalMinutes;
+
+    /**
+     * Constructor injection thay vì @RequiredArgsConstructor vì có @Lazy dependency
+     */
+    public NotificationService(
+            NotificationRepository notificationRepository,
+            UserRepository userRepository,
+            AIInsightsService aiInsightsService,
+            FcmService fcmService,
+            @Lazy NotificationSettingsService notificationSettingsService) {
+        this.notificationRepository = notificationRepository;
+        this.userRepository = userRepository;
+        this.aiInsightsService = aiInsightsService;
+        this.fcmService = fcmService;
+        this.notificationSettingsService = notificationSettingsService;
+    }
+
+    /**
+     * Shutdown executor khi service bị destroy
+     */
+    @PreDestroy
+    public void cleanup() {
+        log.info("Shutting down smart tips scheduler...");
+        smartTipsScheduler.shutdown();
+        try {
+            if (!smartTipsScheduler.awaitTermination(60, TimeUnit.SECONDS)) {
+                smartTipsScheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            smartTipsScheduler.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
 
     /**
      * Lấy tất cả thông báo của user
@@ -256,13 +301,16 @@ public class NotificationService {
     /**
      * Generate Smart Tips from BackendAI and send via FCM (called by scheduler)
      * Gọi BackendAI để lấy smart tips và gửi push notification đến điện thoại user
+     * 
+     * Các tips được gửi cách nhau 30 phút (hoặc theo cấu hình interval-minutes)
+     * VD: Tip 1 gửi lúc 9:20, Tip 2 gửi lúc 9:50, Tip 3 gửi lúc 10:20...
      */
-    @Transactional
     public void generateSmartTips() {
-        log.info("💡 Generating Smart Tips from AI for all users...");
+        log.info("💡 Generating Smart Tips from AI for all users (max={}, interval={}min)...",
+                maxSmartTips, tipIntervalMinutes);
 
         List<User> allUsers = userRepository.findAll();
-        int tipCount = 0;
+        int totalScheduled = 0;
 
         for (User user : allUsers) {
             try {
@@ -272,49 +320,24 @@ public class NotificationService {
                     continue;
                 }
 
-                // Gọi BackendAI để lấy smart tips
-                com.example.backend.dto.SmartTipsResponse tips = aiInsightsService.getSmartTips(user.getId(), 3);
+                // Gọi BackendAI để lấy smart tips (lấy số tips theo config)
+                SmartTipsResponse tips = aiInsightsService.getSmartTips(user.getId(), maxSmartTips);
 
                 if (tips != null && tips.getTips() != null && !tips.getTips().isEmpty()) {
-                    // Lấy tip đầu tiên (quan trọng nhất)
-                    com.example.backend.dto.SmartTip topTip = tips.getTips().get(0);
+                    List<SmartTip> tipList = tips.getTips();
+                    int tipsToSend = Math.min(tipList.size(), maxSmartTips);
 
-                    String title = "💡 " + (topTip.getTitle() != null ? topTip.getTitle() : "Gợi ý Thông minh");
-                    String content = topTip.getContent() != null ? topTip.getContent() : "Xem gợi ý mới từ FinPal AI";
+                    log.info("📋 User {} has {} tips to send with {}min interval",
+                            user.getId(), tipsToSend, tipIntervalMinutes);
 
-                    // Tạo notification trong database
-                    Notification notification = new Notification();
-                    notification.setUserId(user.getId());
-                    notification.setType("SMART_TIP");
-                    notification.setTitle(title);
-                    notification.setContent(content);
-                    notification.setActionUrl(topTip.getActionUrl() != null ? topTip.getActionUrl() : "/dashboard");
-                    notification.setIsRead(false);
-                    notification.setPriority(Notification.NotificationPriority.LOW);
+                    // Lên lịch gửi từng tip với delay tương ứng
+                    for (int i = 0; i < tipsToSend; i++) {
+                        SmartTip tip = tipList.get(i);
+                        int delayMinutes = i * tipIntervalMinutes; // Tip 0: 0 phút, Tip 1: 30 phút, Tip 2: 60 phút...
 
-                    Notification savedNotification = notificationRepository.save(notification);
-                    tipCount++;
-
-                    // Gửi FCM push notification đến điện thoại
-                    try {
-                        java.util.Map<String, String> data = new java.util.HashMap<>();
-                        data.put("type", "SMART_TIP");
-                        data.put("tipType", topTip.getTipType() != null ? topTip.getTipType() : "general");
-                        data.put("notificationId", String.valueOf(savedNotification.getId()));
-                        if (topTip.getCategory() != null) {
-                            data.put("category", topTip.getCategory());
-                        }
-
-                        fcmService.sendPushToUser(
-                                user.getId(),
-                                title,
-                                content,
-                                data);
-
-                        log.debug("📱 FCM push sent for smart tip to user {}", user.getId());
-
-                    } catch (Exception fcmError) {
-                        log.warn("Failed to send FCM for smart tip: {}", fcmError.getMessage());
+                        // Lên lịch gửi tip với delay
+                        scheduleSmartTipDelivery(user, tip, delayMinutes, i + 1, tipsToSend);
+                        totalScheduled++;
                     }
                 }
             } catch (Exception e) {
@@ -322,7 +345,116 @@ public class NotificationService {
             }
         }
 
-        log.info("✅ Smart Tips generated: {} notifications created and pushed via FCM", tipCount);
+        log.info("✅ Smart Tips scheduled: {} tips for all users", totalScheduled);
+    }
+
+    /**
+     * Lên lịch gửi một Smart Tip với delay cụ thể
+     * 
+     * @param user         User nhận thông báo
+     * @param tip          SmartTip cần gửi
+     * @param delayMinutes Số phút delay trước khi gửi
+     * @param tipNumber    Số thứ tự tip (1, 2, 3...)
+     * @param totalTips    Tổng số tips sẽ gửi cho user này
+     */
+    private void scheduleSmartTipDelivery(User user, SmartTip tip, int delayMinutes, int tipNumber, int totalTips) {
+        Runnable deliveryTask = () -> {
+            try {
+                log.info("📤 Delivering Smart Tip {}/{} for user {} (delay was {}min)",
+                        tipNumber, totalTips, user.getId(), delayMinutes);
+
+                sendSmartTipToUser(user, tip, tipNumber, totalTips);
+
+            } catch (Exception e) {
+                log.error("Error delivering smart tip {} for user {}: {}",
+                        tipNumber, user.getId(), e.getMessage());
+            }
+        };
+
+        if (delayMinutes == 0) {
+            // Tip đầu tiên gửi ngay
+            smartTipsScheduler.execute(deliveryTask);
+        } else {
+            // Các tip sau gửi với delay
+            smartTipsScheduler.schedule(deliveryTask, delayMinutes, TimeUnit.MINUTES);
+        }
+
+        log.debug("⏰ Scheduled tip {}/{} for user {} with {}min delay",
+                tipNumber, totalTips, user.getId(), delayMinutes);
+    }
+
+    /**
+     * Gửi một Smart Tip đến user (lưu DB + push FCM)
+     */
+    @Transactional
+    public void sendSmartTipToUser(User user, SmartTip tip, int tipNumber, int totalTips) {
+        // Kiểm tra lại user settings (có thể đã thay đổi trong khi chờ delay)
+        if (!notificationSettingsService.isSavingsTipsEnabled(user.getId())) {
+            log.debug("⏭️ Skip tip {}/{} for user {} - settings changed", tipNumber, totalTips, user.getId());
+            return;
+        }
+
+        String title = tip.getIcon() != null
+                ? tip.getIcon() + " " + (tip.getTitle() != null ? tip.getTitle() : "Gợi ý Thông minh")
+                : "💡 " + (tip.getTitle() != null ? tip.getTitle() : "Gợi ý Thông minh");
+        String content = tip.getContent() != null ? tip.getContent() : "Xem gợi ý mới từ FinPal AI";
+
+        // Tạo notification trong database
+        Notification notification = new Notification();
+        notification.setUserId(user.getId());
+        notification.setType("SMART_TIP");
+        notification.setTitle(title);
+        notification.setContent(content);
+        notification.setActionUrl(tip.getActionUrl() != null ? tip.getActionUrl() : "/dashboard");
+        notification.setIsRead(false);
+        // Priority dựa trên tip.priority (1-5 -> LOW/MEDIUM/HIGH)
+        notification.setPriority(mapTipPriority(tip.getPriority()));
+
+        Notification savedNotification = notificationRepository.save(notification);
+
+        log.info("💾 Saved smart tip {}/{} for user {}: {}", tipNumber, totalTips, user.getId(), title);
+
+        // Gửi FCM push notification đến điện thoại
+        try {
+            java.util.Map<String, String> data = new java.util.HashMap<>();
+            data.put("type", "SMART_TIP");
+            data.put("tipType", tip.getTipType() != null ? tip.getTipType() : "general");
+            data.put("tipId", tip.getTipId() != null ? tip.getTipId() : "");
+            data.put("notificationId", String.valueOf(savedNotification.getId()));
+            data.put("tipNumber", String.valueOf(tipNumber));
+            data.put("totalTips", String.valueOf(totalTips));
+            if (tip.getCategory() != null) {
+                data.put("category", tip.getCategory());
+            }
+            if (tip.getActionUrl() != null) {
+                data.put("actionUrl", tip.getActionUrl());
+            }
+
+            fcmService.sendPushToUser(
+                    user.getId(),
+                    title,
+                    content,
+                    data);
+
+            log.info("📱 FCM push sent for smart tip {}/{} to user {}", tipNumber, totalTips, user.getId());
+
+        } catch (Exception fcmError) {
+            log.warn("Failed to send FCM for smart tip: {}", fcmError.getMessage());
+        }
+    }
+
+    /**
+     * Map priority từ tip (1-5) sang NotificationPriority enum
+     */
+    private Notification.NotificationPriority mapTipPriority(Integer tipPriority) {
+        if (tipPriority == null) {
+            return Notification.NotificationPriority.LOW;
+        }
+        return switch (tipPriority) {
+            case 5 -> Notification.NotificationPriority.HIGH; // Priority 5 = HIGH
+            case 4, 3 -> Notification.NotificationPriority.MEDIUM; // Priority 3-4 = MEDIUM
+            default -> Notification.NotificationPriority.LOW; // Priority 1-2 = LOW
+        };
     }
 
     /**
