@@ -320,22 +320,16 @@ class _SearchTransactionScreenState extends State<SearchTransactionScreen> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Text(
-                          tx.category?.name ?? 'Không phân loại',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                        Flexible(
+                          child: Text(
+                            '${tx.category?.name ?? 'Không phân loại'} • ${tx.transactionSource}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          '•',
-                          style: TextStyle(fontSize: 12, color: Color(0xFFD1D5DC)),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          tx.transactionSource,
-                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                         ),
                       ],
                     ),
