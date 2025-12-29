@@ -495,27 +495,15 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Text(
-                          category,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          '•',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFFD1D5DC),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          account,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                        Flexible(
+                          child: Text(
+                            '$category • $account',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                         ),
                       ],
