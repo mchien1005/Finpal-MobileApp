@@ -7,10 +7,8 @@ import '../dashboard_card.dart';
 class SummaryCardsSection extends StatelessWidget {
   final DashboardSummary? summary;
 
-  const SummaryCardsSection({
-    Key? key,
-    required this.summary,
-  }) : super(key: key);
+  const SummaryCardsSection({Key? key, required this.summary})
+    : super(key: key);
 
   String _formatCurrency(double amount) {
     final currencyFormat = NumberFormat.currency(
@@ -18,7 +16,7 @@ class SummaryCardsSection extends StatelessWidget {
       symbol: '',
       decimalDigits: 0,
     );
-    
+
     if (amount >= 1000000) {
       return '${(amount / 1000000).toStringAsFixed(1)}M';
     } else if (amount >= 1000) {
@@ -29,8 +27,9 @@ class SummaryCardsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasData = (summary?.totalIncome ?? 0) > 0 || (summary?.totalExpense ?? 0) > 0;
-    
+    final hasData =
+        (summary?.totalIncome ?? 0) > 0 || (summary?.totalExpense ?? 0) > 0;
+
     return Column(
       children: [
         Row(
@@ -57,7 +56,7 @@ class SummaryCardsSection extends StatelessWidget {
               child: SummaryCard(
                 icon: Icons.account_balance_wallet,
                 label: 'Còn lại',
-                amount: _formatCurrency(summary?.balance ?? 0),
+                amount: _formatCurrency(summary?.savingsProgress ?? 0),
                 backgroundColor: AppColors.cardBalance,
               ),
             ),
@@ -75,7 +74,11 @@ class SummaryCardsSection extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
+                  Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: Colors.blue.shade700,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
