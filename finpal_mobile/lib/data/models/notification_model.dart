@@ -70,20 +70,18 @@ class NotificationModel {
   String get displayTime {
     try {
       // Parse thời gian từ API
-      // API trả về UTC time nhưng không có 'Z', ví dụ: "2025-12-18T16:00:00"
-      // Cần thêm 'Z' để parse đúng là UTC
-      String dateString = createdAt;
-      if (!dateString.endsWith('Z') &&
-          !dateString.contains('+') &&
-          !dateString.contains('-', 10)) {
-        dateString = '${dateString}Z'; // Thêm Z để đánh dấu UTC
-      }
+      // API trả về thời gian local Vietnam (không có timezone info)
+      // Ví dụ: "2025-12-28T11:20:01" là 11:20 AM giờ Vietnam
+      // Không thêm 'Z' vì sẽ làm sai lệch 7 giờ
 
-      final dateTime = DateTime.parse(dateString).toLocal();
+      final dateTime = DateTime.parse(createdAt);
       final now = DateTime.now();
       final difference = now.difference(dateTime);
 
-      if (difference.inMinutes < 1) {
+      if (difference.isNegative) {
+        // Trường hợp thời gian trong tương lai (có thể do lệch clock)
+        return 'Vừa xong';
+      } else if (difference.inMinutes < 1) {
         return 'Vừa xong';
       } else if (difference.inMinutes < 60) {
         return '${difference.inMinutes} phút trước';

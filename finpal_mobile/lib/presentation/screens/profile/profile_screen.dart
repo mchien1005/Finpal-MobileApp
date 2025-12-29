@@ -343,7 +343,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       'Quay lại',
                                       style: TextStyle(
                                         color: Colors.white,
-                                        fontSize: 16,
+                                        fontSize: 14,
                                       ),
                                     ),
                                   ],
@@ -353,7 +353,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 'Hồ sơ cá nhân',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 18,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),

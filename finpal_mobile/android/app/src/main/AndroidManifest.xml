@@ -12,7 +12,7 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     
     <application
-        android:label="finpal_mobile"
+        android:label="FinPal"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

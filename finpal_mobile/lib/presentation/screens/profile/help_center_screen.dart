@@ -156,7 +156,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                                 'Quay lại',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 16,
+                                  fontSize: 14,
                                 ),
                               ),
                             ],
@@ -166,7 +166,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                           'Trung tâm trợ giúp',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
