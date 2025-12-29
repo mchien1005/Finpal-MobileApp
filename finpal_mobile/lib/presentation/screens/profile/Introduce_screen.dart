@@ -196,50 +196,56 @@ class IntroduceScreen extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // Features grid
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildFeatureCard(
-                          icon: Icons.bolt,
-                          iconColor: const Color(0xFFFF9800),
-                          title: 'Tự động hóa thông minh',
-                          subtitle: 'Đọc SMS và phân loại tự động',
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _buildFeatureCard(
+                            icon: Icons.bolt,
+                            iconColor: const Color(0xFFFF9800),
+                            title: 'Tự động hóa thông minh',
+                            subtitle: 'Đọc SMS và phân loại tự động',
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildFeatureCard(
-                          icon: Icons.shield,
-                          iconColor: const Color(0xFF00A63E),
-                          title: 'Bảo mật tối đa',
-                          subtitle: 'Mã hóa AES-256',
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildFeatureCard(
+                            icon: Icons.shield,
+                            iconColor: const Color(0xFF00A63E),
+                            title: 'Bảo mật tối đa',
+                            subtitle: 'Mã hóa AES-256',
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
 
                   const SizedBox(height: 12),
 
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildFeatureCard(
-                          icon: Icons.people,
-                          iconColor: const Color(0xFF2196F3),
-                          title: 'Dễ sử dụng',
-                          subtitle: 'Giao diện thân thiện',
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _buildFeatureCard(
+                            icon: Icons.people,
+                            iconColor: const Color(0xFF2196F3),
+                            title: 'Dễ sử dụng',
+                            subtitle: 'Giao diện thân thiện',
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildFeatureCard(
-                          icon: Icons.military_tech,
-                          iconColor: const Color(0xFF9C27B0),
-                          title: 'AI thông minh',
-                          subtitle: 'Gợi ý tiết kiệm',
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildFeatureCard(
+                            icon: Icons.military_tech,
+                            iconColor: const Color(0xFF9C27B0),
+                            title: 'AI thông minh',
+                            subtitle: 'Gợi ý tiết kiệm',
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
 
                   const SizedBox(height: 24),
@@ -299,7 +305,7 @@ class IntroduceScreen extends StatelessWidget {
                         ),
                         SizedBox(height: 8),
                         Text(
-                          '© 2024 FinPal. All rights reserved.',
+                          '© 2025 FinPal. All rights reserved.',
                           style: TextStyle(
                             fontSize: 12,
                             color: Color(0xFF717182),
@@ -358,12 +364,15 @@ class IntroduceScreen extends StatelessWidget {
         ],
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, color: iconColor, size: 36),
           const SizedBox(height: 12),
           Text(
             title,
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -374,6 +383,8 @@ class IntroduceScreen extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           ),
         ],
