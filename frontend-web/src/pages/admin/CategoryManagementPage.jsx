@@ -60,14 +60,33 @@ const CategoryManagementPage = () => {
   // Load statistics
   const loadStats = async () => {
     try {
-      // Tính toán stats từ data có sẵn
+      // Tính toán stats cơ bản từ data có sẵn
       const totalCategories = categories.length;
-      
+
+      // Gọi API AI metrics để lấy accuracy
+      const metricsUrl = 'http://175.41.150.228:8000/api/admin/ai/models/Category%20Classification/metrics';
+      let metrics = null;
+
+      try {
+        const res = await fetch(metricsUrl, { method: 'GET' });
+        if (res.ok) {
+          metrics = await res.json();
+        } else {
+          console.warn('AI metrics fetch failed with status', res.status);
+        }
+      } catch (err) {
+        console.warn('Error fetching AI metrics:', err);
+      }
+
       setCategoryStats({
         total: totalCategories.toString(),
-        classifications: '0',
-        accuracy: '0%',
-        accuracyChange: 'Đang cập nhật',
+        classifications: metrics?.total_predictions?.toString() || '0',
+        // Use API accuracy if available, otherwise fallback to 0%
+        accuracy: metrics?.accuracy != null ? `${metrics.accuracy}%` : '0%',
+        // Use confidence or predictions_today as a short description fallback
+        accuracyChange: metrics?.confidence != null
+          ? `${metrics.confidence}%`
+          : (metrics?.predictions_today != null ? `${metrics.predictions_today} hôm nay` : 'Đang cập nhật'),
       });
     } catch (error) {
       console.error('Load stats error:', error);
@@ -84,22 +103,27 @@ const CategoryManagementPage = () => {
     {
       title: 'Tổng danh mục',
       value: categoryStats?.total || '0',
-      color: '#4F46E5',
-    },
-    {
-      title: 'Lượt phân loại',
-      value: categoryStats?.classifications || '0',
-      description: 'Trong tháng',
-      color: '#F59E0B',
+      color: '#1E40AF', // deep blue
     },
     {
       title: 'Độ chính xác',
       value: categoryStats?.accuracy || '0%',
-      description: categoryStats?.accuracyChange || 'Đang cập nhật',
-      descColor: '#00a63e',
-      color: '#EF4444',
+      descColor: '#047857', // green for description
+      color: '#10B981', // green for value
     },
   ];
+
+  // Helper: convert hex color to rgba string with given alpha
+  const hexToRgba = (hex, alpha = 0.08) => {
+    if (!hex) return `rgba(0,0,0,${alpha})`;
+    let h = hex.replace('#', '');
+    if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+    const int = parseInt(h, 16);
+    const r = (int >> 16) & 255;
+    const g = (int >> 8) & 255;
+    const b = int & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
 
   // Predefined colors
   const colorOptions = [
@@ -296,54 +320,6 @@ const CategoryManagementPage = () => {
     },
   ];
 
-  // Table data
-  // const dataSource = [
-  //   {
-  //     key: '1',
-  //     id: 'CAT001',
-  //     icon: '🍽️',
-  //     iconBg: 'rgba(59, 130, 246, 0.13)',
-  //     name: 'Ăn uống',
-  //     description: 'Chi phí ăn uống, nhà hàng, quán cà phê',
-  //     keywords: 15,
-  //     transactions: 3456,
-  //     type: 'Mặc định',
-  //   },
-  //   {
-  //     key: '2',
-  //     id: 'CAT002',
-  //     icon: '🚗',
-  //     iconBg: 'rgba(16, 185, 129, 0.13)',
-  //     name: 'Di chuyển',
-  //     description: 'Xăng xe, Grab, taxi, phương tiện công cộng',
-  //     keywords: 12,
-  //     transactions: 2891,
-  //     type: 'Mặc định',
-  //   },
-  //   {
-  //     key: '3',
-  //     id: 'CAT003',
-  //     icon: '🛍️',
-  //     iconBg: 'rgba(245, 158, 11, 0.13)',
-  //     name: 'Mua sắm',
-  //     description: 'Quần áo, giày dép, mỹ phẩm',
-  //     keywords: 20,
-  //     transactions: 2134,
-  //     type: 'Mặc định',
-  //   },
-  //   {
-  //     key: '4',
-  //     id: 'CAT004',
-  //     icon: '🎬',
-  //     iconBg: 'rgba(239, 68, 68, 0.13)',
-  //     name: 'Giải trí',
-  //     description: 'Phim, game, du lịch, hoạt động vui chơi',
-  //     keywords: 18,
-  //     transactions: 1567,
-  //     type: 'Mặc định',
-  //   },
-  // ];
-
   return (
     <div style={{ 
       display: 'flex', 
@@ -394,12 +370,12 @@ const CategoryManagementPage = () => {
         {/* Stats Cards */}
         <Row gutter={24} style={{ marginBottom: 24 }}>
           {statsCards.map((stat, index) => (
-            <Col xs={24} sm={12} lg={6} key={index}>
+            <Col xs={24} sm={12} lg={12} key={index}>
               <Card
                 style={{
                   borderRadius: 14,
-                  border: '0.8px solid rgba(0,0,0,0.1)',
-                  background: 'white',
+                  border: '0.8px solid rgba(0,0,0,0.06)',
+                  background: hexToRgba(stat.color, 0.08),
                   height: '100%',
                 }}
                 styles={{ body: { padding: '24.8px' } }}
@@ -407,7 +383,7 @@ const CategoryManagementPage = () => {
                 <Text type="secondary" style={{ fontSize: 14, display: 'block', marginBottom: 32 }}>
                   {stat.title}
                 </Text>
-                <div style={{ fontSize: 16, fontWeight: 400, color: '#101828', marginBottom: 32 }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: stat.color || '#101828', marginBottom: 32 }}>
                   {stat.value}
                 </div>
                 <Text 
