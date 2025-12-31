@@ -50,24 +50,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final profile = await _userRepository.getProfile();
       print('✅ Profile loaded successfully: ${profile.toJson()}');
 
-      // Convert gender from API format (NAM, NỮ, KHÁC) to UI format (Nam, Nữ, Khác)
+      // Convert gender from API format (NAM, NU, KHAC) to UI format (Nam, Nữ, Khác)
       String gender = 'Nam';
       if (profile.gender != null) {
         switch (profile.gender!.toUpperCase()) {
           case 'NAM':
             gender = 'Nam';
             break;
-          case 'NỮ':
           case 'NU':
             gender = 'Nữ';
             break;
-          case 'KHÁC':
           case 'KHAC':
-          case 'OTHER':
             gender = 'Khác';
             break;
           default:
             gender = 'Nam';
+        }
+      }
+
+      // Convert dateOfBirth from API format (yyyy-MM-dd) to UI format (dd/MM/yyyy)
+      String dobForUI = '';
+      if (profile.dateOfBirth != null && profile.dateOfBirth!.isNotEmpty) {
+        final parts = profile.dateOfBirth!.split('-');
+        if (parts.length == 3) {
+          dobForUI = '${parts[2]}/${parts[1]}/${parts[0]}';
+        } else {
+          dobForUI = profile.dateOfBirth!;
         }
       }
 
@@ -76,7 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _nameController.text = profile.fullName ?? '';
         _emailController.text = profile.email;
         _phoneController.text = profile.phoneNumber ?? '';
-        _dobController.text = profile.dateOfBirth ?? '';
+        _dobController.text = dobForUI;
         _selectedGender = gender;
         _isLoading = false;
       });
@@ -111,18 +119,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _isSaving = true);
 
     try {
-      // Convert gender from UI format (Nam, Nữ, Khác) to API format (NAM, NỮ, KHÁC)
+      // Convert gender from UI format (Nam, Nữ, Khác) to API format (NAM, NU, KHAC)
       String genderForApi = _selectedGender;
       switch (_selectedGender) {
         case 'Nam':
           genderForApi = 'NAM';
           break;
         case 'Nữ':
-          genderForApi = 'NỮ';
+          genderForApi = 'NU';
           break;
         case 'Khác':
-          genderForApi = 'KHÁC';
+          genderForApi = 'KHAC';
           break;
+      }
+
+      // Convert dateOfBirth from dd/MM/yyyy to yyyy-MM-dd for API
+      String? dateOfBirthForApi;
+      final dobText = _dobController.text.trim();
+      if (dobText.isNotEmpty) {
+        final parts = dobText.split('/');
+        if (parts.length == 3) {
+          dateOfBirthForApi = '${parts[2]}-${parts[1]}-${parts[0]}';
+        }
       }
 
       await _userRepository.updateProfile(
@@ -130,7 +148,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         email: _emailController.text.trim(),
         gender: genderForApi,
         phoneNumber: _phoneController.text.trim(),
-        dateOfBirth: _dobController.text.trim(),
+        dateOfBirth: dateOfBirthForApi,
       );
 
       setState(() => _isSaving = false);

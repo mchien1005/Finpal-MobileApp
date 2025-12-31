@@ -67,15 +67,25 @@ class ApiService {
       } else {
         try {
           final error = jsonDecode(response.body);
+          String message = 'Có lỗi xảy ra';
+          if (error is Map<String, dynamic> && error['message'] != null) {
+            message = error['message'].toString();
+          } else if (error is String && error.isNotEmpty) {
+            message = error;
+          } else {
+            // Fallback include raw body for easier debugging
+            message = 'Có lỗi xảy ra: ${response.body}';
+          }
+
           throw ApiException(
-            message: error['message'] ?? 'Có lỗi xảy ra',
+            message: message,
             statusCode: response.statusCode,
             type: 'validation',
           );
         } catch (e) {
           if (e is ApiException) rethrow;
           throw ApiException(
-            message: 'Có lỗi xảy ra',
+            message: 'Có lỗi xảy ra: ${response.body}',
             statusCode: response.statusCode,
             type: 'validation',
           );
@@ -169,15 +179,25 @@ class ApiService {
       } else {
         try {
           final error = jsonDecode(response.body);
+          String message = 'Có lỗi xảy ra';
+          if (error is Map<String, dynamic> && error['message'] != null) {
+            message = error['message'].toString();
+          } else if (error is String && error.isNotEmpty) {
+            message = error;
+          } else {
+            // Fallback include raw body for easier debugging
+            message = 'Có lỗi xảy ra: ${response.body}';
+          }
+
           throw ApiException(
-            message: error['message'] ?? 'Có lỗi xảy ra',
+            message: message,
             statusCode: response.statusCode,
             type: 'validation',
           );
         } catch (e) {
           if (e is ApiException) rethrow;
           throw ApiException(
-            message: 'Có lỗi xảy ra',
+            message: 'Có lỗi xảy ra: ${response.body}',
             statusCode: response.statusCode,
             type: 'validation',
           );
