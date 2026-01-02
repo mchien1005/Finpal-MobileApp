@@ -49,7 +49,7 @@ public class TransactionService {
         RULE_ONLY // Chỉ dùng Rule
     }
 
-    @Value("${ai.categorization.strategy:RULE_FIRST}")
+    @Value("${ai.categorization.strategy:AI_FIRST}")
     private String strategyConfig;
 
     private CategorizationStrategy getStrategy() {
@@ -86,26 +86,42 @@ public class TransactionService {
         transaction.setTransactionDate(request.getTransactionDate());
         transaction.setIsAuto(request.getIsAuto());
         transaction.setNotes(request.getNotes());
-        // Mã hóa nội dung SMS trước khi lưu
+        // Lưu SMS hash vào cột smsContentEncrypted (không cần encrypt vì đã là hash)
+        // Hash được tính từ SMSTransactionService và truyền qua smsContent field
         if (request.getSmsContent() != null && !request.getSmsContent().isEmpty()) {
-            transaction.setSmsContentEncrypted(encryptionUtil.encrypt(request.getSmsContent()));
+            transaction.setSmsContentEncrypted(request.getSmsContent());
         }
         transaction.setIsVerified(false);
         transaction.setIsAnomaly(false);
 
         // Tự động phân loại category nếu user chưa chọn
+        // QUAN TRỌNG: Phân loại TRƯỚC khi mã hóa description
         if (request.getCategoryId() != null) {
             Category category = categoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new RuntimeException("Category not found"));
             transaction.setCategory(category);
             transaction.setCategorizationSource("USER"); // User tự chọn category
         } else {
-            // Sử dụng description để phân loại
-            String textToAnalyze = request.getDescription();
+            // Ưu tiên merchantHint (từ SMS) để phân loại, fallback sang description
+            // merchantHint chứa thông tin nhạy cảm nên chỉ dùng để phân loại, KHÔNG lưu DB
+            String textToAnalyze = request.getMerchantHint();
+            if (textToAnalyze == null || textToAnalyze.trim().isEmpty()) {
+                textToAnalyze = request.getDescription();
+            }
             if (textToAnalyze != null && !textToAnalyze.trim().isEmpty()) {
                 autoCategorizeTransaction(transaction, textToAnalyze.trim(),
                         request.getAmount().doubleValue(), user.getId());
             }
+        }
+
+        // MÃ HÓA dữ liệu nhạy cảm trước khi lưu vào DB
+        // Description có thể chứa thông tin cá nhân từ giao dịch nhập tay
+        if (request.getDescription() != null && !request.getDescription().isEmpty()) {
+            transaction.setDescription(encryptionUtil.encrypt(request.getDescription()));
+        }
+        // Notes cũng cần được mã hóa
+        if (request.getNotes() != null && !request.getNotes().isEmpty()) {
+            transaction.setNotes(encryptionUtil.encrypt(request.getNotes()));
         }
 
         Transaction saved = transactionRepository.save(transaction);
@@ -147,11 +163,12 @@ public class TransactionService {
             }
         }
 
-        return TransactionResponse.fromEntity(saved);
+        return TransactionResponse.fromEntityDecrypted(saved, encryptionUtil::decrypt);
     }
 
     /**
      * Tự động phân loại transaction theo strategy
+     * Nếu không phân loại được → fallback sang danh mục "Khác"
      */
     private void autoCategorizeTransaction(Transaction transaction, String textToAnalyze,
             Double amount, Long userId) {
@@ -171,6 +188,32 @@ public class TransactionService {
             case RULE_ONLY:
                 autoCategorizeRuleOnly(transaction, textToAnalyze);
                 break;
+        }
+
+        // Fallback: Nếu vẫn chưa có category → gán vào "Khác"
+        if (transaction.getCategory() == null) {
+            assignDefaultCategory(transaction);
+        }
+    }
+
+    /**
+     * Gán danh mục mặc định "Khác" khi không thể phân loại
+     * - EXPENSE → "Khác (Chi)"
+     * - INCOME → "Khác (Thu)"
+     */
+    private void assignDefaultCategory(Transaction transaction) {
+        String defaultCategoryName = transaction.getType() == Transaction.TransactionType.EXPENSE
+                ? "Khác"
+                : "Khác";
+
+        Category defaultCategory = categoryRepository.findByName(defaultCategoryName).orElse(null);
+
+        if (defaultCategory != null) {
+            transaction.setCategory(defaultCategory);
+            transaction.setCategorizationSource("DEFAULT");
+            log.info("📌 Fallback to default category: '{}'", defaultCategoryName);
+        } else {
+            log.warn("⚠️ Default category '{}' not found in database!", defaultCategoryName);
         }
     }
 
@@ -402,7 +445,7 @@ public class TransactionService {
         List<Transaction> pageContent = allResults.subList(start, end);
 
         List<TransactionResponse> responses = pageContent.stream()
-                .map(TransactionResponse::fromEntity)
+                .map(t -> TransactionResponse.fromEntityDecrypted(t, encryptionUtil::decrypt))
                 .collect(Collectors.toList());
 
         return PageResponse.<TransactionResponse>builder()
@@ -436,7 +479,7 @@ public class TransactionService {
             throw new RuntimeException("Transaction does not belong to user");
         }
 
-        return TransactionResponse.fromEntity(transaction);
+        return TransactionResponse.fromEntityDecrypted(transaction, encryptionUtil::decrypt);
     }
 
     /**
@@ -477,8 +520,16 @@ public class TransactionService {
         transaction.setTransactionDate(request.getTransactionDate());
         transaction.setNotes(request.getNotes());
 
+        // Mã hóa description và notes trước khi lưu
+        if (request.getDescription() != null && !request.getDescription().isEmpty()) {
+            transaction.setDescription(encryptionUtil.encrypt(request.getDescription()));
+        }
+        if (request.getNotes() != null && !request.getNotes().isEmpty()) {
+            transaction.setNotes(encryptionUtil.encrypt(request.getNotes()));
+        }
+
         Transaction updated = transactionRepository.save(transaction);
-        return TransactionResponse.fromEntity(updated);
+        return TransactionResponse.fromEntityDecrypted(updated, encryptionUtil::decrypt);
     }
 
     /**

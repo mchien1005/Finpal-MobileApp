@@ -52,7 +52,7 @@ public class Transaction {
     private Boolean isAuto = false;
 
     @Column(name = "noi_dung_sms_ma_hoa", columnDefinition = "TEXT")
-    private String smsContentEncrypted;
+    private String smsContentEncrypted; // SHA-256 hash của SMS content để check duplicate
 
     // Status fields
     @Column(name = "da_xac_nhan")
