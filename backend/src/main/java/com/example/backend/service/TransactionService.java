@@ -275,6 +275,8 @@ public class TransactionService {
      */
     private void autoCategorizeRuleFirst(Transaction transaction, String textToAnalyze,
             Double amount, Long userId) {
+        log.info("🔍 RULE_FIRST: Trying to categorize '{}' (amount: {})", textToAnalyze, amount);
+
         // Bước 1: Thử Rule trước
         Long ruleId = categoryRuleService.suggestCategoryByMerchant(textToAnalyze);
         if (ruleId != null) {
@@ -286,21 +288,109 @@ public class TransactionService {
                 return;
             }
         }
+        log.info("⚠️ RULE_FIRST: No rule matched for '{}'", textToAnalyze);
 
         // Bước 2: Fallback sang AI
+        log.info("🤖 RULE_FIRST: Trying AI categorization...");
         CategoryPrediction aiPrediction = aiCategorizationService.predictCategory(
                 textToAnalyze, amount, textToAnalyze, userId);
 
         if (aiPrediction != null && aiCategorizationService.isConfidentPrediction(aiPrediction)) {
-            Category category = categoryRepository.findByName(aiPrediction.getCategory()).orElse(null);
+            String predictedName = aiPrediction.getCategory();
+            log.info("🤖 AI predicted: '{}' (confidence: {}%)", predictedName, aiPrediction.getConfidence() * 100);
+
+            // Thử tìm theo tên chính xác
+            Category category = categoryRepository.findByName(predictedName).orElse(null);
+
+            // Nếu không tìm thấy, thử tìm theo tên tiếng Việt tương ứng
+            if (category == null) {
+                category = findCategoryByAIName(predictedName, transaction.getType());
+            }
+
             if (category != null) {
                 transaction.setCategory(category);
                 transaction.setCategorizationSource("AI");
                 transaction.setAiConfidence(aiPrediction.getConfidence());
-                log.info("🤖 RULE_FIRST → AI fallback: '{}' -> {} (confidence: {}%)",
-                        textToAnalyze, category.getName(), aiPrediction.getConfidence() * 100);
+                log.info("✅ RULE_FIRST → AI: '{}' -> {} (from AI: {})",
+                        textToAnalyze, category.getName(), predictedName);
+            } else {
+                log.warn("⚠️ AI predicted '{}' but no matching category in DB", predictedName);
             }
+        } else {
+            log.info("⚠️ AI categorization failed or low confidence for '{}'", textToAnalyze);
         }
+    }
+
+    /**
+     * Tìm category dựa trên tên AI trả về (có thể là tiếng Anh hoặc khác định dạng)
+     */
+    private Category findCategoryByAIName(String aiCategoryName, Transaction.TransactionType txType) {
+        if (aiCategoryName == null)
+            return null;
+
+        String nameLower = aiCategoryName.toLowerCase().trim();
+        Category.CategoryType categoryType = txType == Transaction.TransactionType.EXPENSE
+                ? Category.CategoryType.EXPENSE
+                : Category.CategoryType.INCOME;
+
+        // Mapping từ tiếng Anh -> tiếng Việt
+        String vietnameseName = null;
+
+        // EXPENSE categories
+        if (nameLower.contains("food") || nameLower.contains("eat") || nameLower.contains("restaur")) {
+            vietnameseName = "Ăn uống";
+        } else if (nameLower.contains("transport") || nameLower.contains("travel") || nameLower.contains("grab")
+                || nameLower.contains("taxi")) {
+            vietnameseName = "Di chuyển";
+        } else if (nameLower.contains("shopping") || nameLower.contains("shop") || nameLower.contains("buy")) {
+            vietnameseName = "Mua sắm";
+        } else if (nameLower.contains("entertain") || nameLower.contains("movie") || nameLower.contains("game")) {
+            vietnameseName = "Giải trí";
+        } else if (nameLower.contains("health") || nameLower.contains("medical") || nameLower.contains("doctor")) {
+            vietnameseName = "Sức khỏe";
+        } else if (nameLower.contains("education") || nameLower.contains("study") || nameLower.contains("school")) {
+            vietnameseName = "Giáo dục";
+        } else if (nameLower.contains("bill") || nameLower.contains("electric") || nameLower.contains("water")
+                || nameLower.contains("utility")) {
+            vietnameseName = "Hóa đơn & Tiện ích";
+        } else if (nameLower.contains("house") || nameLower.contains("rent") || nameLower.contains("home")) {
+            vietnameseName = "Nhà ở";
+        } else if (nameLower.contains("family")) {
+            vietnameseName = "Gia đình";
+        } else if (nameLower.contains("insurance")) {
+            vietnameseName = "Bảo hiểm";
+        } else if (nameLower.contains("invest")) {
+            vietnameseName = "Đầu tư";
+        } else if (nameLower.contains("gift")) {
+            vietnameseName = "Quà tặng";
+        } else if (nameLower.contains("work") || nameLower.contains("business") || nameLower.contains("office")) {
+            vietnameseName = "Công việc";
+        } else if (nameLower.contains("beauty") || nameLower.contains("salon") || nameLower.contains("spa")) {
+            vietnameseName = "Làm đẹp";
+        }
+        // INCOME categories
+        else if (nameLower.contains("salary") || nameLower.contains("wage")) {
+            vietnameseName = "Lương";
+        } else if (nameLower.contains("bonus") || nameLower.contains("reward")) {
+            vietnameseName = "Thưởng";
+        } else if (nameLower.contains("freelance") || nameLower.contains("extra") || nameLower.contains("part-time")) {
+            vietnameseName = "Làm thêm";
+        } else if (nameLower.contains("business") || nameLower.contains("sell")) {
+            vietnameseName = "Kinh doanh";
+        } else if (nameLower.contains("invest") || nameLower.contains("dividend") || nameLower.contains("interest")) {
+            vietnameseName = "Đầu tư";
+        } else if (nameLower.contains("loan") || nameLower.contains("borrow")) {
+            vietnameseName = "Cho vay";
+        } else if (nameLower.contains("receive") || nameLower.contains("gift") || nameLower.contains("transfer")) {
+            vietnameseName = "Được tặng";
+        }
+
+        if (vietnameseName != null) {
+            log.info("🔄 Mapping AI category '{}' -> '{}'", aiCategoryName, vietnameseName);
+            return categoryRepository.findByNameAndType(vietnameseName, categoryType).orElse(null);
+        }
+
+        return null;
     }
 
     /**
