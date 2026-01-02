@@ -247,14 +247,25 @@ public class TransactionService {
                 textToAnalyze, amount, textToAnalyze, userId);
 
         if (aiPrediction != null && aiCategorizationService.isConfidentPrediction(aiPrediction)) {
-            Category category = categoryRepository.findByName(aiPrediction.getCategory()).orElse(null);
+            String predictedName = aiPrediction.getCategory();
+
+            // Thử tìm theo tên chính xác
+            Category category = categoryRepository.findByName(predictedName).orElse(null);
+
+            // Nếu không tìm thấy, thử tìm theo tên tiếng Việt tương ứng
+            if (category == null) {
+                category = findCategoryByAIName(predictedName, transaction.getType());
+            }
+
             if (category != null) {
                 transaction.setCategory(category);
                 transaction.setCategorizationSource("AI");
                 transaction.setAiConfidence(aiPrediction.getConfidence());
-                log.info("✅ AI_FIRST: AI categorized '{}' -> {} (confidence: {}%)",
-                        textToAnalyze, category.getName(), aiPrediction.getConfidence() * 100);
+                log.info("✅ AI_FIRST: AI categorized '{}' -> {} (from AI: {}, confidence: {}%)",
+                        textToAnalyze, category.getName(), predictedName, aiPrediction.getConfidence() * 100);
                 return;
+            } else {
+                log.warn("⚠️ AI_FIRST: AI predicted '{}' but no matching category in DB", predictedName);
             }
         }
 
@@ -404,9 +415,15 @@ public class TransactionService {
                 textToAnalyze, amount, textToAnalyze, userId);
 
         Category ruleCategory = ruleId != null ? categoryRepository.findById(ruleId).orElse(null) : null;
-        Category aiCategory = (aiPrediction != null && aiCategorizationService.isConfidentPrediction(aiPrediction))
-                ? categoryRepository.findByName(aiPrediction.getCategory()).orElse(null)
-                : null;
+
+        Category aiCategory = null;
+        if (aiPrediction != null && aiCategorizationService.isConfidentPrediction(aiPrediction)) {
+            String predictedName = aiPrediction.getCategory();
+            aiCategory = categoryRepository.findByName(predictedName).orElse(null);
+            if (aiCategory == null) {
+                aiCategory = findCategoryByAIName(predictedName, transaction.getType());
+            }
+        }
 
         // So sánh và chọn
         if (ruleCategory != null && aiCategory != null) {
