@@ -168,12 +168,12 @@ class TransactionCategorizer:
             combined_text = df['merchant'].fillna('')
         
         self.vectorizer = TfidfVectorizer(
-            max_features=150,  # Tăng từ 50 lên 150
-            ngram_range=(1, 3),  # Thêm trigrams
-            min_df=1,  # Giữ lại tất cả
-            sublinear_tf=True,  # Áp dụng sublinear scaling
+            max_features=5000,  # Tăng lên 5000 Features để bắt nhiều từ khóa hơn
+            ngram_range=(1, 3), 
+            min_df=1,
+            sublinear_tf=True,
             analyzer='word',
-            token_pattern=r'(?u)\b\w+\b'  # Bắt cả single characters
+            token_pattern=r'(?u)\b\w+\b'
         )
         self.vectorizer.fit(combined_text)
         

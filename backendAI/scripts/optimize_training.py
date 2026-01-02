@@ -369,7 +369,11 @@ def generate_optimized_data(num_users=100, months=12, transactions_per_month=80)
                 
                 cat_data = OPTIMIZED_CATEGORIES[category]
                 merchant = random.choice(cat_data['merchants'])
-                description = random.choice(cat_data['descriptions'])
+                # Randomly drop description (50%) to force model to learn from merchant name
+                if random.random() < 0.5:
+                    description = ""
+                else:
+                    description = random.choice(cat_data['descriptions'])
                 
                 min_amt, max_amt = cat_data['amount_range']
                 amount = random.randint(int(min_amt), int(max_amt)) 
@@ -405,7 +409,10 @@ def generate_optimized_data(num_users=100, months=12, transactions_per_month=80)
                 
                 cat_data = INCOME_CATEGORIES[category]
                 merchant = random.choice(cat_data['merchants'])
-                description = random.choice(cat_data['descriptions'])
+                if random.random() < 0.5:
+                    description = ""
+                else:
+                    description = random.choice(cat_data['descriptions'])
                 min_amt, max_amt = cat_data['amount_range']
                 amount = random.randint(int(min_amt), int(max_amt))
                 
