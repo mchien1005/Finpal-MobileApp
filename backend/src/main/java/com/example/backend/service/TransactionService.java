@@ -111,6 +111,9 @@ public class TransactionService {
             if (textToAnalyze != null && !textToAnalyze.trim().isEmpty()) {
                 autoCategorizeTransaction(transaction, textToAnalyze.trim(),
                         request.getAmount().doubleValue(), user.getId());
+            } else {
+                // Không có text để phân loại → gán danh mục mặc định
+                assignDefaultCategory(transaction);
             }
         }
 
@@ -198,22 +201,39 @@ public class TransactionService {
 
     /**
      * Gán danh mục mặc định "Khác" khi không thể phân loại
-     * - EXPENSE → "Khác (Chi)"
-     * - INCOME → "Khác (Thu)"
+     * Tìm danh mục "Khác" theo đúng loại giao dịch (EXPENSE/INCOME)
      */
     private void assignDefaultCategory(Transaction transaction) {
-        String defaultCategoryName = transaction.getType() == Transaction.TransactionType.EXPENSE
-                ? "Khác"
-                : "Khác";
+        Category.CategoryType categoryType = transaction.getType() == Transaction.TransactionType.EXPENSE
+                ? Category.CategoryType.EXPENSE
+                : Category.CategoryType.INCOME;
 
-        Category defaultCategory = categoryRepository.findByName(defaultCategoryName).orElse(null);
+        Category defaultCategory = null;
+
+        // Bước 1: Thử tìm "Khác (Chi)" hoặc "Khác (Thu)" theo loại
+        String specificName = categoryType == Category.CategoryType.EXPENSE ? "Khác (Chi)" : "Khác (Thu)";
+        defaultCategory = categoryRepository.findByNameAndType(specificName, categoryType).orElse(null);
+
+        // Bước 2: Thử tìm "Khác" theo đúng loại
+        if (defaultCategory == null) {
+            defaultCategory = categoryRepository.findByNameAndType("Khác", categoryType).orElse(null);
+        }
+
+        // Bước 3: Lấy danh mục bất kỳ theo loại (cuối cùng trong danh sách thường là
+        // "Khác")
+        if (defaultCategory == null) {
+            var categories = categoryRepository.findByType(categoryType);
+            if (!categories.isEmpty()) {
+                defaultCategory = categories.get(categories.size() - 1); // Lấy cuối danh sách
+            }
+        }
 
         if (defaultCategory != null) {
             transaction.setCategory(defaultCategory);
             transaction.setCategorizationSource("DEFAULT");
-            log.info("📌 Fallback to default category: '{}'", defaultCategoryName);
+            log.info("📌 Fallback to default category: '{}' ({})", defaultCategory.getName(), categoryType);
         } else {
-            log.warn("⚠️ Default category '{}' not found in database!", defaultCategoryName);
+            log.warn("⚠️ No default category found for type {}!", categoryType);
         }
     }
 
