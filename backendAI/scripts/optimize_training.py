@@ -321,9 +321,9 @@ def generate_optimized_data(num_users=100, months=12, transactions_per_month=80)
     Tạo dữ liệu training tối ưu với nhiều patterns hơn
     
     Args:
-        num_users: Số users (100 để có đủ data)
+        num_users: Số users (100 để cân bằng giữa chất lượng và tài nguyên)
         months: Số tháng (12 tháng = 1 năm full data)
-        transactions_per_month: Số giao dịch/tháng/user
+        transactions_per_month: Số giao dịch/tháng/user (80 để đảm bảo đủ data)
     """
     
     transactions = []

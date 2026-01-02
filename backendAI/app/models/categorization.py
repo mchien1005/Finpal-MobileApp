@@ -20,6 +20,8 @@ Quy trình:
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import SGDClassifier
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
@@ -76,7 +78,8 @@ class TransactionCategorizer:
         
         # QUAN TRỌNG: Kết hợp merchant + description để có context tốt hơn
         if 'description' in df.columns:
-            combined_text = df['merchant'].fillna('') + ' ' + df['description'].fillna('')
+            # combined_text = df['merchant'].fillna('') + ' ' + df['description'].fillna('')
+            combined_text = df['merchant'].fillna('')
         else:
             combined_text = df['merchant'].fillna('')
         
@@ -163,16 +166,20 @@ class TransactionCategorizer:
         
         # Kết hợp merchant + description để có context tốt hơn
         if 'description' in df.columns:
-            combined_text = df['merchant'].fillna('') + ' ' + df['description'].fillna('')
+            # combined_text = df['merchant'].fillna('') + ' ' + df['description'].fillna('')
+            # CHỈ SỬ DỤNG MERCHANT để model tập trung vào tên thương hiệu
+            combined_text = df['merchant'].fillna('')
         else:
             combined_text = df['merchant'].fillna('')
         
+        # Tối ưu hóa Vectorizer - Giảm RAM nhưng vẫn giữ hiệu quả
         self.vectorizer = TfidfVectorizer(
-            max_features=5000,  # Tăng lên 5000 Features để bắt nhiều từ khóa hơn
-            ngram_range=(1, 3), 
-            min_df=1,
-            sublinear_tf=True,
+            max_features=800,     # Giảm xuống 800 để tiết kiệm RAM
+            ngram_range=(1, 2),   # Unigrams + bigrams
             analyzer='word',
+            min_df=2,             # Giữ min_df=2 để không mất từ quan trọng
+            max_df=0.9,           # Loại bỏ từ quá phổ biến
+            sublinear_tf=True,
             token_pattern=r'(?u)\b\w+\b'
         )
         self.vectorizer.fit(combined_text)
@@ -192,19 +199,22 @@ class TransactionCategorizer:
         
         print(f"📦 Training set: {len(X_train)}, Test set: {len(X_test)}")
         
-        # Train model - CẢI TIẾN hyperparameters
-        print("\n🤖 Training Random Forest model (OPTIMIZED)...")
+        # Train model - Tối ưu RandomForest: Giảm RAM nhưng giữ confidence cao
+        print("🌲 Training Random Forest Classifier (Optimized)...")
         self.model = RandomForestClassifier(
-            n_estimators=200,  # Tăng từ 100 lên 200 trees
-            max_depth=30,  # Tăng từ 20 lên 30
-            min_samples_split=3,  # Giảm từ 5 xuống 3
-            min_samples_leaf=1,  # Giảm từ 2 xuống 1 để capture patterns nhỏ
-            max_features='sqrt',  # Optimize feature selection
-            class_weight='balanced',  # Xử lý imbalanced classes
+            n_estimators=150,           # Giảm xuống 150 trees để tiết kiệm RAM
+            max_depth=None,             # Không giới hạn depth, để model học sâu
+            min_samples_split=2,        # Minimum để capture patterns tốt nhất
+            min_samples_leaf=1,         # Minimum để fit tốt nhất
+            max_features='sqrt',        # sqrt(n_features) cho mỗi split
+            class_weight='balanced',    # Cân bằng classes
             random_state=42,
-            n_jobs=-1,
+            n_jobs=-1,                  # Dùng tất cả CPU cores
             bootstrap=True,
-            oob_score=True  # Out-of-bag score để đánh giá
+            oob_score=True,             # Out-of-bag score để đánh giá
+            warm_start=False,
+            criterion='gini',           # Gini impurity
+            max_samples=0.8             # Sử dụng 80% samples cho mỗi tree (giảm RAM)
         )
         
         self.model.fit(X_train, y_train)
@@ -215,6 +225,8 @@ class TransactionCategorizer:
         
         print(f"\n✅ Model trained successfully!")
         print(f"🎯 Accuracy: {accuracy:.2%}")
+        if hasattr(self.model, 'oob_score_'):
+            print(f"🎯 OOB Score: {self.model.oob_score_:.2%}")
         
         print("\n📊 Classification Report:")
         print(classification_report(
@@ -301,14 +313,14 @@ class TransactionCategorizer:
         category = self.label_encoder.classes_[main_idx]
         confidence = proba[main_idx]
         
-        # Alternatives
+        # Alternatives - chỉ lấy những alternatives có confidence đáng kể
         alternatives = [
             {
                 'category': self.label_encoder.classes_[idx],
                 'confidence': float(proba[idx])
             }
             for idx in top_indices[1:]
-            if proba[idx] > 0.05  # Only include if confidence > 5%
+            if proba[idx] > 0.10  # Only include if confidence > 10%
         ]
         
         # Record prediction to history (for logging purposes)
