@@ -14,7 +14,30 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
   const [showDisableSuccess, setShowDisableSuccess] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [showResetSuccess, setShowResetSuccess] = useState(false);
+  const [newGeneratedPassword, setNewGeneratedPassword] = useState('');
   const [currentStatus, setCurrentStatus] = useState(user?.status);
+  const [userDetail, setUserDetail] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  // Fetch user detail when modal opens
+  useEffect(() => {
+    const fetchUserDetail = async () => {
+      if (visible && user?.realId) {
+        setLoadingDetail(true);
+        try {
+          const detail = await userService.admin.getUserDetail(user.realId);
+          console.log('User detail from API:', detail);
+          setUserDetail(detail);
+        } catch (error) {
+          console.error('Error fetching user detail:', error);
+          message.error('Không thể tải chi tiết người dùng');
+        } finally {
+          setLoadingDetail(false);
+        }
+      }
+    };
+    fetchUserDetail();
+  }, [visible, user?.realId]);
 
   // Update currentStatus when user prop changes
   useEffect(() => {
@@ -110,13 +133,21 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
     setShowResetPassword(true);
   };
 
-  const handleConfirmReset = async (newPassword) => {
+  const handleConfirmReset = async () => {
     setShowResetPassword(false);
     try {
       // Try using realId first (numeric ID), fallback to userId (userCode)
       const idToUse = user.realId || user.userId;
-      await userService.admin.resetPassword(idToUse);
-      console.log('Password reset for user:', idToUse);
+      console.log('Resetting password for user:', idToUse);
+      const response = await userService.admin.resetPassword(idToUse);
+      console.log('Password reset response:', response);
+      console.log('Response keys:', Object.keys(response));
+      
+      // Try different possible field names from API
+      const password = response.newPassword || response.adminPassword || response.password || 'N/A';
+      console.log('Extracted password:', password);
+      setNewGeneratedPassword(password);
+      
       setTimeout(() => {
         setShowResetSuccess(true);
       }, 300);
@@ -134,36 +165,14 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
     setShowResetSuccess(false);
   };
 
-  const loginHistory = [
-    {
-      date: '24/03/2024 10:30',
-      device: 'iPhone 15 Pro',
-      ip: '192.168.1.1',
-      location: 'Hà Nội',
-      status: 'Success',
-    },
-    {
-      date: '24/03/2024 09:15',
-      device: 'iPhone 15 Pro',
-      ip: '192.168.1.1',
-      location: 'Hà Nội',
-      status: 'Success',
-    },
-    {
-      date: '23/03/2024 22:45',
-      device: 'iPhone 15 Pro',
-      ip: '192.168.1.1',
-      location: 'Hà Nội',
-      status: 'Success',
-    },
-    {
-      date: '23/03/2024 14:20',
-      device: 'MacBook Pro',
-      ip: '192.168.1.2',
-      location: 'Hà Nội',
-      status: 'Failed',
-    },
-  ];
+  // Transform login history from API
+  const loginHistory = userDetail?.loginHistory?.map(log => ({
+    date: log.loginTime ? new Date(log.loginTime).toLocaleString('vi-VN') : 'N/A',
+    device: log.deviceName || 'N/A',
+    ip: log.ipAddress || 'N/A',
+    location: log.location || 'N/A',
+    status: log.status === 'SUCCESS' ? 'Success' : 'Failed',
+  })) || [];
 
   return (
     <Modal
@@ -295,7 +304,16 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
             Lịch sử đăng nhập
           </h3>
           <div style={{ maxHeight: 280, overflowY: 'auto' }}>
-            {loginHistory.map((login, index) => (
+            {loadingDetail ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#6b7280' }}>
+                Đang tải...
+              </div>
+            ) : loginHistory.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#6b7280' }}>
+                Chưa có lịch sử đăng nhập
+              </div>
+            ) : (
+              loginHistory.map((login, index) => (
               <div
                 key={index}
                 style={{
@@ -326,7 +344,8 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
                   </Tag>
                 </div>
               </div>
-            ))}
+            )))
+            }
           </div>
         </div>
 
@@ -445,6 +464,7 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
         onClose={handleResetSuccessClose}
         message="Reset mật khẩu thành công!"
         buttonText="Đồng ý"
+        newPassword={newGeneratedPassword}
       />
     </Modal>
   );
