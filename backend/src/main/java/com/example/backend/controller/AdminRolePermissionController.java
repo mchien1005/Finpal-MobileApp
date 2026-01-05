@@ -192,5 +192,18 @@ public class AdminRolePermissionController {
         List<AdminUserFullDetailResponse.ActivityLogItem> activities = activityService.getRecentActivities(limit);
         return ResponseEntity.ok(activities);
     }
+
+    /**
+     * Xóa admin user (revoke admin role)
+     */
+    @DeleteMapping("/users/{adminUserId}")
+    @Operation(summary = "Xóa quyền admin", description = "Thu hồi quyền admin của user (xóa khỏi bảng admin_users)")
+    public ResponseEntity<Map<String, String>> removeAdminUser(
+            @PathVariable Long adminUserId,
+            Authentication authentication) {
+        String currentUsername = authentication.getName();
+        rolePermissionService.removeAdminUser(adminUserId, currentUsername);
+        return ResponseEntity.ok(Map.of("message", "Đã thu hồi quyền admin thành công"));
+    }
 }
 

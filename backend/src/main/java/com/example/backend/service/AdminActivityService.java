@@ -156,6 +156,7 @@ public class AdminActivityService {
                 .timestampText(log.getTimestamp() != null ? log.getTimestamp().format(DATE_FORMATTER) : null)
                 .ipAddress(log.getIpAddress())
                 .status(log.getStatus())
+                .adminName(log.getAdminUser() != null ? log.getAdminUser().getUsername() : null)
                 .build();
     }
 

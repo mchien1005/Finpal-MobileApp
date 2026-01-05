@@ -402,4 +402,30 @@ public class AdminRolePermissionService {
                 .createdAt(adminUser.getCreatedAt())
                 .build();
     }
-}
+
+    /**
+     * Xóa admin user (thu hồi quyền admin)
+     */
+    @Transactional
+    public void removeAdminUser(Long adminUserId, String currentUsername) {
+        AdminUser adminUser = adminUserRepository.findById(adminUserId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy admin user"));
+
+        // Không cho phép xóa chính mình
+        if (adminUser.getUser().getUsername().equals(currentUsername)) {
+            throw new RuntimeException("Không thể xóa quyền admin của chính bạn");
+        }
+
+        // Không cho phép xóa SUPER_ADMIN (trừ khi người xóa cũng là SUPER_ADMIN)
+        AdminUser currentAdmin = adminUserRepository.findByUser_Username(currentUsername)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin admin hiện tại"));
+        
+        if (adminUser.getAdminRole().getRoleCode().equals("SUPER_ADMIN") 
+            && !currentAdmin.getAdminRole().getRoleCode().equals("SUPER_ADMIN")) {
+            throw new RuntimeException("Chỉ SUPER_ADMIN mới có thể xóa quyền của SUPER_ADMIN khác");
+        }
+
+        // Xóa admin user
+        adminUserRepository.delete(adminUser);
+        log.info("Admin {} đã thu hồi quyền admin của user ID: {}", currentUsername, adminUser.getUser().getId());
+    }

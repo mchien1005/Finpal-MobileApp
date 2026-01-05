@@ -195,9 +195,10 @@ public class AdminUserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
 
-        // Không cho phép xóa tài khoản admin
-        if (user.getRole().name().equals("ADMIN")) {
-            throw new RuntimeException("Không thể xóa tài khoản Admin");
+        // Không cho phép xóa tài khoản có quyền admin (kiểm tra theo role)
+        String roleName = user.getRole().name();
+        if (roleName.equals("ADMIN") || roleName.equals("SUPER_ADMIN") || roleName.equals("MODERATOR")) {
+            throw new RuntimeException("Không thể xóa tài khoản có quyền Admin");
         }
 
         // Không cho phép xóa chính mình
