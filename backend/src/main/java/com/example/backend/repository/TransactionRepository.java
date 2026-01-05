@@ -122,14 +122,74 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
                         @Param("startDate") LocalDateTime startDate,
                         @Param("endDate") LocalDateTime endDate);
 
+        // ============================================================================
+        // ADMIN DASHBOARD QUERIES
+        // ============================================================================
+
         /**
-         * Kiểm tra giao dịch trùng lặp từ SMS bằng SMS hash
-         * Đây là cách kiểm tra CHÍNH XÁC 100% vì SMS hash là duy nhất cho mỗi tin nhắn
-         * 
-         * @param userId  ID người dùng
-         * @param smsHash SHA-256 hash của nội dung SMS
-         * @return true nếu đã tồn tại giao dịch với cùng SMS hash
+         * Đếm tổng số giao dịch trong khoảng thời gian (toàn hệ thống)
          */
-        @Query("SELECT COUNT(t) > 0 FROM Transaction t WHERE t.user.id = :userId AND t.smsContentEncrypted = :smsHash")
-        boolean existsBySmsContentHash(@Param("userId") Long userId, @Param("smsHash") String smsHash);
+        @Query("SELECT COUNT(t) FROM Transaction t WHERE t.transactionDate BETWEEN :startDate AND :endDate")
+        Long countAllByDateRange(
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
+
+        /**
+         * Tổng giá trị giao dịch trong khoảng thời gian (toàn hệ thống)
+         */
+        @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.transactionDate BETWEEN :startDate AND :endDate")
+        BigDecimal sumAllByDateRange(
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
+
+        /**
+         * Thống kê giao dịch theo ngày (cho biểu đồ 7 ngày)
+         * Trả về: [date, count, sum]
+         */
+        @Query("SELECT FUNCTION('DATE', t.transactionDate), COUNT(t), COALESCE(SUM(t.amount), 0) " +
+                        "FROM Transaction t " +
+                        "WHERE t.transactionDate BETWEEN :startDate AND :endDate " +
+                        "GROUP BY FUNCTION('DATE', t.transactionDate) " +
+                        "ORDER BY FUNCTION('DATE', t.transactionDate)")
+        List<Object[]> getTransactionStatsByDate(
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
+
+        /**
+         * Thống kê chi tiêu theo danh mục (toàn hệ thống)
+         * Trả về: [categoryId, categoryName, icon, color, totalAmount,
+         * transactionCount]
+         */
+        @Query("SELECT t.category.id, t.category.name, t.category.icon, t.category.color, " +
+                        "COALESCE(SUM(t.amount), 0), COUNT(t) " +
+                        "FROM Transaction t " +
+                        "WHERE t.type = 'EXPENSE' " +
+                        "AND t.category IS NOT NULL " +
+                        "AND t.transactionDate BETWEEN :startDate AND :endDate " +
+                        "GROUP BY t.category.id, t.category.name, t.category.icon, t.category.color " +
+                        "ORDER BY SUM(t.amount) DESC")
+        List<Object[]> getSystemCategoryDistribution(
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
+
+        /**
+         * Thống kê giao dịch theo nguồn (ngân hàng)
+         * Trả về: [transactionSource, userCount, transactionCount]
+         */
+        @Query("SELECT t.transactionSource, COUNT(DISTINCT t.user.id), COUNT(t) " +
+                        "FROM Transaction t " +
+                        "WHERE t.transactionSource IS NOT NULL " +
+                        "AND t.transactionSource != '' " +
+                        "AND t.isAuto = true " +
+                        "GROUP BY t.transactionSource " +
+                        "ORDER BY COUNT(t) DESC")
+        List<Object[]> getBankDistribution();
+
+        /**
+         * Đếm số giao dịch tự động (từ SMS) trong khoảng thời gian
+         */
+        @Query("SELECT COUNT(t) FROM Transaction t WHERE t.isAuto = true AND t.transactionDate BETWEEN :startDate AND :endDate")
+        Long countAutoTransactionsByDateRange(
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 }
