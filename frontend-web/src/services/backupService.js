@@ -32,6 +32,18 @@ export const deleteBackup = async (id) => {
 
 export const downloadBackupUrl = (id) => `${api.defaults.baseURL}/backup/download/${id}`;
 
+// Lấy thống kê backup
+export const getBackupStatistics = async () => {
+  const res = await api.get('/backup/statistics');
+  return res.data;
+};
+
+// Lấy danh sách backup thất bại
+export const getFailedBackups = async () => {
+  const res = await api.get('/backup/failed');
+  return res.data;
+};
+
 export default {
   getBackupHealth,
   getBackupHistory,
@@ -40,4 +52,6 @@ export default {
   restoreBackup,
   deleteBackup,
   downloadBackupUrl,
+  getBackupStatistics,
+  getFailedBackups,
 };
