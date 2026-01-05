@@ -34,6 +34,12 @@ const userService = {
             return response.data;
         },
 
+        // Get user detail by ID
+        getUserDetail: async (userId) => {
+            const response = await api.get(`/admin/users/${userId}`);
+            return response.data;
+        },
+
         // Get user by ID
         getUserById: async (userId) => {
             const response = await api.get(`/admin/users/${userId}`);
