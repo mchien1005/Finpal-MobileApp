@@ -10,10 +10,8 @@
 2. [Tính năng Nổi bật](#-tính-năng-nổi-bật)
 3. [Kiến trúc Hệ thống](#-kiến-trúc-hệ-thống)
 4. [Công nghệ Sử dụng](#-công-nghệ-sử-dụng)
-5. [Cài đặt & Triển khai](#-cài-đặt--triển-khai)
-6. [Tài liệu API](#-tài-liệu-api)
-7. [Cấu hình Chi tiết](#-cấu-hình-chi-tiết)
-8. [Cơ sở Dữ liệu](#-cơ-sở-dữ-liệu)
+5. [Tài liệu API](#-tài-liệu-api)
+6. [Cấu hình Chi tiết](#-cấu-hình-chi-tiết)
 
 ---
 
