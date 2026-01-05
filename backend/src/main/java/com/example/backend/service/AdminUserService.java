@@ -33,6 +33,7 @@ public class AdminUserService {
 
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
+    private final AdminUserRepository adminUserRepository;
     private final LoginHistoryRepository loginHistoryRepository;
     private final BudgetRepository budgetRepository;
     private final SavingsGoalRepository savingsGoalRepository;
@@ -226,18 +227,31 @@ public class AdminUserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
 
-        // Không cho phép xóa tài khoản admin
-        if (user.getRole().name().equals("ADMIN")) {
-            throw new RuntimeException("Không thể xóa tài khoản Admin");
-        }
-
         // Không cho phép xóa chính mình
         if (user.getUsername().equals(adminUsername)) {
             throw new RuntimeException("Không thể xóa tài khoản của chính bạn");
         }
 
+        // Nếu là Admin, kiểm tra thêm logic
+        if (user.getRole().name().equals("ADMIN")) {
+            // Tìm thông tin AdminUser
+            var adminUserOptional = adminUserRepository.findByUserId(userId);
+            if (adminUserOptional.isPresent()) {
+                var adminUser = adminUserOptional.get();
+                // Không cho phép xóa Super Admin
+                if (adminUser.getAdminRole() != null && "SUPER_ADMIN".equals(adminUser.getAdminRole().getRoleCode())) {
+                    throw new RuntimeException("Không thể xóa tài khoản Super Admin");
+                }
+                // Vô hiệu hóa AdminUser
+                adminUser.setIsActive(false);
+                adminUserRepository.save(adminUser);
+            }
+        }
+
         // Soft delete: vô hiệu hóa và đánh dấu
         user.setIsActive(false);
+        // Rename để giải phóng unique constraint cho email/username (cho phép tạo lại
+        // user cùng tên sau này nếu cần)
         user.setEmail(user.getEmail() + "_deleted_" + System.currentTimeMillis());
         user.setUsername(user.getUsername() + "_deleted_" + System.currentTimeMillis());
         userRepository.save(user);
