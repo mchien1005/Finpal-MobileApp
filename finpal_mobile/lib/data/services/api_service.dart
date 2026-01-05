@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:device_info_plus/device_info_plus.dart';
 import 'storage_service.dart';
 
 class ApiException implements Exception {
@@ -16,13 +18,43 @@ class ApiException implements Exception {
 class ApiService {
   static const String baseUrl = 'http://175.41.150.228:8080/api';
   final StorageService _storageService = StorageService();
+  String? _userAgent;
 
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal();
 
+  Future<String> _getUserAgent() async {
+    if (_userAgent != null) return _userAgent!;
+
+    try {
+      final deviceInfo = DeviceInfoPlugin();
+      String model = 'Unknown Device';
+      String os = 'Unknown OS';
+
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        model = '${androidInfo.manufacturer} ${androidInfo.model}'.trim();
+        os = 'Android ${androidInfo.version.release}';
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        // Sử dụng utsname.machine để lấy mã model chính xác (ví dụ: iPhone13,4)
+        model = '${iosInfo.utsname.machine} (${iosInfo.name})';
+        os = '${iosInfo.systemName} ${iosInfo.systemVersion}';
+      }
+      _userAgent = 'FinpalMobile/1.0 ($model; $os)';
+    } catch (e) {
+      _userAgent = 'FinpalMobile/1.0 (Unknown Device; Unknown OS)';
+    }
+    return _userAgent!;
+  }
+
   Future<Map<String, String>> _getHeaders({bool includeAuth = true}) async {
-    final headers = {'Content-Type': 'application/json'};
+    final userAgent = await _getUserAgent();
+    final headers = {
+      'Content-Type': 'application/json',
+      'User-Agent': userAgent,
+    };
 
     if (includeAuth) {
       final token = await _storageService.getToken();
