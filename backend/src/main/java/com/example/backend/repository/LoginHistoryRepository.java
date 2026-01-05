@@ -27,10 +27,9 @@ public interface LoginHistoryRepository extends JpaRepository<LoginHistory, Long
     @Query("SELECT COUNT(l) FROM LoginHistory l WHERE l.user.id = :userId AND l.status = 'FAILED' AND l.loginTime >= :since")
     Long countRecentFailedLogins(@Param("userId") Long userId, @Param("since") LocalDateTime since);
 
-    // Lấy lần đăng nhập thành công gần nhất - dùng Spring Data naming convention
+    // Lấy lần đăng nhập thành công gần nhất - fix lỗi JPQL LIMIT 1
     LoginHistory findFirstByUserIdAndStatusOrderByLoginTimeDesc(Long userId, LoginHistory.LoginStatus status);
 
-    // Wrapper method để lấy 1 kết quả với status SUCCESS
     default LoginHistory findLastSuccessfulLogin(Long userId) {
         return findFirstByUserIdAndStatusOrderByLoginTimeDesc(userId, LoginHistory.LoginStatus.SUCCESS);
     }
