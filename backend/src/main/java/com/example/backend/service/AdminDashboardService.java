@@ -372,25 +372,65 @@ public class AdminDashboardService {
 
     /**
      * Lấy tình trạng sức khỏe hệ thống
+     * Sử dụng JMX để lấy thông tin CPU/RAM của JVM và hệ thống
      */
     public SystemHealthDTO getSystemHealth() {
         log.info("Getting system health");
 
-        // === MEMORY ===
+        // === JVM HEAP MEMORY ===
         MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
-        long usedMemory = memoryBean.getHeapMemoryUsage().getUsed() / (1024 * 1024);
-        long maxMemory = memoryBean.getHeapMemoryUsage().getMax() / (1024 * 1024);
-        long freeMemory = maxMemory - usedMemory;
-        double ramUsage = maxMemory > 0 ? (usedMemory * 100.0 / maxMemory) : 0;
+        long usedHeap = memoryBean.getHeapMemoryUsage().getUsed() / (1024 * 1024);
+        long maxHeap = memoryBean.getHeapMemoryUsage().getMax() / (1024 * 1024);
+        long freeHeap = maxHeap - usedHeap;
+        double heapUsage = maxHeap > 0 ? (usedHeap * 100.0 / maxHeap) : 0;
+
+        // === SYSTEM RAM (thông qua com.sun.management) ===
+        long totalSystemMemoryMB = maxHeap; // Fallback là JVM heap
+        long freeSystemMemoryMB = freeHeap;
+        long usedSystemMemoryMB = usedHeap;
+        double systemRamUsage = heapUsage;
+
+        try {
+            OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+            if (osBean instanceof com.sun.management.OperatingSystemMXBean sunOsBean) {
+                // Lấy thông tin RAM hệ thống thực sự
+                long totalPhysical = sunOsBean.getTotalMemorySize() / (1024 * 1024);
+                long freePhysical = sunOsBean.getFreeMemorySize() / (1024 * 1024);
+                if (totalPhysical > 0) {
+                    totalSystemMemoryMB = totalPhysical;
+                    freeSystemMemoryMB = freePhysical;
+                    usedSystemMemoryMB = totalPhysical - freePhysical;
+                    systemRamUsage = (usedSystemMemoryMB * 100.0) / totalSystemMemoryMB;
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Could not get system memory info, using JVM heap instead: {}", e.getMessage());
+        }
 
         // === CPU ===
-        OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
-        double cpuLoad = osBean.getSystemLoadAverage();
-        // Nếu không có systemLoadAverage, tính từ available processors
-        if (cpuLoad < 0) {
-            cpuLoad = 45.0; // Placeholder
-        } else {
-            cpuLoad = Math.min(cpuLoad * 100 / osBean.getAvailableProcessors(), 100);
+        double cpuLoad = 0.0;
+        try {
+            OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+            if (osBean instanceof com.sun.management.OperatingSystemMXBean sunOsBean) {
+                // Lấy CPU usage của tiến trình JVM (hoạt động trên cả Windows)
+                double processCpuLoad = sunOsBean.getProcessCpuLoad();
+                double systemCpuLoad = sunOsBean.getCpuLoad(); // Java 14+
+
+                // Ưu tiên System CPU, fallback sang Process CPU
+                if (systemCpuLoad >= 0) {
+                    cpuLoad = systemCpuLoad * 100;
+                } else if (processCpuLoad >= 0) {
+                    cpuLoad = processCpuLoad * 100;
+                } else {
+                    // Fallback: System Load Average (không hoạt động trên Windows)
+                    double loadAvg = osBean.getSystemLoadAverage();
+                    if (loadAvg >= 0) {
+                        cpuLoad = Math.min(loadAvg * 100 / osBean.getAvailableProcessors(), 100);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Could not get CPU load: {}", e.getMessage());
         }
 
         // === DATABASE ===
@@ -431,10 +471,10 @@ public class AdminDashboardService {
 
         return SystemHealthDTO.builder()
                 .cpuUsage(Math.round(cpuLoad * 10.0) / 10.0)
-                .ramUsage(Math.round(ramUsage * 10.0) / 10.0)
-                .totalMemoryMB(maxMemory)
-                .usedMemoryMB(usedMemory)
-                .freeMemoryMB(freeMemory)
+                .ramUsage(Math.round(systemRamUsage * 10.0) / 10.0)
+                .totalMemoryMB(totalSystemMemoryMB)
+                .usedMemoryMB(usedSystemMemoryMB)
+                .freeMemoryMB(freeSystemMemoryMB)
                 .databaseStatus(dbStatus)
                 .databaseConnections(dbConnections)
                 .databaseResponseMs(dbResponseMs)
