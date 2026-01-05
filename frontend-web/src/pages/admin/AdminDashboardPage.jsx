@@ -1,5 +1,5 @@
-import React from 'react';
-import { Typography, Row, Col, Card, Statistic, Badge, Progress, Tag, List } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Typography, Row, Col, Card, Statistic, Badge, Progress, Tag, List, Spin, message } from 'antd';
 import {
   UserOutlined,
   TransactionOutlined,
@@ -24,144 +24,213 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import AdminLayout from '../../layouts/AdminLayout';
+import dashboardService from '../../services/dashboardService';
 
 const { Title, Text } = Typography;
 
 const AdminDashboardPage = () => {
-
-  // Stats cards data
-  const stats = [
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState([
     {
       title: 'Tổng người dùng',
-      value: '12,543',
-      badge: '+12.5%',
+      value: '0',
+      badge: '+0%',
       badgeColor: '#dcfce7',
       badgeTextColor: '#008236',
-      detail: '1,234 active today',
+      detail: 'Đang tải...',
       icon: <img src="/images/ngdung.svg" alt="user icon" style={{ width: 24, height: 24 }} />,
       iconBg: '#dbeafe',
       iconColor: '#3b82f6',
     },
     {
       title: 'Giao dịch hôm nay',
-      value: '8,392',
-      badge: '+8.2%',
+      value: '0',
+      badge: '+0%',
       badgeColor: '#dcfce7',
       badgeTextColor: '#008236',
-      detail: '₫245.6M tổng giá trị',
-      icon: <img src="/images/lenxuong.svg" alt="user icon" style={{ width: 24, height: 24 }} />,
+      detail: 'Đang tải...',
+      icon: <img src="/images/lenxuong.svg" alt="transaction icon" style={{ width: 24, height: 24 }} />,
       iconBg: '#dcfce7',
       iconColor: '#10b981',
     },
-    {
-      title: 'AI Accuracy',
-      value: '94.2%',
-      badge: '+2.1%',
-      badgeColor: '#dcfce7',
-      badgeTextColor: '#008236',
-      detail: 'Category classification',
-      icon: <img src="/images/accuracy.svg" alt="user icon" style={{ width: 24, height: 24 }} />,
-      iconBg: '#f3e8ff',
-      iconColor: '#8b5cf6',
-    },
-    {
-      title: 'SMS Parsing',
-      value: '98.7%',
-      badge: '+0.5%',
-      badgeColor: '#dcfce7',
-      badgeTextColor: '#008236',
-      detail: '128 failed today',
-      icon: <img src="/images/warning.svg" alt="user icon" style={{ width: 24, height: 24 }} />,
-      iconBg: '#ffedd4',
-      iconColor: '#f59e0b',
-    },
-  ];
+  ]);
+  const [userGrowthData, setUserGrowthData] = useState([]);
+  const [transactionVolumeData, setTransactionVolumeData] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
+  const [bankData, setBankData] = useState([]);
+  const [systemStatus, setSystemStatus] = useState([]);
 
-  // User growth chart data
-  const userGrowthData = [
-    { month: 'T1', activeUsers: 3200, totalUsers: 3500 },
-    { month: 'T2', activeUsers: 4100, totalUsers: 4800 },
-    { month: 'T3', activeUsers: 5300, totalUsers: 6200 },
-    { month: 'T4', activeUsers: 6800, totalUsers: 8100 },
-    { month: 'T5', activeUsers: 8500, totalUsers: 9800 },
-    { month: 'T6', activeUsers: 10200, totalUsers: 11500 },
-    { month: 'T7', activeUsers: 11800, totalUsers: 12543 },
-  ];
+  // Load all dashboard data
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
 
-  // Transaction volume data
-  const transactionVolumeData = [
-    { day: 'T2', value: 850, count: 420 },
-    { day: 'T3', value: 1250, count: 580 },
-    { day: 'T4', value: 650, count: 310 },
-    { day: 'T5', value: 1850, count: 820 },
-    { day: 'T6', value: 2100, count: 950 },
-    { day: 'T7', value: 1850, count: 780 },
-    { day: 'CN', value: 1450, count: 620 },
-  ];
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Load all data in parallel
+      const [overview, userGrowth, transactionVolume, categoryDist, bankDist, systemHealth] = await Promise.all([
+        dashboardService.getOverview().catch(err => {
+          console.error('Error loading overview:', err);
+          return null;
+        }),
+        dashboardService.getUserGrowth().catch(err => {
+          console.error('Error loading user growth:', err);
+          return null;
+        }),
+        dashboardService.getTransactionVolume().catch(err => {
+          console.error('Error loading transaction volume:', err);
+          return null;
+        }),
+        dashboardService.getCategoryDistribution().catch(err => {
+          console.error('Error loading category distribution:', err);
+          return null;
+        }),
+        dashboardService.getBankDistribution().catch(err => {
+          console.error('Error loading bank distribution:', err);
+          return null;
+        }),
+        dashboardService.getSystemHealth().catch(err => {
+          console.error('Error loading system health:', err);
+          return null;
+        }),
+      ]);
 
-  // Category distribution data
-  const categoryData = [
-    { name: 'Ăn uống', value: 35, color: '#3b82f6' },
-    { name: 'Di chuyển', value: 20, color: '#10b981' },
-    { name: 'Mua sắm', value: 18, color: '#f59e0b' },
-    { name: 'Giải trí', value: 12, color: '#ef4444' },
-    { name: 'Hóa đơn', value: 10, color: '#8b5cf6' },
-    { name: 'Khác', value: 5, color: '#6b7280' },
-  ];
+      // Process overview data (stats cards)
+      if (overview) {
+        console.log('Overview data loaded successfully:', overview);
+        
+        setStats([
+          {
+            title: 'Tổng người dùng',
+            value: overview.totalUsers?.toLocaleString() || '0',
+            badge: `+${overview.userGrowthPercent || 0}%`,
+            badgeColor: '#dcfce7',
+            badgeTextColor: '#008236',
+            detail: overview.activeUsersToday ? `${overview.activeUsersToday.toLocaleString()} active today` : 'N/A',
+            icon: <img src="/images/ngdung.svg" alt="user icon" style={{ width: 24, height: 24 }} />,
+            iconBg: '#dbeafe',
+            iconColor: '#3b82f6',
+          },
+          {
+            title: 'Giao dịch hôm nay',
+            value: overview.todayTransactions?.toLocaleString() || '0',
+            badge: `+${overview.transactionsGrowthPercent || 0}%`,
+            badgeColor: '#dcfce7',
+            badgeTextColor: '#008236',
+            detail: overview.totalValueToday ? `₫${(overview.totalValueToday / 1000000).toFixed(1)}M tổng giá trị` : '₫0M tổng giá trị',
+            icon: <img src="/images/lenxuong.svg" alt="transaction icon" style={{ width: 24, height: 24 }} />,
+            iconBg: '#dcfce7',
+            iconColor: '#10b981',
+          },
+        ]);
+      } else {
+        console.warn('No overview data received from API');
+      }
 
-  // Bank distribution data
-  const bankData = [
-    { name: 'VCB', users: 3245, percentage: 25.9 },
-    { name: 'TCB', users: 2891, percentage: 23.1 },
-    { name: 'ACB', users: 2134, percentage: 17.0 },
-    { name: 'VTB', users: 1678, percentage: 13.4 },
-    { name: 'MBB', users: 1456, percentage: 11.6 },
-    { name: 'Others', users: 1139, percentage: 9.0 },
-  ];
+      // Process user growth data
+      if (userGrowth && userGrowth.data) {
+        console.log('User growth loaded:', userGrowth.data);
+        
+        // Map to expected format for LineChart
+        const growthArray = userGrowth.data.map(item => ({
+          month: item.month || '',
+          totalUsers: item.totalUsers || 0,
+          activeUsers: item.activeUsers || 0,
+          newUsers: item.newUsers || 0,
+        }));
+        
+        setUserGrowthData(growthArray);
+      }
 
-  // System status data
-  const systemStatus = [
-    { name: 'CPU Usage', value: 45, color: '#00c950' },
-    { name: 'RAM Usage', value: 68, color: '#f0b100' },
-    { name: 'Disk Usage', value: 32, color: '#00c950' },
-    { name: 'API Latency', value: 89, color: '#fb2c36' },
-  ];
+      // Process transaction volume data
+      if (transactionVolume && transactionVolume.data) {
+        console.log('Transaction volume loaded:', transactionVolume.data);
+        
+        // Map to expected format for BarChart
+        const volumeArray = transactionVolume.data.map(item => ({
+          day: item.day || '',
+          count: item.transactionCount || 0,
+          value: item.totalValue || 0, // Already in millions
+        }));
+        
+        setTransactionVolumeData(volumeArray);
+      }
 
-  // Recent errors data
-  const recentErrors = [
-    {
-      title: 'SMS Parse Failed',
-      description: 'VCB format not recognized',
-      time: '10:45 AM',
-      severity: 'high',
-       icon: <img src="/images/warning.svg" alt="user icon" style={{ width: 24, height: 24 }} />,
-    },
-    {
-      title: 'AI Low Confidence',
-      description: 'Category: Shopping (62%)',
-      time: '10:32 AM',
-      severity: 'medium',
-       icon: <img src="/images/warningvang.svg" alt="user icon" style={{ width: 24, height: 24 }} />,
-    },
-    {
-      title: 'API Error',
-      description: 'Timeout on transaction sync',
-      time: '10:18 AM',
-      severity: 'high',
-       icon: <img src="/images/warning.svg" alt="user icon" style={{ width: 24, height: 24 }} />,
-    },
-    {
-      title: 'SMS Parse Failed',
-      description: 'Unknown bank format',
-      time: '09:54 AM',
-      severity: 'medium',
-      icon: <img src="/images/warningvang.svg" alt="user icon" style={{ width: 24, height: 24 }} />,
-    },
-  ];
+      // Process category distribution
+      if (categoryDist && categoryDist.categories) {
+        console.log('Category distribution loaded:', categoryDist.categories);
+        
+        // Map to expected format for PieChart
+        const categoryArray = categoryDist.categories.map(cat => ({
+          name: cat.categoryName || cat.name,
+          value: cat.percentage || 0,
+          color: cat.color || '#cccccc',
+          count: cat.transactionCount || cat.count || 0,
+          amount: cat.amount || 0,
+        }));
+        
+        setCategoryData(categoryArray);
+      }
+
+      // Process bank distribution
+      if (bankDist && bankDist.banks) {
+        console.log('Bank distribution loaded:', bankDist.banks);
+        
+        // Map to expected format
+        const bankArray = bankDist.banks.map(bank => ({
+          name: bank.bankCode || bank.bankName,
+          users: bank.userCount || 0,
+          percentage: bank.percentage || 0,
+        }));
+        
+        setBankData(bankArray);
+      }
+
+      // Process system health
+      if (systemHealth) {
+        console.log('System health loaded:', systemHealth);
+        
+        // Convert object to array for Progress bars
+        const healthArray = [
+          {
+            name: 'CPU Usage',
+            value: systemHealth.cpuUsage || 0,
+            color: systemHealth.cpuUsage > 80 ? '#ef4444' : systemHealth.cpuUsage > 60 ? '#f59e0b' : '#10b981',
+          },
+          {
+            name: 'RAM Usage',
+            value: systemHealth.ramUsage || 0,
+            color: systemHealth.ramUsage > 80 ? '#ef4444' : systemHealth.ramUsage > 60 ? '#f59e0b' : '#10b981',
+          },
+          {
+            name: 'Database',
+            value: systemHealth.databaseStatus === 'CONNECTED' ? 100 : systemHealth.databaseStatus === 'SLOW' ? 70 : 0,
+            color: systemHealth.databaseStatus === 'CONNECTED' ? '#3b82f6' : systemHealth.databaseStatus === 'SLOW' ? '#f59e0b' : '#ef4444',
+          },
+          {
+            name: 'AI Backend',
+            value: systemHealth.aiBackendStatus === 'ONLINE' ? 100 : systemHealth.aiBackendStatus === 'DEGRADED' ? 60 : 0,
+            color: systemHealth.aiBackendStatus === 'ONLINE' ? '#8b5cf6' : systemHealth.aiBackendStatus === 'DEGRADED' ? '#f59e0b' : '#ef4444',
+          },
+        ];
+        
+        setSystemStatus(healthArray);
+      }
+
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      message.error('Không thể tải dữ liệu dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <AdminLayout>
-      {/* Header */}
+      <Spin spinning={loading} tip="Đang tải dữ liệu dashboard...">
+        {/* Header */}
         <div style={{ marginBottom: 32 }}>
           <Title level={2} style={{ margin: 0, marginBottom: 4, color: '#101828' }}>
             Dashboard & Analytics
@@ -174,7 +243,7 @@ const AdminDashboardPage = () => {
         {/* Stats Cards */}
         <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
           {stats.map((stat, index) => (
-            <Col xs={24} sm={12} lg={6} key={index}>
+            <Col xs={24} sm={12} lg={12} key={index}>
               <Card
                 style={{
                   borderRadius: 14,
@@ -363,7 +432,7 @@ const AdminDashboardPage = () => {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={false}
                     outerRadius={75}
                     fill="#8884d8"
                     dataKey="value"
@@ -425,7 +494,7 @@ const AdminDashboardPage = () => {
                           fontWeight: 500,
                         }}
                       >
-                        {item.name}
+                        {item.name.length > 4 ? item.name.substring(0, 4) : item.name}
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -498,68 +567,7 @@ const AdminDashboardPage = () => {
             </Card>
           </Col>
         </Row>
-                
-
-        {/* Recent Errors */}
-        <Card
-          title={
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 16, color: '#101828' }}>Lỗi gần đây</Text>
-              <Tag color="error">4 errors in last hour</Tag>
-            </div>
-          }
-          style={{
-            borderRadius: 14,
-            border: '1px solid rgba(0, 0, 0, 0.1)',
-            boxShadow: 'none',
-          }}
-          bodyStyle={{ padding: '24px' }}
-        >
-          <List
-            itemLayout="horizontal"
-            dataSource={recentErrors}
-            renderItem={(item) => (
-              <List.Item
-                style={{
-                  background: '#f9fafb',
-                  padding: 16,
-                  borderRadius: 10,
-                  marginBottom: 12,
-                }}
-              >
-                <List.Item.Meta
-                  avatar={
-                    <div
-                      style={{
-                        width: 20,
-                        height: 20,
-                        color: item.severity === 'high' ? '#fb2c36' : '#f0b100',
-                        fontSize: 20,
-                      }}
-                    >
-                      {item.icon}
-                    </div>
-                  }
-                  title={
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <Text style={{ fontSize: 14, color: '#101828' }}>{item.title}</Text>
-                      <Tag
-                        color={item.severity === 'high' ? 'error' : 'warning'}
-                        style={{ fontSize: 12 }}
-                      >
-                        {item.severity}
-                      </Tag>
-                    </div>
-                  }
-                  description={
-                    <Text style={{ fontSize: 14, color: '#4a5565' }}>{item.description}</Text>
-                  }
-                />
-                <Text style={{ fontSize: 12, color: '#6a7282' }}>{item.time}</Text>
-              </List.Item>
-            )}
-          />
-        </Card>
+      </Spin>
     </AdminLayout>
   );
 };
