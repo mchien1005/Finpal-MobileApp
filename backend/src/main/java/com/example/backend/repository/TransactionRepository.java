@@ -122,6 +122,18 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
                         @Param("startDate") LocalDateTime startDate,
                         @Param("endDate") LocalDateTime endDate);
 
+        /**
+         * Kiểm tra giao dịch trùng lặp bằng SMS content hash
+         * Hash được lưu trong cột smsContentEncrypted (noi_dung_sms_ma_hoa)
+         * Đây là cách chính xác nhất để phát hiện SMS trùng lặp
+         */
+        @Query("SELECT COUNT(t) > 0 FROM Transaction t WHERE t.user.id = :userId " +
+                        "AND t.smsContentEncrypted = :smsHash " +
+                        "AND t.isAuto = true")
+        boolean existsBySmsContentHash(
+                        @Param("userId") Long userId,
+                        @Param("smsHash") String smsHash);
+
         // ============================================================================
         // ADMIN DASHBOARD QUERIES
         // ============================================================================
