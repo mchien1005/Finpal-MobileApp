@@ -123,17 +123,21 @@ const ResetPasswordModal = ({ open, onConfirm, onCancel, user }) => {
 
           <div>
             <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Email</div>
-            <div style={{ fontSize: 14, color: '#111827' }}>{user?.contact?.email}</div>
+            <div style={{ 
+              fontSize: 14, 
+              color: '#111827',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              maxWidth: '180px'
+            }}>
+              {user?.contact?.email}
+            </div>
           </div>
 
           <div>
             <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Số điện thoại</div>
             <div style={{ fontSize: 14, color: '#111827' }}>{user?.contact?.phone}</div>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Ngân hàng</div>
-            <div style={{ fontSize: 14, color: '#111827' }}>{user?.bank}</div>
           </div>
 
           <div>

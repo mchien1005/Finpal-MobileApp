@@ -9,9 +9,7 @@ export const useUserSearch = (users) => {
   const [searchText, setSearchText] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('Tất cả');
   const [advancedFilters, setAdvancedFilters] = useState({
-    bank: null,
     minTransactions: '',
-    minSpending: '',
     registeredDate: null,
   });
 
@@ -38,22 +36,10 @@ export const useUserSearch = (users) => {
     }
 
     // Apply advanced filters
-    if (advancedFilters.bank) {
-      result = result.filter(user => user.bank === advancedFilters.bank);
-    }
-
     if (advancedFilters.minTransactions) {
       result = result.filter(user => {
         const transactions = parseInt(user.transactions);
         return transactions >= parseInt(advancedFilters.minTransactions);
-      });
-    }
-
-    if (advancedFilters.minSpending) {
-      result = result.filter(user => {
-        // Extract number from spending string like "₫45.6M"
-        const spending = parseFloat(user.totalSpending.replace(/[₫M]/g, ''));
-        return spending >= parseFloat(advancedFilters.minSpending);
       });
     }
 

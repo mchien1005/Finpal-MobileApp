@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Typography, Row, Col, Card, Table, Input, Button, Tag, Avatar, Dropdown, Space, DatePicker } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Typography, Row, Col, Card, Table, Input, Button, Tag, Avatar, Dropdown, Space, DatePicker, message, Spin } from 'antd';
 import {
   SearchOutlined,
   FilterOutlined,
@@ -12,6 +12,7 @@ import AdminSidebar from '../../components/admin/AdminSidebar';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { useUserSearch } from '../../hooks/useUserSearch';
 import UserDetailModal from '../../components/admin/UserDetailModal';
+import userService from '../../services/userService';
 
 const { Title, Text } = Typography;
 
@@ -20,31 +21,60 @@ const UserManagementPage = () => {
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetailVisible, setUserDetailVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [statsData, setStatsData] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
 
   // Stats cards data
-  const statsCards = [
+  const statsCards = statsData ? [
     {
       title: 'Tổng người dùng',
-      value: '12,543',
-      change: '+12.5% từ tháng trước',
+      value: statsData.totalUsers?.toLocaleString() || '0',
+      change: statsData.totalUsersChange || '+0% từ tháng trước',
       changeColor: '#00a63e',
     },
     {
       title: 'Active Users',
-      value: '11,234',
-      change: '89.5% tổng số',
+      value: statsData.activeUsers?.toLocaleString() || '0',
+      change: statsData.activeUsersPercentage || '0% tổng số',
       changeColor: '#00a63e',
     },
     {
       title: 'Người dùng mới (tháng này)',
-      value: '1,456',
-      change: '+8.2% so tháng trước',
+      value: statsData.newUsersThisMonth?.toLocaleString() || '0',
+      change: statsData.newUsersChange || '+0% so tháng trước',
       changeColor: '#00a63e',
     },
     {
       title: 'Tài khoản bị khóa',
-      value: '89',
-      change: '0.7% tổng số',
+      value: statsData.bannedUsers?.toLocaleString() || '0',
+      change: statsData.bannedUsersPercentage || '0% tổng số',
+      changeColor: '#e7000b',
+    },
+  ] : [
+    {
+      title: 'Tổng người dùng',
+      value: '0',
+      change: 'Đang tải...',
+      changeColor: '#00a63e',
+    },
+    {
+      title: 'Active Users',
+      value: '0',
+      change: 'Đang tải...',
+      changeColor: '#00a63e',
+    },
+    {
+      title: 'Người dùng mới (tháng này)',
+      value: '0',
+      change: 'Đang tải...',
+      changeColor: '#00a63e',
+    },
+    {
+      title: 'Tài khoản bị khóa',
+      value: '0',
+      change: 'Đang tải...',
       changeColor: '#e7000b',
     },
   ];
@@ -87,31 +117,23 @@ const UserManagementPage = () => {
       align: 'left',
       render: (contact) => (
         <div>
-          <div style={{ marginBottom: 2 }}><Text style={{ fontSize: 14, color: '#111827' }}>{contact.email}</Text></div>
+          <div style={{ marginBottom: 2 }}>
+            <Text 
+              style={{ 
+                fontSize: 14, 
+                color: '#111827',
+                display: 'block',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: '200px'
+              }}
+            >
+              {contact.email}
+            </Text>
+          </div>
           <div><Text type="secondary" style={{ fontSize: 12, color: '#6b7280' }}>{contact.phone}</Text></div>
         </div>
-      ),
-    },
-    {
-      title: 'Ngân hàng',
-      dataIndex: 'bank',
-      key: 'bank',
-      width: 100,
-      align: 'left',
-      render: (bank) => (
-        <Tag
-          style={{
-            background: '#dbeafe',
-            color: '#2563eb',
-            border: 'none',
-            borderRadius: 6,
-            fontSize: 12,
-            fontWeight: 500,
-            padding: '2px 10px',
-          }}
-        >
-          {bank}
-        </Tag>
       ),
     },
     {
@@ -153,14 +175,6 @@ const UserManagementPage = () => {
       render: (text) => <Text style={{ fontSize: 14, color: '#111827' }}>{text}</Text>,
     },
     {
-      title: 'Tổng chi tiêu',
-      dataIndex: 'totalSpending',
-      key: 'totalSpending',
-      width: 130,
-      align: 'left',
-      render: (text) => <Text style={{ fontSize: 14, color: '#111827' }}>{text}</Text>,
-    },
-    {
       title: 'Ngày đăng ký',
       dataIndex: 'registeredDate',
       key: 'registeredDate',
@@ -196,68 +210,151 @@ const UserManagementPage = () => {
   ];
 
   // Table data - convert to state so we can delete users
-  const [dataSource, setDataSource] = useState([
-    {
-      key: '1',
-      userId: 'USR001',
-      user: { name: 'Nguyễn Văn A' },
-      contact: { email: 'nguyenvana@gmail.com', phone: '0901234567' },
-      bank: 'VCB',
-      status: 'Active',
-      transactions: '245',
-      totalSpending: '₫45.6M',
-      registeredDate: '15/03/2024',
-      lastActive: '2 giờ trước',
-    },
-    {
-      key: '2',
-      userId: 'USR002',
-      user: { name: 'Trần Thị B' },
-      contact: { email: 'tranthib@gmail.com', phone: '0907654321' },
-      bank: 'TCB',
-      status: 'Active',
-      transactions: '189',
-      totalSpending: '₫38.9M',
-      registeredDate: '20/03/2024',
-      lastActive: '5 phút trước',
-    },
-    {
-      key: '3',
-      userId: 'USR003',
-      user: { name: 'Lê Văn C' },
-      contact: { email: 'levanc@gmail.com', phone: '0912345678' },
-      bank: 'ACB',
-      status: 'Inactive',
-      transactions: '67',
-      totalSpending: '₫12.3M',
-      registeredDate: '10/02/2024',
-      lastActive: '3 ngày trước',
-    },
-    {
-      key: '4',
-      userId: 'USR004',
-      user: { name: 'Phạm Thị D' },
-      contact: { email: 'phamthid@gmail.com', phone: '0909876543' },
-      bank: 'VTB',
-      status: 'Active',
-      transactions: '312',
-      totalSpending: '₫67.8M',
-      registeredDate: '25/03/2024',
-      lastActive: '1 giờ trước',
-    },
-    {
-      key: '5',
-      userId: 'USR005',
-      user: { name: 'Hoàng Văn E' },
-      contact: { email: 'hoangvane@gmail.com', phone: '0903456789' },
-      bank: 'MBB',
-      status: 'Banned',
-      transactions: '45',
-      totalSpending: '₫8.9M',
-      registeredDate: '05/01/2024',
-      lastActive: '1 tuần trước',
-    },
-  ]);
+  const [dataSource, setDataSource] = useState([]);
+
+  // Load data from API
+  useEffect(() => {
+    loadUsers();
+    loadStatistics();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching users from API...');
+      const response = await userService.admin.getUsers();
+      console.log('API Response:', response);
+      
+      // Handle different response formats
+      let users = [];
+      if (Array.isArray(response)) {
+        users = response;
+      } else if (response?.data && Array.isArray(response.data)) {
+        users = response.data;
+      } else if (response?.content && Array.isArray(response.content)) {
+        users = response.content;
+      } else {
+        console.warn('Unexpected response format:', response);
+        throw new Error('Invalid response format');
+      }
+      
+      console.log('Users array:', users);
+      
+      // Log first user to see structure
+      if (users.length > 0) {
+        console.log('First user structure:', JSON.stringify(users[0], null, 2));
+        console.log('Available fields:', Object.keys(users[0]));
+      }
+      
+      // Transform API data to match table format
+      const transformedData = users.map((user, index) => {
+        return {
+          key: index.toString(),
+          userId: user.userCode || user.id?.toString() || `USR${String(index + 1).padStart(3, '0')}`,
+          realId: user.id, // Store the actual numeric ID for API calls
+          user: { name: user.fullName || user.username || user.name || 'N/A' },
+          contact: { 
+            email: user.email || 'N/A', 
+            phone: user.phone || user.phoneNumber || user.mobile || 'Chưa cập nhật'
+          },
+          status: user.isActive === true ? 'Active' : (user.isActive === false ? 'Inactive' : (user.status || 'Active')),
+          transactions: user.totalTransactions?.toString() || user.transactionCount?.toString() || '0',
+          registeredDate: user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : user.registeredDate || 'N/A',
+          lastActive: user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('vi-VN') : (user.lastActive || 'N/A'),
+        };
+      });
+      
+      console.log('Transformed data:', transformedData);
+      setDataSource(transformedData);
+      
+      // Calculate stats from users if API doesn't provide them
+      if (!statsData) {
+        calculateStatsFromUsers(transformedData);
+      }
+      
+      message.success(`Đã tải ${transformedData.length} người dùng`);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      message.error(`Không thể tải danh sách người dùng: ${error.response?.data?.message || error.message}`);
+      // Set empty array on error
+      setDataSource([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateStatsFromUsers = (users) => {
+    const totalUsers = users.length;
+    const activeUsers = users.filter(u => u.status === 'Active').length;
+    const bannedUsers = users.filter(u => u.status === 'Banned').length;
+    
+    // Calculate users registered this month
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const newUsersThisMonth = users.filter(u => {
+      if (u.registeredDate && u.registeredDate !== 'N/A') {
+        const parts = u.registeredDate.split('/');
+        if (parts.length === 3) {
+          const month = parseInt(parts[1]) - 1; // JS months are 0-indexed
+          const year = parseInt(parts[2]);
+          return month === currentMonth && year === currentYear;
+        }
+      }
+      return false;
+    }).length;
+    
+    const stats = {
+      totalUsers,
+      activeUsers,
+      bannedUsers,
+      newUsersThisMonth,
+      activeUsersPercentage: `${((activeUsers / totalUsers) * 100).toFixed(1)}% tổng số`,
+      bannedUsersPercentage: `${((bannedUsers / totalUsers) * 100).toFixed(1)}% tổng số`,
+      totalUsersChange: '+0% từ tháng trước',
+      newUsersChange: '+0% so tháng trước',
+    };
+    
+    console.log('Calculated stats from users:', stats);
+    setStatsData(stats);
+  };
+
+  const loadStatistics = async () => {
+    try {
+      console.log('Fetching statistics from API...');
+      const response = await userService.admin.getStatistics();
+      console.log('Statistics Response:', response);
+      
+      // Handle different response formats
+      let stats = response;
+      if (response?.data) {
+        stats = response.data;
+      }
+      
+      // Check if stats has valid data
+      if (stats && (stats.totalUsers !== undefined || stats.total !== undefined)) {
+        setStatsData(stats);
+        console.log('Stats data set from API:', stats);
+      } else {
+        console.warn('Statistics API returned no valid data, will calculate from users');
+      }
+    } catch (error) {
+      console.error('Error loading statistics:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      // Don't show error message, will calculate from users instead
+      console.log('Will calculate stats from users list instead');
+    }
+  };
 
   const statusMenuItems = [
     { key: 'all', label: 'Tất cả' },
@@ -287,15 +384,24 @@ const UserManagementPage = () => {
   };
 
   const handleDeleteUser = (userId) => {
-    // Remove user from dataSource
-    setDataSource(prev => prev.filter(user => user.userId !== userId));
+    // Remove user from dataSource (API already called by modal)
+    const newData = dataSource.filter(user => user.userId !== userId);
+    setDataSource(newData);
+    // Recalculate statistics
+    calculateStatsFromUsers(newData);
   };
 
   const handleDisableUser = (userId) => {
-    // Update user status to Inactive
-    setDataSource(prev => prev.map(user => 
-      user.userId === userId ? { ...user, status: 'Inactive' } : user
-    ));
+    // Update user status in dataSource (API already called by modal)
+    setDataSource(prev => prev.map(user => {
+      if (user.userId === userId) {
+        const newStatus = user.status === 'Active' ? 'Inactive' : 'Active';
+        return { ...user, status: newStatus };
+      }
+      return user;
+    }));
+    // Reload statistics
+    calculateStatsFromUsers(dataSource);
   };
 
   return (
@@ -452,50 +558,6 @@ const UserManagementPage = () => {
                 <Col xs={24} sm={12}>
                   <div style={{ marginBottom: 8 }}>
                     <label style={{ fontSize: 14, fontWeight: 500, color: '#101828' }}>
-                      Ngân hàng
-                    </label>
-                  </div>
-                  <Dropdown
-                    menu={{
-                      items: [
-                        { key: 'all', label: 'Tất cả' },
-                        { key: 'VCB', label: 'VCB' },
-                        { key: 'TCB', label: 'TCB' },
-                        { key: 'ACB', label: 'ACB' },
-                        { key: 'VTB', label: 'VTB' },
-                        { key: 'MBB', label: 'MBB' },
-                      ],
-                      onClick: ({ key }) => {
-                        setAdvancedFilters({
-                          ...advancedFilters,
-                          bank: key === 'all' ? null : key
-                        });
-                      },
-                    }}
-                    trigger={['click']}
-                  >
-                    <Button
-                      style={{
-                        width: '100%',
-                        height: 40,
-                        background: '#f3f3f5',
-                        border: 'none',
-                        borderRadius: 8,
-                        textAlign: 'left',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <span>{advancedFilters.bank || 'VCB'}</span>
-                      <DownOutlined />
-                    </Button>
-                  </Dropdown>
-                </Col>
-
-                <Col xs={24} sm={12}>
-                  <div style={{ marginBottom: 8 }}>
-                    <label style={{ fontSize: 14, fontWeight: 500, color: '#101828' }}>
                       Tổng giao dịch tối thiểu
                     </label>
                   </div>
@@ -504,26 +566,6 @@ const UserManagementPage = () => {
                     type="number"
                     value={advancedFilters.minTransactions}
                     onChange={(e) => setAdvancedFilters({ ...advancedFilters, minTransactions: e.target.value })}
-                    style={{
-                      height: 40,
-                      background: '#f3f3f5',
-                      border: 'none',
-                      borderRadius: 8,
-                    }}
-                  />
-                </Col>
-
-                <Col xs={24} sm={12}>
-                  <div style={{ marginBottom: 8 }}>
-                    <label style={{ fontSize: 14, fontWeight: 500, color: '#101828' }}>
-                      Tổng chi tiêu tối thiểu (triệu)
-                    </label>
-                  </div>
-                  <Input
-                    placeholder="45"
-                    type="number"
-                    value={advancedFilters.minSpending}
-                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, minSpending: e.target.value })}
                     style={{
                       height: 40,
                       background: '#f3f3f5',
@@ -568,20 +610,31 @@ const UserManagementPage = () => {
           }}
           bodyStyle={{ padding: 0 }}
         >
-          <Table
-            columns={columns}
-            dataSource={filteredUsers}
-            pagination={{
-              current: 1,
-              pageSize: 5,
-              total: totalFiltered,
-              showSizeChanger: false,
-              showTotal: (total) => `Hiển thị 1-5 trong tổng số ${total.toLocaleString()} người dùng`,
-              style: { padding: '16px 24px', marginBottom: 0 },
-            }}
-            tableLayout="fixed"
-            style={{ borderRadius: 12 }}
-          />
+          <Spin spinning={loading} tip="Đang tải dữ liệu...">
+            <Table
+              columns={columns}
+              dataSource={filteredUsers}
+              pagination={{
+                current: currentPage,
+                pageSize: pageSize,
+                total: totalFiltered,
+                showSizeChanger: true,
+                pageSizeOptions: ['5', '10', '20', '50'],
+                showTotal: (total, range) => `Hiển thị ${range[0]}-${range[1]} trong tổng số ${total.toLocaleString()} người dùng`,
+                onChange: (page, pageSize) => {
+                  setCurrentPage(page);
+                  setPageSize(pageSize);
+                },
+                onShowSizeChange: (current, size) => {
+                  setCurrentPage(1);
+                  setPageSize(size);
+                },
+                style: { padding: '16px 24px', marginBottom: 0 },
+              }}
+              tableLayout="fixed"
+              style={{ borderRadius: 12 }}
+            />
+          </Spin>
         </Card>
 
         {/* User Detail Modal */}
