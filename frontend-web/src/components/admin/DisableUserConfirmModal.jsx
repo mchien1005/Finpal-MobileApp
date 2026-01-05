@@ -1,8 +1,10 @@
 import React from 'react';
 import { CloseOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 
-const DisableUserConfirmModal = ({ open, onConfirm, onCancel, userName, userEmail }) => {
+const DisableUserConfirmModal = ({ open, onConfirm, onCancel, userName, userEmail, isActive = true }) => {
   if (!open) return null;
+
+  const isDisabling = isActive; // true = đang vô hiệu hóa, false = đang kích hoạt lại
 
   return (
     <>
@@ -62,14 +64,14 @@ const DisableUserConfirmModal = ({ open, onConfirm, onCancel, userName, userEmai
               width: 48,
               height: 48,
               borderRadius: '50%',
-              background: '#FEE2E2',
+              background: isDisabling ? '#FEE2E2' : '#DCFCE7',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
             }}
           >
-            <ExclamationCircleOutlined style={{ fontSize: 24, color: '#DC2626' }} />
+            <ExclamationCircleOutlined style={{ fontSize: 24, color: isDisabling ? '#DC2626' : '#16A34A' }} />
           </div>
 
           <div style={{ flex: 1 }}>
@@ -83,7 +85,7 @@ const DisableUserConfirmModal = ({ open, onConfirm, onCancel, userName, userEmai
                 lineHeight: '28px',
               }}
             >
-              Vô hiệu hóa tài khoản
+              {isDisabling ? 'Vô hiệu hóa tài khoản' : 'Kích hoạt lại tài khoản'}
             </h3>
 
             {/* Description */}
@@ -96,7 +98,7 @@ const DisableUserConfirmModal = ({ open, onConfirm, onCancel, userName, userEmai
                 lineHeight: '20px',
               }}
             >
-              Bạn có chắc chắn muốn vô hiệu hóa tài khoản này?
+              {isDisabling ? 'Bạn có chắc chắn muốn vô hiệu hóa tài khoản này?' : 'Bạn có chắc chắn muốn kích hoạt lại tài khoản này?'}
             </p>
           </div>
         </div>
@@ -104,8 +106,8 @@ const DisableUserConfirmModal = ({ open, onConfirm, onCancel, userName, userEmai
         {/* User Info Box */}
         <div
           style={{
-            background: '#FEF2F2',
-            border: '1px solid #FECACA',
+            background: isDisabling ? '#FEF2F2' : '#F0FDF4',
+            border: isDisabling ? '1px solid #FECACA' : '1px solid #BBF7D0',
             borderRadius: 12,
             padding: 16,
             marginBottom: 16,
@@ -132,7 +134,9 @@ const DisableUserConfirmModal = ({ open, onConfirm, onCancel, userName, userEmai
             marginBottom: 24,
           }}
         >
-          Người dùng sẽ không thể đăng nhập và truy cập hệ thống cho đến khi tài khoản được kích hoạt lại.
+          {isDisabling 
+            ? 'Người dùng sẽ không thể đăng nhập và truy cập hệ thống cho đến khi tài khoản được kích hoạt lại.'
+            : 'Người dùng sẽ có thể đăng nhập và truy cập hệ thống trở lại sau khi kích hoạt.'}
         </p>
 
         {/* Action Buttons */}
@@ -164,7 +168,7 @@ const DisableUserConfirmModal = ({ open, onConfirm, onCancel, userName, userEmai
             onClick={onConfirm}
             style={{
               padding: '10px 20px',
-              background: '#DC2626',
+              background: isDisabling ? '#DC2626' : '#16A34A',
               border: 'none',
               borderRadius: 8,
               color: '#FFFFFF',
@@ -174,10 +178,10 @@ const DisableUserConfirmModal = ({ open, onConfirm, onCancel, userName, userEmai
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
-              e.target.style.background = '#B91C1C';
+              e.target.style.background = isDisabling ? '#B91C1C' : '#15803D';
             }}
             onMouseLeave={(e) => {
-              e.target.style.background = '#DC2626';
+              e.target.style.background = isDisabling ? '#DC2626' : '#16A34A';
             }}
           >
             Xác nhận

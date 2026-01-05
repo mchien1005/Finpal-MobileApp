@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Modal, Row, Col, Tag, Button } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Modal, Row, Col, Tag, Button, message } from 'antd';
 import { CloseOutlined, SyncOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import DeleteUserConfirmModal from './DeleteUserConfirmModal';
 import DisableUserConfirmModal from './DisableUserConfirmModal';
 import ResetPasswordModal from './ResetPasswordModal';
 import SuccessModal from '../common/SuccessModal';
+import userService from '../../services/userService';
 
 const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuccess }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -13,6 +14,14 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
   const [showDisableSuccess, setShowDisableSuccess] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [showResetSuccess, setShowResetSuccess] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState(user?.status);
+
+  // Update currentStatus when user prop changes
+  useEffect(() => {
+    if (user) {
+      setCurrentStatus(user.status);
+    }
+  }, [user]);
 
   if (!user) return null;
 
@@ -20,12 +29,20 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
     setShowDeleteConfirm(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     setShowDeleteConfirm(false);
-    // Simulate delete API call
-    setTimeout(() => {
-      setShowDeleteSuccess(true);
-    }, 300);
+    try {
+      // Try using realId first (numeric ID), fallback to userId (userCode)
+      const idToUse = user.realId || user.userId;
+      console.log('Attempting to delete user:', { userId: user.userId, realId: user.realId, using: idToUse });
+      await userService.admin.deleteUser(idToUse);
+      setTimeout(() => {
+        setShowDeleteSuccess(true);
+      }, 300);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      message.error('Không thể xóa người dùng');
+    }
   };
 
   const handleCancelDelete = () => {
@@ -48,12 +65,29 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
     setShowDisableConfirm(true);
   };
 
-  const handleConfirmDisable = () => {
+  const handleConfirmDisable = async () => {
     setShowDisableConfirm(false);
-    // Simulate disable API call
-    setTimeout(() => {
-      setShowDisableSuccess(true);
-    }, 300);
+    try {
+      // Try using realId first (numeric ID), fallback to userId (userCode)
+      const idToUse = user.realId || user.userId;
+      console.log('Attempting to toggle status for user:', { userId: user.userId, realId: user.realId, using: idToUse });
+      const response = await userService.admin.toggleStatus(idToUse);
+      console.log('Toggle status response:', response);
+      
+      // Update local status immediately
+      const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+      setCurrentStatus(newStatus);
+      
+      setTimeout(() => {
+        setShowDisableSuccess(true);
+      }, 300);
+    } catch (error) {
+      console.error('Error disabling user:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Error message:', error.message);
+      message.error(`Không thể vô hiệu hóa người dùng: ${error.response?.data?.message || error.message}`);
+    }
   };
 
   const handleCancelDisable = () => {
@@ -76,13 +110,20 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
     setShowResetPassword(true);
   };
 
-  const handleConfirmReset = (newPassword) => {
+  const handleConfirmReset = async (newPassword) => {
     setShowResetPassword(false);
-    // Simulate reset password API call
-    console.log('New password:', newPassword);
-    setTimeout(() => {
-      setShowResetSuccess(true);
-    }, 300);
+    try {
+      // Try using realId first (numeric ID), fallback to userId (userCode)
+      const idToUse = user.realId || user.userId;
+      await userService.admin.resetPassword(idToUse);
+      console.log('Password reset for user:', idToUse);
+      setTimeout(() => {
+        setShowResetSuccess(true);
+      }, 300);
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      message.error('Không thể reset mật khẩu');
+    }
   };
 
   const handleCancelReset = () => {
@@ -168,14 +209,14 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
             <div>
               <Tag
                 style={{
-                  background: '#dcfce7',
-                  color: '#008236',
+                  background: currentStatus === 'Active' ? '#dcfce7' : (currentStatus === 'Inactive' ? '#f3f4f6' : '#fee2e2'),
+                  color: currentStatus === 'Active' ? '#008236' : (currentStatus === 'Inactive' ? '#4b5563' : '#dc2626'),
                   border: 'none',
                   borderRadius: 6,
                   padding: '2px 8px',
                 }}
               >
-                {user.status}
+                {currentStatus}
               </Tag>
             </div>
           </Col>
@@ -185,7 +226,15 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
               <span style={{ fontSize: 12, color: '#6a7282' }}>Email</span>
             </div>
             <div>
-              <span style={{ fontSize: 14, color: '#101828' }}>
+              <span style={{ 
+                fontSize: 14, 
+                color: '#101828',
+                display: 'block',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: '200px'
+              }}>
                 {user.contact?.email}
               </span>
             </div>
@@ -198,17 +247,6 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
             <div>
               <span style={{ fontSize: 14, color: '#101828' }}>
                 {user.contact?.phone}
-              </span>
-            </div>
-          </Col>
-
-          <Col span={12}>
-            <div style={{ marginBottom: 4 }}>
-              <span style={{ fontSize: 12, color: '#6a7282' }}>Ngân hàng</span>
-            </div>
-            <div>
-              <span style={{ fontSize: 14, color: '#101828' }}>
-                {user.bank}
               </span>
             </div>
           </Col>
@@ -228,10 +266,10 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
         {/* Financial Overview */}
         <div style={{ marginBottom: 24 }}>
           <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: '#101828' }}>
-            Tổng quan tài chính
+            Thông tin giao dịch
           </h3>
           <Row gutter={12}>
-            <Col span={8}>
+            <Col span={24}>
               <div
                 style={{
                   background: '#f9fafb',
@@ -245,40 +283,6 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
                 </div>
                 <div style={{ fontSize: 20, fontWeight: 600, color: '#101828' }}>
                   {user.transactions}
-                </div>
-              </div>
-            </Col>
-            <Col span={8}>
-              <div
-                style={{
-                  background: '#f9fafb',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 8,
-                  padding: '16px 12px',
-                }}
-              >
-                <div style={{ fontSize: 12, color: '#6a7282', marginBottom: 8 }}>
-                  Tổng chi tiêu
-                </div>
-                <div style={{ fontSize: 20, fontWeight: 600, color: '#101828' }}>
-                  {user.totalSpending}
-                </div>
-              </div>
-            </Col>
-            <Col span={8}>
-              <div
-                style={{
-                  background: '#f9fafb',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 8,
-                  padding: '16px 12px',
-                }}
-              >
-                <div style={{ fontSize: 12, color: '#6a7282', marginBottom: 8 }}>
-                  TB/giao dịch
-                </div>
-                <div style={{ fontSize: 20, fontWeight: 600, color: '#101828' }}>
-                  ₫186K
                 </div>
               </div>
             </Col>
@@ -343,19 +347,36 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
             </Button>
           </Col>
           <Col span={8}>
-            <Button
-              icon={<EditOutlined />}
-              onClick={handleDisableClick}
-              style={{
-                width: '100%',
-                height: 40,
-                borderRadius: 8,
-                border: '1px solid #fca5a5',
-                color: '#dc2626',
-              }}
-            >
-              Vô hiệu hóa
-            </Button>
+            {currentStatus === 'Active' ? (
+              <Button
+                icon={<EditOutlined />}
+                onClick={handleDisableClick}
+                style={{
+                  width: '100%',
+                  height: 40,
+                  borderRadius: 8,
+                  border: '1px solid #fca5a5',
+                  color: '#dc2626',
+                }}
+              >
+                Vô hiệu hóa
+              </Button>
+            ) : (
+              <Button
+                icon={<EditOutlined />}
+                onClick={handleDisableClick}
+                style={{
+                  width: '100%',
+                  height: 40,
+                  borderRadius: 8,
+                  border: '1px solid #86efac',
+                  color: '#16a34a',
+                  background: '#f0fdf4',
+                }}
+              >
+                Kích hoạt lại
+              </Button>
+            )}
           </Col>
           <Col span={8}>
             <Button
@@ -391,6 +412,7 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
         onCancel={handleCancelDisable}
         userName={user.user?.name}
         userEmail={user.contact?.email}
+        isActive={currentStatus === 'Active'}
       />
 
       {/* Delete Success Modal */}
@@ -405,7 +427,7 @@ const UserDetailModal = ({ visible, onClose, user, onDeleteSuccess, onDisableSuc
       <SuccessModal
         open={showDisableSuccess}
         onClose={handleDisableSuccessClose}
-        message="Vô hiệu hóa tài khoản thành công!"
+        message={currentStatus === 'Inactive' ? "Vô hiệu hóa tài khoản thành công!" : "Kích hoạt tài khoản thành công!"}
         buttonText="Đồng ý"
       />
 
