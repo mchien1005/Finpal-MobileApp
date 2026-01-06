@@ -5,23 +5,25 @@ import { CloseOutlined } from '@ant-design/icons';
 const AdminDetailModal = ({ visible, onClose, admin }) => {
   if (!admin) return null;
 
-  const activityLogs = [
-    {
-      action: 'Đã chỉnh sửa category "Ăn uống"',
-      timestamp: '24/03/2024 10:30',
-      ip: '192.168.1.1',
-    },
-    {
-      action: 'Đã thêm template SMS cho Vietcombank',
-      timestamp: '23/03/2024 15:20',
-      ip: '192.168.1.1',
-    },
-    {
-      action: 'Đã xem danh sách người dùng',
-      timestamp: '23/03/2024 09:15',
-      ip: '192.168.1.1',
-    },
-  ];
+  // Format date
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString('vi-VN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  // Use data from API or fallback to old structure
+  const displayName = admin.displayName || admin.name || 'N/A';
+  const roleName = admin.roleName || admin.role || 'N/A';
+  const permissionList = admin.permissionNames || admin.permissions || [];
+  const activities = admin.recentActivities || [];
+  const isActive = admin.isActive !== undefined ? admin.isActive : (admin.status === 'Hoạt động');
 
   return (
     <Modal
@@ -61,7 +63,7 @@ const AdminDetailModal = ({ visible, onClose, admin }) => {
               Tên
             </label>
             <div style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>
-              {admin.name}
+              {displayName}
             </div>
           </div>
         </div>
@@ -73,7 +75,7 @@ const AdminDetailModal = ({ visible, onClose, admin }) => {
             </label>
             <Tag
               style={{
-                background: '#f3e8ff',
+                background: admin.roleColor || '#f3e8ff',
                 color: '#9333ea',
                 border: 'none',
                 borderRadius: 6,
@@ -82,7 +84,7 @@ const AdminDetailModal = ({ visible, onClose, admin }) => {
                 padding: '2px 10px',
               }}
             >
-              {admin.role}
+              {roleName}
             </Tag>
           </div>
           <div>
@@ -91,8 +93,8 @@ const AdminDetailModal = ({ visible, onClose, admin }) => {
             </label>
             <Tag
               style={{
-                background: admin.status === 'Hoạt động' ? '#dcfce7' : '#f3f4f6',
-                color: admin.status === 'Hoạt động' ? '#16a34a' : '#6b7280',
+                background: isActive ? '#dcfce7' : '#f3f4f6',
+                color: isActive ? '#16a34a' : '#6b7280',
                 border: 'none',
                 borderRadius: 6,
                 fontSize: 12,
@@ -100,7 +102,7 @@ const AdminDetailModal = ({ visible, onClose, admin }) => {
                 padding: '2px 10px',
               }}
             >
-              {admin.status}
+              {isActive ? 'Hoạt động' : 'Không hoạt động'}
             </Tag>
           </div>
         </div>
@@ -110,7 +112,7 @@ const AdminDetailModal = ({ visible, onClose, admin }) => {
             Hoạt động lần cuối
           </label>
           <div style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>
-            {admin.lastActive}
+            {admin.lastActivityText || admin.lastActive || 'Chưa có hoạt động'}
           </div>
         </div>
       </div>
@@ -121,22 +123,26 @@ const AdminDetailModal = ({ visible, onClose, admin }) => {
           Quyền hạn
         </label>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {admin.permissions?.map((permission, index) => (
-            <Tag
-              key={index}
-              style={{
-                background: '#dcfce7',
-                color: '#16a34a',
-                border: 'none',
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 500,
-                padding: '4px 12px',
-              }}
-            >
-              {permission}
-            </Tag>
-          ))}
+          {permissionList.length > 0 ? (
+            permissionList.map((permission, index) => (
+              <Tag
+                key={index}
+                style={{
+                  background: '#dcfce7',
+                  color: '#16a34a',
+                  border: 'none',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  padding: '4px 12px',
+                }}
+              >
+                {permission}
+              </Tag>
+            ))
+          ) : (
+            <span style={{ fontSize: 14, color: '#6b7280' }}>Không có quyền</span>
+          )}
         </div>
       </div>
 
@@ -146,24 +152,30 @@ const AdminDetailModal = ({ visible, onClose, admin }) => {
           Lịch sử hoạt động gần đây
         </label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {activityLogs.map((log, index) => (
-            <div
-              key={index}
-              style={{
-                padding: '12px',
-                background: '#f9fafb',
-                borderRadius: 8,
-                border: '1px solid #e5e7eb',
-              }}
-            >
-              <div style={{ fontSize: 14, color: '#111827', fontWeight: 500, marginBottom: 4 }}>
-                {log.action}
+          {activities.length > 0 ? (
+            activities.map((log, index) => (
+              <div
+                key={index}
+                style={{
+                  padding: '12px',
+                  background: '#f9fafb',
+                  borderRadius: 8,
+                  border: '1px solid #e5e7eb',
+                }}
+              >
+                <div style={{ fontSize: 14, color: '#111827', fontWeight: 500, marginBottom: 4 }}>
+                  {log.description}
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280' }}>
+                  {log.timestampText} • IP: {log.ipAddress || 'N/A'}
+                </div>
               </div>
-              <div style={{ fontSize: 12, color: '#6b7280' }}>
-                {log.timestamp} • IP: {log.ip}
-              </div>
+            ))
+          ) : (
+            <div style={{ padding: '12px', textAlign: 'center', color: '#6b7280', fontSize: 14 }}>
+              Chưa có hoạt động
             </div>
-          ))}
+          )}
         </div>
       </div>
 
@@ -178,7 +190,7 @@ const AdminDetailModal = ({ visible, onClose, admin }) => {
               Ngày tạo tài khoản
             </label>
             <div style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>
-              15/01/2024
+              {formatDate(admin.createdAt)}
             </div>
           </div>
           <div>
@@ -186,7 +198,7 @@ const AdminDetailModal = ({ visible, onClose, admin }) => {
               Người tạo
             </label>
             <div style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>
-              System Admin
+              {admin.createdBy || 'System'}
             </div>
           </div>
           <div>
@@ -194,7 +206,7 @@ const AdminDetailModal = ({ visible, onClose, admin }) => {
               Tổng số hành động
             </label>
             <div style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>
-              1,234
+              {admin.totalActions !== undefined ? admin.totalActions.toLocaleString() : 'N/A'}
             </div>
           </div>
           <div>
@@ -202,7 +214,7 @@ const AdminDetailModal = ({ visible, onClose, admin }) => {
               Đăng nhập lần cuối
             </label>
             <div style={{ fontSize: 14, color: '#2563eb', fontWeight: 500 }}>
-              24/03/2024 10:00
+              {formatDate(admin.lastLoginAt)}
             </div>
           </div>
         </div>

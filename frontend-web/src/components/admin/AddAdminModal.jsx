@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { Modal, Input, Button } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Modal, Input, Button, Select, Tag } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 
-const AddAdminModal = ({ visible, onClose, onAdd }) => {
+const AddAdminModal = ({ visible, onClose, onAdd, roles = [], permissions = [], loading = false }) => {
   const [formData, setFormData] = useState({
     email: '',
-    role: 'Admin',
+    roleCode: roles.length > 0 ? roles[0].roleCode : '',
     name: '',
     permissions: '',
     fullName: '',
@@ -14,6 +14,23 @@ const AddAdminModal = ({ visible, onClose, onAdd }) => {
     confirmPassword: '',
   });
 
+  // Auto-fill permissions when role changes
+  useEffect(() => {
+    if (formData.roleCode && roles.length > 0) {
+      const selectedRole = roles.find(r => r.roleCode === formData.roleCode);
+      console.log('Selected role:', selectedRole);
+      if (selectedRole) {
+        // Use permissionNames if available, otherwise use permissionCodes
+        const perms = selectedRole.permissionNames || selectedRole.permissionCodes || [];
+        console.log('Role permissions:', perms);
+        setFormData(prev => ({
+          ...prev,
+          permissions: Array.isArray(perms) ? perms.join(', ') : ''
+        }));
+      }
+    }
+  }, [formData.roleCode, roles]);
+
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -21,22 +38,13 @@ const AddAdminModal = ({ visible, onClose, onAdd }) => {
   const handleSubmit = () => {
     // Validation logic here
     onAdd(formData);
-    setFormData({
-      email: '',
-      role: 'Admin',
-      name: '',
-      permissions: '',
-      fullName: '',
-      password: '',
-      phone: '',
-      confirmPassword: '',
-    });
+    // Don't reset form here - let parent component handle success/error
   };
 
   const handleCancel = () => {
     setFormData({
       email: '',
-      role: 'Admin',
+      roleCode: roles.length > 0 ? roles[0].roleCode : '',
       name: '',
       permissions: '',
       fullName: '',
@@ -92,16 +100,20 @@ const AddAdminModal = ({ visible, onClose, onAdd }) => {
           <label style={{ display: 'block', fontSize: 15, color: '#374151', marginBottom: 8, fontWeight: 500 }}>
             Vai trò
           </label>
-          <Input
-            placeholder="Admin"
-            value={formData.role}
-            onChange={(e) => handleChange('role', e.target.value)}
+          <Select
+            placeholder="Chọn vai trò"
+            value={formData.roleCode}
+            onChange={(value) => handleChange('roleCode', value)}
+            loading={loading}
             style={{
+              width: '100%',
               height: 48,
-              borderRadius: 8,
-              border: '1px solid #d1d5db',
-              fontSize: 15,
             }}
+            size="large"
+            options={roles.map(role => ({
+              value: role.roleCode,
+              label: role.roleName,
+            }))}
           />
         </div>
 
@@ -125,19 +137,42 @@ const AddAdminModal = ({ visible, onClose, onAdd }) => {
 
         <div>
           <label style={{ display: 'block', fontSize: 15, color: '#374151', marginBottom: 8, fontWeight: 500 }}>
-            Quyền
+            Quyền (tự động theo vai trò)
           </label>
-          <Input
-            placeholder="All"
-            value={formData.permissions}
-            onChange={(e) => handleChange('permissions', e.target.value)}
+          <div
             style={{
-              height: 48,
+              minHeight: 48,
               borderRadius: 8,
               border: '1px solid #d1d5db',
               fontSize: 15,
+              padding: '8px 12px',
+              background: '#f9fafb',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 6,
+              alignItems: 'center',
             }}
-          />
+          >
+            {formData.permissions ? (
+              formData.permissions.split(', ').map((perm, idx) => (
+                <Tag
+                  key={idx}
+                  style={{
+                    background: '#dcfce7',
+                    color: '#16a34a',
+                    border: 'none',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    margin: 0,
+                  }}
+                >
+                  {perm}
+                </Tag>
+              ))
+            ) : (
+              <span style={{ color: '#9ca3af', fontSize: 14 }}>Chọn vai trò để xem quyền</span>
+            )}
+          </div>
         </div>
 
         {/* Row 3 */}
