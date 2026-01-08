@@ -2,6 +2,8 @@ package com.example.backend.service;
 
 import com.example.backend.model.*;
 import com.example.backend.repository.*;
+import com.example.backend.util.EncryptionUtil;
+import com.itextpdf.io.font.PdfEncodings;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
@@ -28,8 +30,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +41,7 @@ public class UserDataExportService {
     private final CategoryRepository categoryRepository;
     private final BudgetRepository budgetRepository;
     private final SavingsGoalRepository savingsGoalRepository;
+    private final EncryptionUtil encryptionUtil;
 
     @Value("${pdf.export.temp.directory:/tmp/finpal-exports}")
     private String exportDirectory;
@@ -85,24 +86,33 @@ public class UserDataExportService {
                 Document document = new Document(pdfDoc)) {
 
             // Font hỗ trợ Unicode (tiếng Việt)
-            // Sử dụng font từ classpath hoặc system font
             PdfFont font;
             PdfFont boldFont;
             try {
-                // Thử dùng font Arial từ hệ thống (hỗ trợ Unicode)
-                font = PdfFontFactory.createFont("Helvetica", com.itextpdf.io.font.PdfEncodings.IDENTITY_H,
-                        PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
-                boldFont = PdfFontFactory.createFont("Helvetica-Bold", com.itextpdf.io.font.PdfEncodings.IDENTITY_H,
-                        PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
+                // Thử load font từ hệ thống (ưu tiên Noto Sans hoặc DejaVu Sans trên Linux)
+                String fontPath = "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf";
+                String boldFontPath = "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf";
+
+                if (new File(fontPath).exists()) {
+                    font = PdfFontFactory.createFont(fontPath, PdfEncodings.IDENTITY_H,
+                            PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
+                    boldFont = PdfFontFactory.createFont(boldFontPath, PdfEncodings.IDENTITY_H,
+                            PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
+                } else {
+                    // Fallback to standard names if file path not found
+                    log.warn("Noto Sans font not found at {}, falling back to StandardFonts", fontPath);
+                    font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+                    boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+                }
             } catch (Exception e) {
-                // Fallback về font chuẩn nếu không tìm thấy
-                log.warn("Could not load Unicode font, falling back to standard fonts");
+                log.warn("Could not load preferred font, using StandardFonts: " + e.getMessage());
                 font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
                 boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
             }
 
-            // Tiêu đề (dùng tiếng Việt không dấu để đảm bảo hiển thị)
-            Paragraph title = new Paragraph("FINPAL - BAO CAO DU LIEU CA NHAN")
+            // Tiêu đề (dùng tiếng Việt không dấu để đảm bảo hiển thị nếu fallback fail)
+            // Nhưng nếu font load được thì dùng tiếng Việt có dấu ok
+            Paragraph title = new Paragraph("FINPAL - BÁO CÁO DỮ LIỆU CÁ NHÂN")
                     .setFont(boldFont)
                     .setFontSize(18)
                     .setTextAlignment(TextAlignment.CENTER)
@@ -125,7 +135,7 @@ public class UserDataExportService {
             addSavingsGoals(document, userId, font, boldFont);
 
             // Footer
-            Paragraph footer = new Paragraph(String.format("Bao cao duoc tao vao: %s",
+            Paragraph footer = new Paragraph(String.format("Báo cáo được tạo vào: %s",
                     getVietnamNow().format(DATE_TIME_FORMATTER)))
                     .setFont(font)
                     .setFontSize(10)
@@ -139,7 +149,7 @@ public class UserDataExportService {
     }
 
     private void addUserInfo(Document document, User user, PdfFont font, PdfFont boldFont) {
-        document.add(new Paragraph("1. THONG TIN NGUOI DUNG")
+        document.add(new Paragraph("1. THÔNG TIN NGƯỜI DÙNG")
                 .setFont(boldFont)
                 .setFontSize(14)
                 .setMarginTop(10));
@@ -147,20 +157,20 @@ public class UserDataExportService {
         Table table = new Table(UnitValue.createPercentArray(new float[] { 30, 70 }))
                 .setWidth(UnitValue.createPercentValue(100));
 
-        addTableRow(table, "Ten dang nhap:", user.getUsername(), font, boldFont);
+        addTableRow(table, "Tên đăng nhập:", user.getUsername(), font, boldFont);
         addTableRow(table, "Email:", user.getEmail(), font, boldFont);
-        addTableRow(table, "Ho ten:", user.getFullName() != null ? user.getFullName() : "N/A", font, boldFont);
-        addTableRow(table, "So dien thoai:", user.getPhone() != null ? user.getPhone() : "N/A", font, boldFont);
-        addTableRow(table, "Ngay sinh:",
+        addTableRow(table, "Họ tên:", user.getFullName() != null ? user.getFullName() : "N/A", font, boldFont);
+        addTableRow(table, "Số điện thoại:", user.getPhone() != null ? user.getPhone() : "N/A", font, boldFont);
+        addTableRow(table, "Ngày sinh:",
                 user.getDateOfBirth() != null ? user.getDateOfBirth().format(DATE_FORMATTER) : "N/A", font, boldFont);
-        addTableRow(table, "Ngay tao tai khoan:",
+        addTableRow(table, "Ngày tạo tài khoản:",
                 user.getCreatedAt() != null ? user.getCreatedAt().format(DATE_TIME_FORMATTER) : "N/A", font, boldFont);
 
         document.add(table);
     }
 
     private void addOverviewStatistics(Document document, Long userId, PdfFont font, PdfFont boldFont) {
-        document.add(new Paragraph("2. THONG KE TONG QUAN")
+        document.add(new Paragraph("2. THỐNG KÊ TỔNG QUAN")
                 .setFont(boldFont)
                 .setFontSize(14)
                 .setMarginTop(15));
@@ -180,16 +190,16 @@ public class UserDataExportService {
         Table table = new Table(UnitValue.createPercentArray(new float[] { 40, 60 }))
                 .setWidth(UnitValue.createPercentValue(100));
 
-        addTableRow(table, "Tong so giao dich:", String.valueOf(allTransactions.size()), font, boldFont);
-        addTableRow(table, "Tong thu nhap:", formatMoney(totalIncome) + " VND", font, boldFont);
-        addTableRow(table, "Tong chi tieu:", formatMoney(totalExpense) + " VND", font, boldFont);
-        addTableRow(table, "So du:", formatMoney(totalIncome.subtract(totalExpense)) + " VND", font, boldFont);
+        addTableRow(table, "Tổng số giao dịch:", String.valueOf(allTransactions.size()), font, boldFont);
+        addTableRow(table, "Tổng thu nhập:", formatMoney(totalIncome) + " VND", font, boldFont);
+        addTableRow(table, "Tổng chi tiêu:", formatMoney(totalExpense) + " VND", font, boldFont);
+        addTableRow(table, "Số dư:", formatMoney(totalIncome.subtract(totalExpense)) + " VND", font, boldFont);
 
         document.add(table);
     }
 
     private void addTransactions(Document document, Long userId, PdfFont font, PdfFont boldFont) {
-        document.add(new Paragraph("3. LICH SU GIAO DICH")
+        document.add(new Paragraph("3. LỊCH SỬ GIAO DỊCH")
                 .setFont(boldFont)
                 .setFontSize(14)
                 .setMarginTop(15));
@@ -197,7 +207,7 @@ public class UserDataExportService {
         List<Transaction> transactions = transactionRepository.findByUserIdOrderByTransactionDateDesc(userId);
 
         if (transactions.isEmpty()) {
-            document.add(new Paragraph("Khong co giao dich nao.").setFont(font));
+            document.add(new Paragraph("Không có giao dịch nào.").setFont(font));
             return;
         }
 
@@ -205,30 +215,41 @@ public class UserDataExportService {
                 .setWidth(UnitValue.createPercentValue(100));
 
         // Header
-        table.addHeaderCell(new Cell().add(new Paragraph("Ngay").setFont(boldFont).setFontSize(10)));
-        table.addHeaderCell(new Cell().add(new Paragraph("Loai").setFont(boldFont).setFontSize(10)));
-        table.addHeaderCell(new Cell().add(new Paragraph("Danh muc").setFont(boldFont).setFontSize(10)));
-        table.addHeaderCell(new Cell().add(new Paragraph("Mo ta").setFont(boldFont).setFontSize(10)));
-        table.addHeaderCell(new Cell().add(new Paragraph("So tien").setFont(boldFont).setFontSize(10)));
+        table.addHeaderCell(new Cell().add(new Paragraph("Ngày").setFont(boldFont).setFontSize(10)));
+        table.addHeaderCell(new Cell().add(new Paragraph("Loại").setFont(boldFont).setFontSize(10)));
+        table.addHeaderCell(new Cell().add(new Paragraph("Danh mục").setFont(boldFont).setFontSize(10)));
+        table.addHeaderCell(new Cell().add(new Paragraph("Mô tả").setFont(boldFont).setFontSize(10)));
+        table.addHeaderCell(new Cell().add(new Paragraph("Số tiền").setFont(boldFont).setFontSize(10)));
 
         // Data (giới hạn 1000 giao dịch để tránh file PDF quá lớn)
         int limit = Math.min(transactions.size(), 1000);
         for (int i = 0; i < limit; i++) {
             Transaction t = transactions.get(i);
+
+            // Decrypt description
+            String description = t.getDescription();
+            try {
+                if (description != null && !description.isEmpty()) {
+                    description = encryptionUtil.decrypt(description);
+                }
+            } catch (Exception e) {
+                log.debug("Failed to decrypt transaction description for ID {}: {}", t.getId(), e.getMessage());
+            }
+
             table.addCell(new Cell()
                     .add(new Paragraph(t.getTransactionDate().format(DATE_FORMATTER)).setFont(font).setFontSize(9)));
             table.addCell(new Cell().add(new Paragraph(t.getType().name()).setFont(font).setFontSize(9)));
             table.addCell(new Cell().add(new Paragraph(t.getCategory() != null ? t.getCategory().getName() : "N/A")
                     .setFont(font).setFontSize(9)));
             table.addCell(new Cell().add(
-                    new Paragraph(t.getDescription() != null ? t.getDescription() : "").setFont(font).setFontSize(9)));
+                    new Paragraph(description != null ? description : "").setFont(font).setFontSize(9)));
             table.addCell(new Cell().add(new Paragraph(formatMoney(t.getAmount())).setFont(font).setFontSize(9)));
         }
 
         document.add(table);
 
         if (transactions.size() > 1000) {
-            document.add(new Paragraph(String.format("(Chi hien thi 1000/%d giao dich gan nhat)", transactions.size()))
+            document.add(new Paragraph(String.format("(Chỉ hiển thị 1000/%d giao dịch gần nhất)", transactions.size()))
                     .setFont(font)
                     .setFontSize(9)
                     .setItalic());
@@ -236,7 +257,7 @@ public class UserDataExportService {
     }
 
     private void addBudgets(Document document, Long userId, PdfFont font, PdfFont boldFont) {
-        document.add(new Paragraph("4. NGAN SACH")
+        document.add(new Paragraph("4. NGÂN SÁCH")
                 .setFont(boldFont)
                 .setFontSize(14)
                 .setMarginTop(15));
@@ -244,21 +265,21 @@ public class UserDataExportService {
         List<Budget> budgets = budgetRepository.findByUserId(userId);
 
         if (budgets.isEmpty()) {
-            document.add(new Paragraph("Khong co ngan sach nao.").setFont(font));
+            document.add(new Paragraph("Không có ngân sách nào.").setFont(font));
             return;
         }
 
         Table table = new Table(UnitValue.createPercentArray(new float[] { 30, 25, 25, 20 }))
                 .setWidth(UnitValue.createPercentValue(100));
 
-        table.addHeaderCell(new Cell().add(new Paragraph("Danh muc").setFont(boldFont).setFontSize(10)));
-        table.addHeaderCell(new Cell().add(new Paragraph("Giai han").setFont(boldFont).setFontSize(10)));
-        table.addHeaderCell(new Cell().add(new Paragraph("Thoi gian").setFont(boldFont).setFontSize(10)));
-        table.addHeaderCell(new Cell().add(new Paragraph("Trang thai").setFont(boldFont).setFontSize(10)));
+        table.addHeaderCell(new Cell().add(new Paragraph("Danh mục").setFont(boldFont).setFontSize(10)));
+        table.addHeaderCell(new Cell().add(new Paragraph("Giới hạn").setFont(boldFont).setFontSize(10)));
+        table.addHeaderCell(new Cell().add(new Paragraph("Thời gian").setFont(boldFont).setFontSize(10)));
+        table.addHeaderCell(new Cell().add(new Paragraph("Trạng thái").setFont(boldFont).setFontSize(10)));
 
         for (Budget budget : budgets) {
             // Only categoryId is available, not category object
-            String categoryName = "Tong";
+            String categoryName = "Tổng";
             if (budget.getCategoryId() != null) {
                 Category cat = null;
                 try {
@@ -280,7 +301,7 @@ public class UserDataExportService {
     }
 
     private void addSavingsGoals(Document document, Long userId, PdfFont font, PdfFont boldFont) {
-        document.add(new Paragraph("5. MUC TIEU TIET KIEM")
+        document.add(new Paragraph("5. MỤC TIÊU TIẾT KIỆM")
                 .setFont(boldFont)
                 .setFontSize(14)
                 .setMarginTop(15));
@@ -288,18 +309,18 @@ public class UserDataExportService {
         List<SavingsGoal> goals = savingsGoalRepository.findByUserId(userId);
 
         if (goals.isEmpty()) {
-            document.add(new Paragraph("Khong co muc tieu tiet kiem.").setFont(font));
+            document.add(new Paragraph("Không có mục tiêu tiết kiệm.").setFont(font));
             return;
         }
 
         Table table = new Table(UnitValue.createPercentArray(new float[] { 30, 20, 20, 15, 15 }))
                 .setWidth(UnitValue.createPercentValue(100));
 
-        table.addHeaderCell(new Cell().add(new Paragraph("Ten muc tieu").setFont(boldFont).setFontSize(10)));
-        table.addHeaderCell(new Cell().add(new Paragraph("Muc tieu").setFont(boldFont).setFontSize(10)));
-        table.addHeaderCell(new Cell().add(new Paragraph("Hien tai").setFont(boldFont).setFontSize(10)));
-        table.addHeaderCell(new Cell().add(new Paragraph("Tien do").setFont(boldFont).setFontSize(10)));
-        table.addHeaderCell(new Cell().add(new Paragraph("Han").setFont(boldFont).setFontSize(10)));
+        table.addHeaderCell(new Cell().add(new Paragraph("Tên mục tiêu").setFont(boldFont).setFontSize(10)));
+        table.addHeaderCell(new Cell().add(new Paragraph("Mục tiêu").setFont(boldFont).setFontSize(10)));
+        table.addHeaderCell(new Cell().add(new Paragraph("Hiện tại").setFont(boldFont).setFontSize(10)));
+        table.addHeaderCell(new Cell().add(new Paragraph("Tiến độ").setFont(boldFont).setFontSize(10)));
+        table.addHeaderCell(new Cell().add(new Paragraph("Hạn").setFont(boldFont).setFontSize(10)));
 
         for (SavingsGoal goal : goals) {
             table.addCell(new Cell().add(new Paragraph(goal.getName()).setFont(font).setFontSize(9)));

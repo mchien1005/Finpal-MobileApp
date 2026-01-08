@@ -25,6 +25,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         default-mysql-client \
         wget \
+        fonts-noto \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
