@@ -29,7 +29,6 @@ public class AdminActivityService {
 
     private final AdminActivityLogRepository activityLogRepository;
     private final AdminUserRepository adminUserRepository;
-    private final LoginHistoryRepository loginHistoryRepository;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -156,7 +155,9 @@ public class AdminActivityService {
                 .timestampText(log.getTimestamp() != null ? log.getTimestamp().format(DATE_FORMATTER) : null)
                 .ipAddress(log.getIpAddress())
                 .status(log.getStatus())
-                .adminName(getAdminName(log.getAdminUser()))
+                .adminName(log.getAdminUser() != null && log.getAdminUser().getUser() != null
+                        ? log.getAdminUser().getUser().getUsername()
+                        : null)
                 .build();
     }
 

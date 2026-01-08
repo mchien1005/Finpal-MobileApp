@@ -65,9 +65,6 @@ public class Transaction {
     @Column(name = "ghi_chu", columnDefinition = "TEXT")
     private String notes;
 
-    @Column(name = "anh_hoa_don", length = 500)
-    private String receiptImage;
-
     @Column(name = "ngay_tao", updatable = false)
     private LocalDateTime createdAt;
 
