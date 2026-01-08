@@ -49,7 +49,7 @@ public class TransactionService {
         RULE_ONLY // Chỉ dùng Rule
     }
 
-    @Value("${ai.categorization.strategy:RULE_FIRST}")
+    @Value("${ai.categorization.strategy:AI_FIRST}")
     private String strategyConfig;
 
     private CategorizationStrategy getStrategy() {
@@ -86,26 +86,45 @@ public class TransactionService {
         transaction.setTransactionDate(request.getTransactionDate());
         transaction.setIsAuto(request.getIsAuto());
         transaction.setNotes(request.getNotes());
-        // Mã hóa nội dung SMS trước khi lưu
+        // Lưu SMS hash vào cột smsContentEncrypted (không cần encrypt vì đã là hash)
+        // Hash được tính từ SMSTransactionService và truyền qua smsContent field
         if (request.getSmsContent() != null && !request.getSmsContent().isEmpty()) {
-            transaction.setSmsContentEncrypted(encryptionUtil.encrypt(request.getSmsContent()));
+            transaction.setSmsContentEncrypted(request.getSmsContent());
         }
         transaction.setIsVerified(false);
         transaction.setIsAnomaly(false);
 
         // Tự động phân loại category nếu user chưa chọn
+        // QUAN TRỌNG: Phân loại TRƯỚC khi mã hóa description
         if (request.getCategoryId() != null) {
             Category category = categoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new RuntimeException("Category not found"));
             transaction.setCategory(category);
             transaction.setCategorizationSource("USER"); // User tự chọn category
         } else {
-            // Sử dụng description để phân loại
-            String textToAnalyze = request.getDescription();
+            // Ưu tiên merchantHint (từ SMS) để phân loại, fallback sang description
+            // merchantHint chứa thông tin nhạy cảm nên chỉ dùng để phân loại, KHÔNG lưu DB
+            String textToAnalyze = request.getMerchantHint();
+            if (textToAnalyze == null || textToAnalyze.trim().isEmpty()) {
+                textToAnalyze = request.getDescription();
+            }
             if (textToAnalyze != null && !textToAnalyze.trim().isEmpty()) {
                 autoCategorizeTransaction(transaction, textToAnalyze.trim(),
                         request.getAmount().doubleValue(), user.getId());
+            } else {
+                // Không có text để phân loại → gán danh mục mặc định
+                assignDefaultCategory(transaction);
             }
+        }
+
+        // MÃ HÓA dữ liệu nhạy cảm trước khi lưu vào DB
+        // Description có thể chứa thông tin cá nhân từ giao dịch nhập tay
+        if (request.getDescription() != null && !request.getDescription().isEmpty()) {
+            transaction.setDescription(encryptionUtil.encrypt(request.getDescription()));
+        }
+        // Notes cũng cần được mã hóa
+        if (request.getNotes() != null && !request.getNotes().isEmpty()) {
+            transaction.setNotes(encryptionUtil.encrypt(request.getNotes()));
         }
 
         Transaction saved = transactionRepository.save(transaction);
@@ -147,11 +166,12 @@ public class TransactionService {
             }
         }
 
-        return TransactionResponse.fromEntity(saved);
+        return TransactionResponse.fromEntityDecrypted(saved, encryptionUtil::decrypt);
     }
 
     /**
      * Tự động phân loại transaction theo strategy
+     * Nếu không phân loại được → fallback sang danh mục "Khác"
      */
     private void autoCategorizeTransaction(Transaction transaction, String textToAnalyze,
             Double amount, Long userId) {
@@ -172,6 +192,49 @@ public class TransactionService {
                 autoCategorizeRuleOnly(transaction, textToAnalyze);
                 break;
         }
+
+        // Fallback: Nếu vẫn chưa có category → gán vào "Khác"
+        if (transaction.getCategory() == null) {
+            assignDefaultCategory(transaction);
+        }
+    }
+
+    /**
+     * Gán danh mục mặc định "Khác" khi không thể phân loại
+     * Tìm danh mục "Khác" theo đúng loại giao dịch (EXPENSE/INCOME)
+     */
+    private void assignDefaultCategory(Transaction transaction) {
+        Category.CategoryType categoryType = transaction.getType() == Transaction.TransactionType.EXPENSE
+                ? Category.CategoryType.EXPENSE
+                : Category.CategoryType.INCOME;
+
+        Category defaultCategory = null;
+
+        // Bước 1: Thử tìm "Khác (Chi)" hoặc "Khác (Thu)" theo loại
+        String specificName = categoryType == Category.CategoryType.EXPENSE ? "Khác (Chi)" : "Khác (Thu)";
+        defaultCategory = categoryRepository.findByNameAndType(specificName, categoryType).orElse(null);
+
+        // Bước 2: Thử tìm "Khác" theo đúng loại
+        if (defaultCategory == null) {
+            defaultCategory = categoryRepository.findByNameAndType("Khác", categoryType).orElse(null);
+        }
+
+        // Bước 3: Lấy danh mục bất kỳ theo loại (cuối cùng trong danh sách thường là
+        // "Khác")
+        if (defaultCategory == null) {
+            var categories = categoryRepository.findByType(categoryType);
+            if (!categories.isEmpty()) {
+                defaultCategory = categories.get(categories.size() - 1); // Lấy cuối danh sách
+            }
+        }
+
+        if (defaultCategory != null) {
+            transaction.setCategory(defaultCategory);
+            transaction.setCategorizationSource("DEFAULT");
+            log.info("📌 Fallback to default category: '{}' ({})", defaultCategory.getName(), categoryType);
+        } else {
+            log.warn("⚠️ No default category found for type {}!", categoryType);
+        }
     }
 
     /**
@@ -184,14 +247,25 @@ public class TransactionService {
                 textToAnalyze, amount, textToAnalyze, userId);
 
         if (aiPrediction != null && aiCategorizationService.isConfidentPrediction(aiPrediction)) {
-            Category category = categoryRepository.findByName(aiPrediction.getCategory()).orElse(null);
+            String predictedName = aiPrediction.getCategory();
+
+            // Thử tìm theo tên chính xác
+            Category category = categoryRepository.findByName(predictedName).orElse(null);
+
+            // Nếu không tìm thấy, thử tìm theo tên tiếng Việt tương ứng
+            if (category == null) {
+                category = findCategoryByAIName(predictedName, transaction.getType());
+            }
+
             if (category != null) {
                 transaction.setCategory(category);
                 transaction.setCategorizationSource("AI");
                 transaction.setAiConfidence(aiPrediction.getConfidence());
-                log.info("✅ AI_FIRST: AI categorized '{}' -> {} (confidence: {}%)",
-                        textToAnalyze, category.getName(), aiPrediction.getConfidence() * 100);
+                log.info("✅ AI_FIRST: AI categorized '{}' -> {} (from AI: {}, confidence: {}%)",
+                        textToAnalyze, category.getName(), predictedName, aiPrediction.getConfidence() * 100);
                 return;
+            } else {
+                log.warn("⚠️ AI_FIRST: AI predicted '{}' but no matching category in DB", predictedName);
             }
         }
 
@@ -212,6 +286,8 @@ public class TransactionService {
      */
     private void autoCategorizeRuleFirst(Transaction transaction, String textToAnalyze,
             Double amount, Long userId) {
+        log.info("🔍 RULE_FIRST: Trying to categorize '{}' (amount: {})", textToAnalyze, amount);
+
         // Bước 1: Thử Rule trước
         Long ruleId = categoryRuleService.suggestCategoryByMerchant(textToAnalyze);
         if (ruleId != null) {
@@ -223,21 +299,109 @@ public class TransactionService {
                 return;
             }
         }
+        log.info("⚠️ RULE_FIRST: No rule matched for '{}'", textToAnalyze);
 
         // Bước 2: Fallback sang AI
+        log.info("🤖 RULE_FIRST: Trying AI categorization...");
         CategoryPrediction aiPrediction = aiCategorizationService.predictCategory(
                 textToAnalyze, amount, textToAnalyze, userId);
 
         if (aiPrediction != null && aiCategorizationService.isConfidentPrediction(aiPrediction)) {
-            Category category = categoryRepository.findByName(aiPrediction.getCategory()).orElse(null);
+            String predictedName = aiPrediction.getCategory();
+            log.info("🤖 AI predicted: '{}' (confidence: {}%)", predictedName, aiPrediction.getConfidence() * 100);
+
+            // Thử tìm theo tên chính xác
+            Category category = categoryRepository.findByName(predictedName).orElse(null);
+
+            // Nếu không tìm thấy, thử tìm theo tên tiếng Việt tương ứng
+            if (category == null) {
+                category = findCategoryByAIName(predictedName, transaction.getType());
+            }
+
             if (category != null) {
                 transaction.setCategory(category);
                 transaction.setCategorizationSource("AI");
                 transaction.setAiConfidence(aiPrediction.getConfidence());
-                log.info("🤖 RULE_FIRST → AI fallback: '{}' -> {} (confidence: {}%)",
-                        textToAnalyze, category.getName(), aiPrediction.getConfidence() * 100);
+                log.info("✅ RULE_FIRST → AI: '{}' -> {} (from AI: {})",
+                        textToAnalyze, category.getName(), predictedName);
+            } else {
+                log.warn("⚠️ AI predicted '{}' but no matching category in DB", predictedName);
             }
+        } else {
+            log.info("⚠️ AI categorization failed or low confidence for '{}'", textToAnalyze);
         }
+    }
+
+    /**
+     * Tìm category dựa trên tên AI trả về (có thể là tiếng Anh hoặc khác định dạng)
+     */
+    private Category findCategoryByAIName(String aiCategoryName, Transaction.TransactionType txType) {
+        if (aiCategoryName == null)
+            return null;
+
+        String nameLower = aiCategoryName.toLowerCase().trim();
+        Category.CategoryType categoryType = txType == Transaction.TransactionType.EXPENSE
+                ? Category.CategoryType.EXPENSE
+                : Category.CategoryType.INCOME;
+
+        // Mapping từ tiếng Anh -> tiếng Việt
+        String vietnameseName = null;
+
+        // EXPENSE categories
+        if (nameLower.contains("food") || nameLower.contains("eat") || nameLower.contains("restaur")) {
+            vietnameseName = "Ăn uống";
+        } else if (nameLower.contains("transport") || nameLower.contains("travel") || nameLower.contains("grab")
+                || nameLower.contains("taxi")) {
+            vietnameseName = "Di chuyển";
+        } else if (nameLower.contains("shopping") || nameLower.contains("shop") || nameLower.contains("buy")) {
+            vietnameseName = "Mua sắm";
+        } else if (nameLower.contains("entertain") || nameLower.contains("movie") || nameLower.contains("game")) {
+            vietnameseName = "Giải trí";
+        } else if (nameLower.contains("health") || nameLower.contains("medical") || nameLower.contains("doctor")) {
+            vietnameseName = "Sức khỏe";
+        } else if (nameLower.contains("education") || nameLower.contains("study") || nameLower.contains("school")) {
+            vietnameseName = "Giáo dục";
+        } else if (nameLower.contains("bill") || nameLower.contains("electric") || nameLower.contains("water")
+                || nameLower.contains("utility")) {
+            vietnameseName = "Hóa đơn & Tiện ích";
+        } else if (nameLower.contains("house") || nameLower.contains("rent") || nameLower.contains("home")) {
+            vietnameseName = "Nhà ở";
+        } else if (nameLower.contains("family")) {
+            vietnameseName = "Gia đình";
+        } else if (nameLower.contains("insurance")) {
+            vietnameseName = "Bảo hiểm";
+        } else if (nameLower.contains("invest")) {
+            vietnameseName = "Đầu tư";
+        } else if (nameLower.contains("gift")) {
+            vietnameseName = "Quà tặng";
+        } else if (nameLower.contains("work") || nameLower.contains("business") || nameLower.contains("office")) {
+            vietnameseName = "Công việc";
+        } else if (nameLower.contains("beauty") || nameLower.contains("salon") || nameLower.contains("spa")) {
+            vietnameseName = "Làm đẹp";
+        }
+        // INCOME categories
+        else if (nameLower.contains("salary") || nameLower.contains("wage")) {
+            vietnameseName = "Lương";
+        } else if (nameLower.contains("bonus") || nameLower.contains("reward")) {
+            vietnameseName = "Thưởng";
+        } else if (nameLower.contains("freelance") || nameLower.contains("extra") || nameLower.contains("part-time")) {
+            vietnameseName = "Làm thêm";
+        } else if (nameLower.contains("business") || nameLower.contains("sell")) {
+            vietnameseName = "Kinh doanh";
+        } else if (nameLower.contains("invest") || nameLower.contains("dividend") || nameLower.contains("interest")) {
+            vietnameseName = "Đầu tư";
+        } else if (nameLower.contains("loan") || nameLower.contains("borrow")) {
+            vietnameseName = "Cho vay";
+        } else if (nameLower.contains("receive") || nameLower.contains("gift") || nameLower.contains("transfer")) {
+            vietnameseName = "Được tặng";
+        }
+
+        if (vietnameseName != null) {
+            log.info("🔄 Mapping AI category '{}' -> '{}'", aiCategoryName, vietnameseName);
+            return categoryRepository.findByNameAndType(vietnameseName, categoryType).orElse(null);
+        }
+
+        return null;
     }
 
     /**
@@ -251,9 +415,15 @@ public class TransactionService {
                 textToAnalyze, amount, textToAnalyze, userId);
 
         Category ruleCategory = ruleId != null ? categoryRepository.findById(ruleId).orElse(null) : null;
-        Category aiCategory = (aiPrediction != null && aiCategorizationService.isConfidentPrediction(aiPrediction))
-                ? categoryRepository.findByName(aiPrediction.getCategory()).orElse(null)
-                : null;
+
+        Category aiCategory = null;
+        if (aiPrediction != null && aiCategorizationService.isConfidentPrediction(aiPrediction)) {
+            String predictedName = aiPrediction.getCategory();
+            aiCategory = categoryRepository.findByName(predictedName).orElse(null);
+            if (aiCategory == null) {
+                aiCategory = findCategoryByAIName(predictedName, transaction.getType());
+            }
+        }
 
         // So sánh và chọn
         if (ruleCategory != null && aiCategory != null) {
@@ -402,7 +572,7 @@ public class TransactionService {
         List<Transaction> pageContent = allResults.subList(start, end);
 
         List<TransactionResponse> responses = pageContent.stream()
-                .map(TransactionResponse::fromEntity)
+                .map(t -> TransactionResponse.fromEntityDecrypted(t, encryptionUtil::decrypt))
                 .collect(Collectors.toList());
 
         return PageResponse.<TransactionResponse>builder()
@@ -436,7 +606,7 @@ public class TransactionService {
             throw new RuntimeException("Transaction does not belong to user");
         }
 
-        return TransactionResponse.fromEntity(transaction);
+        return TransactionResponse.fromEntityDecrypted(transaction, encryptionUtil::decrypt);
     }
 
     /**
@@ -477,8 +647,16 @@ public class TransactionService {
         transaction.setTransactionDate(request.getTransactionDate());
         transaction.setNotes(request.getNotes());
 
+        // Mã hóa description và notes trước khi lưu
+        if (request.getDescription() != null && !request.getDescription().isEmpty()) {
+            transaction.setDescription(encryptionUtil.encrypt(request.getDescription()));
+        }
+        if (request.getNotes() != null && !request.getNotes().isEmpty()) {
+            transaction.setNotes(encryptionUtil.encrypt(request.getNotes()));
+        }
+
         Transaction updated = transactionRepository.save(transaction);
-        return TransactionResponse.fromEntity(updated);
+        return TransactionResponse.fromEntityDecrypted(updated, encryptionUtil::decrypt);
     }
 
     /**

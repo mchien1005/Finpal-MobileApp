@@ -29,7 +29,6 @@ public class AdminActivityService {
 
     private final AdminActivityLogRepository activityLogRepository;
     private final AdminUserRepository adminUserRepository;
-    private final LoginHistoryRepository loginHistoryRepository;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -37,8 +36,8 @@ public class AdminActivityService {
      * Ghi log hoạt động của admin
      */
     @Transactional
-    public void logActivity(String username, String action, String entityType, Long entityId, 
-                           String description, String oldData, String newData) {
+    public void logActivity(String username, String action, String entityType, Long entityId,
+            String description, String oldData, String newData) {
         try {
             AdminUser adminUser = adminUserRepository.findByUsername(username).orElse(null);
             if (adminUser == null) {
@@ -156,26 +155,45 @@ public class AdminActivityService {
                 .timestampText(log.getTimestamp() != null ? log.getTimestamp().format(DATE_FORMATTER) : null)
                 .ipAddress(log.getIpAddress())
                 .status(log.getStatus())
-                .adminName(log.getAdminUser() != null ? log.getAdminUser().getUsername() : null)
+                .adminName(log.getAdminUser() != null && log.getAdminUser().getUser() != null
+                        ? log.getAdminUser().getUser().getUsername()
+                        : null)
                 .build();
+    }
+
+    private String getAdminName(AdminUser adminUser) {
+        if (adminUser == null)
+            return "Unknown";
+        if (adminUser.getDisplayName() != null && !adminUser.getDisplayName().isEmpty()) {
+            return adminUser.getDisplayName();
+        }
+        if (adminUser.getUser() != null) {
+            return adminUser.getUser().getFullName();
+        }
+        return "Admin #" + adminUser.getId();
     }
 
     /**
      * Format thời gian thành dạng "X phút trước", "X giờ trước"
      */
     private String formatTimeAgo(LocalDateTime dateTime) {
-        if (dateTime == null) return "Chưa có hoạt động";
+        if (dateTime == null)
+            return "Chưa có hoạt động";
 
         Duration duration = Duration.between(dateTime, LocalDateTime.now());
         long minutes = duration.toMinutes();
         long hours = duration.toHours();
         long days = duration.toDays();
 
-        if (minutes < 1) return "Vừa xong";
-        if (minutes < 60) return minutes + " phút trước";
-        if (hours < 24) return hours + " giờ trước";
-        if (days < 7) return days + " ngày trước";
-        
+        if (minutes < 1)
+            return "Vừa xong";
+        if (minutes < 60)
+            return minutes + " phút trước";
+        if (hours < 24)
+            return hours + " giờ trước";
+        if (days < 7)
+            return days + " ngày trước";
+
         return dateTime.format(DATE_FORMATTER);
     }
 

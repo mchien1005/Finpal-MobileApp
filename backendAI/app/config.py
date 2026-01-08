@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     ANOMALY_THRESHOLD: float = 0.7               # Ngưỡng phát hiện anomaly (0-1)
     PREDICTION_WINDOW: int = 30                  # Số ngày dự đoán chi tiêu tương lai
     
+    # Google Gemini AI - Dùng cho SMS parsing khi regex không hoạt động
+    GEMINI_API_KEY: str = ""
+    
     class Config:
         env_file = ".env"           # Đọc config từ file .env
         case_sensitive = True       # Phân biệt hoa/thường cho tên biến

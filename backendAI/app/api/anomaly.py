@@ -96,7 +96,7 @@ def create_anomaly_message(
     if "ai" in reason.lower() or "pattern" in reason.lower():
         # Rule 4: Isolation Forest / AI detection
         return (
-            f"🤖 AI phát hiện bất thường: {amount_int:,}đ tại '{merchant}' ({category}). "
+            f"🤖 AI phát hiện bất thường: Giao dịch {amount_int:,}đ cho {category}. "
             f"Mô hình AI nhận thấy giao dịch này có đặc điểm khác với thói quen chi tiêu của bạn. "
             f"Hãy kiểm tra lại giao dịch này."
         )
@@ -104,7 +104,7 @@ def create_anomaly_message(
     elif "top 5%" in reason.lower() or "95%" in reason.lower():
         # Rule 2: Nằm trong top 5% cao nhất
         return (
-            f"🔔 Giao dịch đáng chú ý: {amount_int:,}đ tại '{merchant}' ({category}). "
+            f"🔔 Giao dịch đáng chú ý: {amount_int:,}đ cho {category}. "
             f"Đây là một trong những khoản chi lớn nhất của bạn gần đây. "
             f"Xem xét lại nếu cần thiết."
         )
@@ -112,7 +112,7 @@ def create_anomaly_message(
     elif "z-score" in reason.lower():
         # Rule 3: Z-score cao
         return (
-            f"⚠️ Chi tiêu khác thường: {amount_int:,}đ tại '{merchant}' ({category}). "
+            f"⚠️ Chi tiêu khác thường: {amount_int:,}đ cho {category}. "
             f"Giao dịch này khác biệt đáng kể so với thói quen chi tiêu của bạn. "
             f"Hãy kiểm tra lại giao dịch này."
         )
@@ -121,7 +121,7 @@ def create_anomaly_message(
         # Rule 1: Cao hơn 3x trung bình
         times = round(amount / average_amount, 1) if average_amount > 0 else 0
         return (
-            f"🚨 Chi tiêu lớn: {amount_int:,}đ tại '{merchant}' ({category}). "
+            f"🚨 Chi tiêu lớn: {amount_int:,}đ cho {category}. "
             f"Khoản này gấp {times}x mức chi thường ngày của bạn ({average_int:,}đ). "
             f"Hãy kiểm tra lại giao dịch này!"
         )
@@ -129,7 +129,7 @@ def create_anomaly_message(
     else:
         # Fallback message chung
         return (
-            f"🚨 Phát hiện chi tiêu bất thường: {amount_int:,}đ tại '{merchant}' ({category}). "
+            f"🚨 Phát hiện chi tiêu bất thường: {amount_int:,}đ cho {category}. "
             f"{reason}. Hãy kiểm tra lại giao dịch này."
         )
 

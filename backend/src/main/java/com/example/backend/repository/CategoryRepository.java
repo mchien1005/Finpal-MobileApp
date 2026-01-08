@@ -15,4 +15,7 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     List<Category> findByTypeOrderByDisplayOrderAsc(Category.CategoryType type);
 
     Optional<Category> findByName(String name);
+
+    // Tìm danh mục theo tên VÀ loại (dùng cho fallback "Khác" đúng loại)
+    Optional<Category> findByNameAndType(String name, Category.CategoryType type);
 }

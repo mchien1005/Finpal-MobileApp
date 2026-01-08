@@ -13,29 +13,8 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements
 COPY requirements.txt .
 
-# Install Python dependencies với timeout cao hơn
-# Split installation để tránh timeout
-RUN pip install --default-timeout=1000 --no-cache-dir \
-  fastapi==0.104.1 \
-  uvicorn[standard]==0.24.0 \
-  pydantic==2.5.0 \
-  pydantic-settings==2.1.0 \
-  pandas==2.1.3 \
-  numpy==1.26.2
-
-RUN pip install --default-timeout=1000 --no-cache-dir \
-  scikit-learn==1.5.2 \
-  joblib==1.3.2 \
-  scipy==1.11.4
-
-RUN pip install --default-timeout=1000 --no-cache-dir \
-  sqlalchemy==2.0.23 \
-  pymysql==1.1.0 \
-  httpx==0.25.2 \
-  requests==2.31.0 \
-  python-dotenv==1.0.0 \
-  python-multipart==0.0.6 \
-  faker==20.1.0
+# Install Python dependencies từ requirements.txt
+RUN pip install --default-timeout=1000 --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY app ./app

@@ -43,41 +43,55 @@ public class AdminRolePermissionService {
      */
     private void initializePermissions() {
         createPermissionIfNotExists(Permission.ALL, "Tất cả quyền", "SYSTEM", "Super Admin - có tất cả quyền", 0);
-        
+
         // Dashboard & Analytics
-        createPermissionIfNotExists(Permission.VIEW_DASHBOARD, "Xem Dashboard", "DASHBOARD", "Xem tổng quan hệ thống", 1);
-        createPermissionIfNotExists(Permission.VIEW_ANALYTICS, "Xem Analytics", "DASHBOARD", "Xem báo cáo phân tích", 2);
-        
+        createPermissionIfNotExists(Permission.VIEW_DASHBOARD, "Xem Dashboard", "DASHBOARD", "Xem tổng quan hệ thống",
+                1);
+        createPermissionIfNotExists(Permission.VIEW_ANALYTICS, "Xem Analytics", "DASHBOARD", "Xem báo cáo phân tích",
+                2);
+
         // User Management
-        createPermissionIfNotExists(Permission.VIEW_USERS, "Xem người dùng", "USER_MANAGEMENT", "Xem danh sách và chi tiết người dùng", 10);
-        createPermissionIfNotExists(Permission.EDIT_USERS, "Sửa người dùng", "USER_MANAGEMENT", "Cập nhật thông tin người dùng", 11);
-        createPermissionIfNotExists(Permission.DELETE_USERS, "Xóa người dùng", "USER_MANAGEMENT", "Xóa/vô hiệu hóa người dùng", 12);
-        createPermissionIfNotExists(Permission.RESET_PASSWORD, "Reset mật khẩu", "USER_MANAGEMENT", "Đặt lại mật khẩu người dùng", 13);
-        
+        createPermissionIfNotExists(Permission.VIEW_USERS, "Xem người dùng", "USER_MANAGEMENT",
+                "Xem danh sách và chi tiết người dùng", 10);
+        createPermissionIfNotExists(Permission.EDIT_USERS, "Sửa người dùng", "USER_MANAGEMENT",
+                "Cập nhật thông tin người dùng", 11);
+        createPermissionIfNotExists(Permission.DELETE_USERS, "Xóa người dùng", "USER_MANAGEMENT",
+                "Xóa/vô hiệu hóa người dùng", 12);
+        createPermissionIfNotExists(Permission.RESET_PASSWORD, "Reset mật khẩu", "USER_MANAGEMENT",
+                "Đặt lại mật khẩu người dùng", 13);
+
         // Category Management
-        createPermissionIfNotExists(Permission.VIEW_CATEGORIES, "Xem danh mục", "CATEGORY", "Xem danh sách danh mục", 20);
-        createPermissionIfNotExists(Permission.EDIT_CATEGORIES, "Sửa danh mục", "CATEGORY", "Thêm/sửa/xóa danh mục", 21);
-        
+        createPermissionIfNotExists(Permission.VIEW_CATEGORIES, "Xem danh mục", "CATEGORY", "Xem danh sách danh mục",
+                20);
+        createPermissionIfNotExists(Permission.EDIT_CATEGORIES, "Sửa danh mục", "CATEGORY", "Thêm/sửa/xóa danh mục",
+                21);
+
         // SMS Parser
-        createPermissionIfNotExists(Permission.VIEW_SMS_PARSERS, "Xem SMS Parser", "SMS_PARSER", "Xem cấu hình SMS parser", 30);
-        createPermissionIfNotExists(Permission.EDIT_SMS_PARSERS, "Sửa SMS Parser", "SMS_PARSER", "Thêm/sửa/xóa SMS parser", 31);
-        
+        createPermissionIfNotExists(Permission.VIEW_SMS_PARSERS, "Xem SMS Parser", "SMS_PARSER",
+                "Xem cấu hình SMS parser", 30);
+        createPermissionIfNotExists(Permission.EDIT_SMS_PARSERS, "Sửa SMS Parser", "SMS_PARSER",
+                "Thêm/sửa/xóa SMS parser", 31);
+
         // AI Model
         createPermissionIfNotExists(Permission.VIEW_AI_MODEL, "Xem AI Model", "AI", "Xem thông tin mô hình AI", 40);
-        createPermissionIfNotExists(Permission.MANAGE_AI_MODEL, "Quản lý AI Model", "AI", "Cấu hình và huấn luyện AI", 41);
-        
+        createPermissionIfNotExists(Permission.MANAGE_AI_MODEL, "Quản lý AI Model", "AI", "Cấu hình và huấn luyện AI",
+                41);
+
         // Content Management
-        createPermissionIfNotExists(Permission.VIEW_CONTENT, "Xem nội dung", "CONTENT", "Xem tips, FAQs, templates", 50);
+        createPermissionIfNotExists(Permission.VIEW_CONTENT, "Xem nội dung", "CONTENT", "Xem tips, FAQs, templates",
+                50);
         createPermissionIfNotExists(Permission.EDIT_CONTENT, "Sửa nội dung", "CONTENT", "Thêm/sửa/xóa nội dung", 51);
-        
+
         // Logs & Audit
         createPermissionIfNotExists(Permission.VIEW_LOGS, "Xem Logs", "AUDIT", "Xem logs hệ thống", 60);
         createPermissionIfNotExists(Permission.VIEW_AUDIT, "Xem Audit", "AUDIT", "Xem lịch sử audit", 61);
-        
+
         // System
         createPermissionIfNotExists(Permission.MANAGE_SYSTEM, "Quản lý hệ thống", "SYSTEM", "Cấu hình hệ thống", 70);
-        createPermissionIfNotExists(Permission.MANAGE_ROLES, "Quản lý vai trò", "SYSTEM", "Thêm/sửa/xóa vai trò admin", 71);
-        createPermissionIfNotExists(Permission.MANAGE_BACKUP, "Quản lý backup", "SYSTEM", "Sao lưu và phục hồi dữ liệu", 72);
+        createPermissionIfNotExists(Permission.MANAGE_ROLES, "Quản lý vai trò", "SYSTEM", "Thêm/sửa/xóa vai trò admin",
+                71);
+        createPermissionIfNotExists(Permission.MANAGE_BACKUP, "Quản lý backup", "SYSTEM", "Sao lưu và phục hồi dữ liệu",
+                72);
     }
 
     private void createPermissionIfNotExists(String code, String name, String group, String description, int order) {
@@ -99,29 +113,27 @@ public class AdminRolePermissionService {
      */
     private void initializeRoles() {
         // Super Admin - có tất cả quyền
-        createRoleIfNotExists("SUPER_ADMIN", "Super Admin", "Quản trị viên cao nhất, có tất cả quyền", 
+        createRoleIfNotExists("SUPER_ADMIN", "Super Admin", "Quản trị viên cao nhất, có tất cả quyền",
                 "#4CAF50", 1, List.of(Permission.ALL));
-        
+
         // Moderator - quản lý nội dung và người dùng
         createRoleIfNotExists("MODERATOR", "Moderator", "Quản lý nội dung và hỗ trợ người dùng",
                 "#2196F3", 2, List.of(
                         Permission.VIEW_DASHBOARD, Permission.VIEW_ANALYTICS,
                         Permission.VIEW_USERS, Permission.EDIT_USERS,
                         Permission.VIEW_CONTENT, Permission.EDIT_CONTENT,
-                        Permission.VIEW_LOGS
-                ));
-        
+                        Permission.VIEW_LOGS));
+
         // Support - hỗ trợ người dùng
         createRoleIfNotExists("SUPPORT", "Support Team", "Nhóm hỗ trợ khách hàng",
                 "#9C27B0", 3, List.of(
                         Permission.VIEW_DASHBOARD,
                         Permission.VIEW_USERS,
-                        Permission.VIEW_LOGS
-                ));
+                        Permission.VIEW_LOGS));
     }
 
-    private void createRoleIfNotExists(String code, String name, String description, String color, 
-                                        int order, List<String> permissionCodes) {
+    private void createRoleIfNotExists(String code, String name, String description, String color,
+            int order, List<String> permissionCodes) {
         if (!adminRoleRepository.existsByRoleCode(code)) {
             Set<Permission> permissions = new HashSet<>();
             for (String permCode : permissionCodes) {
@@ -231,7 +243,8 @@ public class AdminRolePermissionService {
         // Kiểm tra có admin nào đang dùng vai trò này không
         List<AdminUser> adminsWithRole = adminUserRepository.findByAdminRoleIdAndIsActiveTrue(id);
         if (!adminsWithRole.isEmpty()) {
-            throw new RuntimeException("Không thể xóa vai trò đang được sử dụng bởi " + adminsWithRole.size() + " admin");
+            throw new RuntimeException(
+                    "Không thể xóa vai trò đang được sử dụng bởi " + adminsWithRole.size() + " admin");
         }
 
         role.setIsActive(false);
@@ -312,7 +325,8 @@ public class AdminRolePermissionService {
     @Transactional(readOnly = true)
     public boolean hasPermission(String username, String permissionCode) {
         AdminUser adminUser = adminUserRepository.findByUsername(username).orElse(null);
-        if (adminUser == null) return false;
+        if (adminUser == null)
+            return false;
         return adminUser.hasPermission(permissionCode);
     }
 
@@ -417,11 +431,11 @@ public class AdminRolePermissionService {
         }
 
         // Không cho phép xóa SUPER_ADMIN (trừ khi người xóa cũng là SUPER_ADMIN)
-        AdminUser currentAdmin = adminUserRepository.findByUser_Username(currentUsername)
+        AdminUser currentAdmin = adminUserRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin admin hiện tại"));
-        
-        if (adminUser.getAdminRole().getRoleCode().equals("SUPER_ADMIN") 
-            && !currentAdmin.getAdminRole().getRoleCode().equals("SUPER_ADMIN")) {
+
+        if (adminUser.getAdminRole().getRoleCode().equals("SUPER_ADMIN")
+                && !currentAdmin.getAdminRole().getRoleCode().equals("SUPER_ADMIN")) {
             throw new RuntimeException("Chỉ SUPER_ADMIN mới có thể xóa quyền của SUPER_ADMIN khác");
         }
 
@@ -429,3 +443,4 @@ public class AdminRolePermissionService {
         adminUserRepository.delete(adminUser);
         log.info("Admin {} đã thu hồi quyền admin của user ID: {}", currentUsername, adminUser.getUser().getId());
     }
+}

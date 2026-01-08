@@ -321,9 +321,9 @@ def generate_optimized_data(num_users=100, months=12, transactions_per_month=80)
     Tạo dữ liệu training tối ưu với nhiều patterns hơn
     
     Args:
-        num_users: Số users (100 để có đủ data)
+        num_users: Số users (100 để cân bằng giữa chất lượng và tài nguyên)
         months: Số tháng (12 tháng = 1 năm full data)
-        transactions_per_month: Số giao dịch/tháng/user
+        transactions_per_month: Số giao dịch/tháng/user (80 để đảm bảo đủ data)
     """
     
     transactions = []
@@ -369,7 +369,11 @@ def generate_optimized_data(num_users=100, months=12, transactions_per_month=80)
                 
                 cat_data = OPTIMIZED_CATEGORIES[category]
                 merchant = random.choice(cat_data['merchants'])
-                description = random.choice(cat_data['descriptions'])
+                # Randomly drop description (50%) to force model to learn from merchant name
+                if random.random() < 0.5:
+                    description = ""
+                else:
+                    description = random.choice(cat_data['descriptions'])
                 
                 min_amt, max_amt = cat_data['amount_range']
                 amount = random.randint(int(min_amt), int(max_amt)) 
@@ -405,7 +409,10 @@ def generate_optimized_data(num_users=100, months=12, transactions_per_month=80)
                 
                 cat_data = INCOME_CATEGORIES[category]
                 merchant = random.choice(cat_data['merchants'])
-                description = random.choice(cat_data['descriptions'])
+                if random.random() < 0.5:
+                    description = ""
+                else:
+                    description = random.choice(cat_data['descriptions'])
                 min_amt, max_amt = cat_data['amount_range']
                 amount = random.randint(int(min_amt), int(max_amt))
                 

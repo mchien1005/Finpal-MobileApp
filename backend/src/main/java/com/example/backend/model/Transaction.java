@@ -52,7 +52,7 @@ public class Transaction {
     private Boolean isAuto = false;
 
     @Column(name = "noi_dung_sms_ma_hoa", columnDefinition = "TEXT")
-    private String smsContentEncrypted;
+    private String smsContentEncrypted; // SHA-256 hash của SMS content để check duplicate
 
     // Status fields
     @Column(name = "da_xac_nhan")
@@ -64,9 +64,6 @@ public class Transaction {
     // Metadata
     @Column(name = "ghi_chu", columnDefinition = "TEXT")
     private String notes;
-
-    @Column(name = "anh_hoa_don", length = 500)
-    private String receiptImage;
 
     @Column(name = "ngay_tao", updatable = false)
     private LocalDateTime createdAt;

@@ -33,6 +33,7 @@ public class AdminUserService {
 
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
+    private final AdminUserRepository adminUserRepository;
     private final LoginHistoryRepository loginHistoryRepository;
     private final BudgetRepository budgetRepository;
     private final SavingsGoalRepository savingsGoalRepository;
@@ -51,8 +52,8 @@ public class AdminUserService {
             String sortBy,
             String sortDirection) {
 
-        Sort sort = "DESC".equalsIgnoreCase(sortDirection) 
-                ? Sort.by(sortBy).descending() 
+        Sort sort = "DESC".equalsIgnoreCase(sortDirection)
+                ? Sort.by(sortBy).descending()
                 : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
@@ -87,64 +88,95 @@ public class AdminUserService {
      */
     @Transactional(readOnly = true)
     public AdminUserDetailResponse getUserDetail(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + userId));
+        log.info("Bắt đầu lấy thông tin chi tiết user ID: {}", userId);
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + userId));
 
-        // Lấy thống kê giao dịch
-        BigDecimal totalIncome = transactionRepository.sumByUserIdAndType(userId, Transaction.TransactionType.INCOME);
-        BigDecimal totalExpense = transactionRepository.sumByUserIdAndType(userId, Transaction.TransactionType.EXPENSE);
-        
-        if (totalIncome == null) totalIncome = BigDecimal.ZERO;
-        if (totalExpense == null) totalExpense = BigDecimal.ZERO;
+            // Lấy thống kê giao dịch
+            log.debug("Đang lấy thống kê transaction...");
+            BigDecimal totalIncome = transactionRepository.sumByUserIdAndType(userId,
+                    Transaction.TransactionType.INCOME);
+            BigDecimal totalExpense = transactionRepository.sumByUserIdAndType(userId,
+                    Transaction.TransactionType.EXPENSE);
 
-        // Đếm tổng số giao dịch
-        long totalTransactions = transactionRepository.findByUserIdOrderByTransactionDateDesc(userId).size();
+            if (totalIncome == null)
+                totalIncome = BigDecimal.ZERO;
+            if (totalExpense == null)
+                totalExpense = BigDecimal.ZERO;
 
-        // Tính trung bình mỗi giao dịch
-        BigDecimal averagePerTransaction = BigDecimal.ZERO;
-        if (totalTransactions > 0) {
-            BigDecimal totalAmount = totalIncome.add(totalExpense);
-            averagePerTransaction = totalAmount.divide(BigDecimal.valueOf(totalTransactions), 0, RoundingMode.HALF_UP);
+            // Đếm tổng số giao dịch
+            long totalTransactions = transactionRepository.findByUserIdOrderByTransactionDateDesc(userId).size();
+
+            // Tính trung bình mỗi giao dịch
+            BigDecimal averagePerTransaction = BigDecimal.ZERO;
+            if (totalTransactions > 0) {
+                BigDecimal totalAmount = totalIncome.add(totalExpense);
+                averagePerTransaction = totalAmount.divide(BigDecimal.valueOf(totalTransactions), 0,
+                        RoundingMode.HALF_UP);
+            }
+
+            // Lấy ngân hàng chính
+            log.debug("Đang lấy primary bank...");
+            String primaryBank = getPrimaryBank(userId);
+
+            // Đếm ngân sách và mục tiêu
+            log.debug("Đang đếm budget và savings goal...");
+            long activeBudgets = budgetRepository.countByUserIdAndIsActiveTrue(userId);
+
+            // Xử lý status enum cho SavingsGoalRepository
+            long activeSavingsGoals = 0;
+            try {
+                // Thử truyền String
+                activeSavingsGoals = savingsGoalRepository.countByUserIdAndStatus(userId, "ACTIVE");
+            } catch (Exception e) {
+                log.warn("Lỗi khi đếm savings goal (String): {}", e.getMessage());
+                // Fallback nếu cần hoặc swallow error
+            }
+
+            // Lấy lịch sử đăng nhập
+            log.debug("Đang lấy login history...");
+            List<LoginHistory> loginHistories;
+            try {
+                loginHistories = loginHistoryRepository.findTop10ByUserIdOrderByLoginTimeDesc(userId);
+            } catch (Exception e) {
+                log.error("Lỗi khi lấy login history list: {}", e.getMessage());
+                loginHistories = List.of();
+            }
+
+            long totalLogins = loginHistoryRepository.countByUserId(userId);
+            long failedLogins = loginHistoryRepository.countByUserIdAndStatus(userId, LoginHistory.LoginStatus.FAILED);
+
+            return AdminUserDetailResponse.builder()
+                    .id(user.getId())
+                    .userCode(String.format("USR%03d", user.getId()))
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .phone(user.getPhone())
+                    .fullName(user.getFullName())
+                    .avatarUrl(user.getAvatarUrl())
+                    .isActive(user.getIsActive())
+                    .role(user.getRole().name())
+                    .createdAt(user.getCreatedAt())
+                    .lastLoginAt(user.getLastLoginAt())
+                    .lastActiveAt(user.getLastActiveAt())
+                    .primaryBank(primaryBank)
+                    .totalTransactions(totalTransactions)
+                    .totalIncome(totalIncome)
+                    .totalExpense(totalExpense)
+                    .averagePerTransaction(averagePerTransaction)
+                    .activeBudgets(activeBudgets)
+                    .activeSavingsGoals(activeSavingsGoals)
+                    .loginHistory(loginHistories.stream()
+                            .map(AdminUserDetailResponse.LoginHistoryItem::fromEntity)
+                            .collect(Collectors.toList()))
+                    .totalLogins(totalLogins)
+                    .failedLogins(failedLogins)
+                    .build();
+        } catch (Exception e) {
+            log.error("CRITICAL ERROR in getUserDetail: ", e);
+            throw e;
         }
-
-        // Lấy ngân hàng chính (nguồn giao dịch phổ biến nhất)
-        String primaryBank = getPrimaryBank(userId);
-
-        // Đếm ngân sách và mục tiêu
-        long activeBudgets = budgetRepository.countByUserIdAndIsActiveTrue(userId);
-        long activeSavingsGoals = savingsGoalRepository.countByUserIdAndStatus(userId, "ACTIVE");
-
-        // Lấy lịch sử đăng nhập
-        List<LoginHistory> loginHistories = loginHistoryRepository.findTop10ByUserIdOrderByLoginTimeDesc(userId);
-        long totalLogins = loginHistoryRepository.countByUserId(userId);
-        long failedLogins = loginHistoryRepository.countByUserIdAndStatus(userId, LoginHistory.LoginStatus.FAILED);
-
-        return AdminUserDetailResponse.builder()
-                .id(user.getId())
-                .userCode(String.format("USR%03d", user.getId()))
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .phone(user.getPhone())
-                .fullName(user.getFullName())
-                .avatarUrl(user.getAvatarUrl())
-                .isActive(user.getIsActive())
-                .role(user.getRole().name())
-                .createdAt(user.getCreatedAt())
-                .lastLoginAt(user.getLastLoginAt())
-                .lastActiveAt(user.getLastActiveAt())
-                .primaryBank(primaryBank)
-                .totalTransactions(totalTransactions)
-                .totalIncome(totalIncome)
-                .totalExpense(totalExpense)
-                .averagePerTransaction(averagePerTransaction)
-                .activeBudgets(activeBudgets)
-                .activeSavingsGoals(activeSavingsGoals)
-                .loginHistory(loginHistories.stream()
-                        .map(AdminUserDetailResponse.LoginHistoryItem::fromEntity)
-                        .collect(Collectors.toList()))
-                .totalLogins(totalLogins)
-                .failedLogins(failedLogins)
-                .build();
     }
 
     /**
@@ -163,9 +195,9 @@ public class AdminUserService {
         user.setIsActive(!user.getIsActive());
         userRepository.save(user);
 
-        log.info("Admin {} đã {} tài khoản {}", 
-                adminUsername, 
-                user.getIsActive() ? "kích hoạt" : "vô hiệu hóa", 
+        log.info("Admin {} đã {} tài khoản {}",
+                adminUsername,
+                user.getIsActive() ? "kích hoạt" : "vô hiệu hóa",
                 user.getUsername());
     }
 
@@ -195,19 +227,31 @@ public class AdminUserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
 
-        // Không cho phép xóa tài khoản có quyền admin (kiểm tra theo role)
-        String roleName = user.getRole().name();
-        if (roleName.equals("ADMIN") || roleName.equals("SUPER_ADMIN") || roleName.equals("MODERATOR")) {
-            throw new RuntimeException("Không thể xóa tài khoản có quyền Admin");
-        }
-
         // Không cho phép xóa chính mình
         if (user.getUsername().equals(adminUsername)) {
             throw new RuntimeException("Không thể xóa tài khoản của chính bạn");
         }
 
+        // Nếu là Admin, kiểm tra thêm logic
+        if (user.getRole().name().equals("ADMIN")) {
+            // Tìm thông tin AdminUser
+            var adminUserOptional = adminUserRepository.findByUserId(userId);
+            if (adminUserOptional.isPresent()) {
+                var adminUser = adminUserOptional.get();
+                // Không cho phép xóa Super Admin
+                if (adminUser.getAdminRole() != null && "SUPER_ADMIN".equals(adminUser.getAdminRole().getRoleCode())) {
+                    throw new RuntimeException("Không thể xóa tài khoản Super Admin");
+                }
+                // Vô hiệu hóa AdminUser
+                adminUser.setIsActive(false);
+                adminUserRepository.save(adminUser);
+            }
+        }
+
         // Soft delete: vô hiệu hóa và đánh dấu
         user.setIsActive(false);
+        // Rename để giải phóng unique constraint cho email/username (cho phép tạo lại
+        // user cùng tên sau này nếu cần)
         user.setEmail(user.getEmail() + "_deleted_" + System.currentTimeMillis());
         user.setUsername(user.getUsername() + "_deleted_" + System.currentTimeMillis());
         userRepository.save(user);
@@ -220,7 +264,8 @@ public class AdminUserService {
      */
     private String getPrimaryBank(Long userId) {
         List<Transaction> transactions = transactionRepository.findByUserIdOrderByTransactionDateDesc(userId);
-        if (transactions.isEmpty()) return null;
+        if (transactions.isEmpty())
+            return null;
 
         return transactions.stream()
                 .filter(t -> t.getTransactionSource() != null)

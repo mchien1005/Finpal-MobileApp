@@ -3,6 +3,8 @@ package com.example.backend.controller;
 import com.example.backend.dto.AdminUserDetailResponse;
 import com.example.backend.dto.AdminUserListResponse;
 import com.example.backend.dto.PageResponse;
+import com.example.backend.model.Role;
+import com.example.backend.repository.UserRepository;
 import com.example.backend.service.AdminUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,6 +14,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -32,13 +37,13 @@ import java.util.Map;
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
+    private final UserRepository userRepository;
 
     /**
      * Lấy danh sách người dùng với phân trang và tìm kiếm
      */
     @GetMapping
-    @Operation(summary = "Lấy danh sách người dùng", 
-               description = "Lấy danh sách người dùng với phân trang, tìm kiếm theo keyword, lọc theo trạng thái và vai trò")
+    @Operation(summary = "Lấy danh sách người dùng", description = "Lấy danh sách người dùng với phân trang, tìm kiếm theo keyword, lọc theo trạng thái và vai trò")
     public ResponseEntity<PageResponse<AdminUserListResponse>> getAllUsers(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Boolean isActive,
@@ -57,8 +62,7 @@ public class AdminUserController {
      * Lấy chi tiết 1 người dùng
      */
     @GetMapping("/{userId}")
-    @Operation(summary = "Xem chi tiết người dùng", 
-               description = "Lấy thông tin chi tiết của 1 người dùng: thông tin cơ bản, tổng quan tài chính, lịch sử đăng nhập")
+    @Operation(summary = "Xem chi tiết người dùng", description = "Lấy thông tin chi tiết của 1 người dùng: thông tin cơ bản, tổng quan tài chính, lịch sử đăng nhập")
     public ResponseEntity<AdminUserDetailResponse> getUserDetail(@PathVariable Long userId) {
         AdminUserDetailResponse response = adminUserService.getUserDetail(userId);
         return ResponseEntity.ok(response);
@@ -68,8 +72,7 @@ public class AdminUserController {
      * Vô hiệu hóa / Kích hoạt tài khoản
      */
     @PutMapping("/{userId}/toggle-status")
-    @Operation(summary = "Vô hiệu hóa / Kích hoạt tài khoản", 
-               description = "Chuyển đổi trạng thái tài khoản: Active ↔ Inactive")
+    @Operation(summary = "Vô hiệu hóa / Kích hoạt tài khoản", description = "Chuyển đổi trạng thái tài khoản: Active ↔ Inactive")
     public ResponseEntity<Map<String, String>> toggleUserStatus(
             @PathVariable Long userId,
             Authentication authentication) {
@@ -82,8 +85,7 @@ public class AdminUserController {
      * Reset mật khẩu người dùng
      */
     @PostMapping("/{userId}/reset-password")
-    @Operation(summary = "Reset mật khẩu", 
-               description = "Tạo mật khẩu mới ngẫu nhiên cho người dùng. Mật khẩu mới sẽ được trả về trong response.")
+    @Operation(summary = "Reset mật khẩu", description = "Tạo mật khẩu mới ngẫu nhiên cho người dùng. Mật khẩu mới sẽ được trả về trong response.")
     public ResponseEntity<Map<String, String>> resetUserPassword(
             @PathVariable Long userId,
             Authentication authentication) {
@@ -91,16 +93,14 @@ public class AdminUserController {
         String newPassword = adminUserService.resetUserPassword(userId, adminUsername);
         return ResponseEntity.ok(Map.of(
                 "message", "Đã reset mật khẩu thành công",
-                "newPassword", newPassword
-        ));
+                "newPassword", newPassword));
     }
 
     /**
      * Xóa tài khoản (soft delete)
      */
     @DeleteMapping("/{userId}")
-    @Operation(summary = "Xóa tài khoản", 
-               description = "Xóa tài khoản người dùng (soft delete: vô hiệu hóa và đánh dấu). Không thể xóa tài khoản Admin.")
+    @Operation(summary = "Xóa tài khoản", description = "Xóa tài khoản người dùng (soft delete: vô hiệu hóa và đánh dấu). Không thể xóa tài khoản Admin.")
     public ResponseEntity<Map<String, String>> deleteUser(
             @PathVariable Long userId,
             Authentication authentication) {
@@ -113,15 +113,51 @@ public class AdminUserController {
      * Thống kê tổng quan người dùng
      */
     @GetMapping("/statistics")
-    @Operation(summary = "Thống kê người dùng", 
-               description = "Lấy thống kê tổng quan: tổng số người dùng, số active, số mới trong tuần/tháng")
+    @Operation(summary = "Thống kê người dùng", description = "Lấy thống kê tổng quan: tổng số người dùng, số active, số mới trong tuần/tháng")
     public ResponseEntity<Map<String, Object>> getUserStatistics() {
-        // TODO: Implement user statistics
-        return ResponseEntity.ok(Map.of(
-                "totalUsers", 0,
-                "activeUsers", 0,
-                "newUsersThisWeek", 0,
-                "newUsersThisMonth", 0
-        ));
+        // Thời gian hiện tại
+        LocalDateTime now = LocalDateTime.now();
+
+        // Đầu tuần này (Thứ 2)
+        LocalDateTime startOfWeek = LocalDate.now()
+                .with(java.time.DayOfWeek.MONDAY)
+                .atStartOfDay();
+
+        // Đầu tháng này
+        LocalDateTime startOfMonth = LocalDate.now()
+                .withDayOfMonth(1)
+                .atStartOfDay();
+
+        // Đầu tháng trước
+        LocalDateTime startOfLastMonth = LocalDate.now()
+                .minusMonths(1)
+                .withDayOfMonth(1)
+                .atStartOfDay();
+        LocalDateTime endOfLastMonth = startOfMonth.minusSeconds(1);
+
+        // Lấy thống kê
+        Long totalUsers = userRepository.countByRole(Role.USER);
+        Long activeUsers = userRepository.countByIsActive(true);
+        Long newUsersThisWeek = userRepository.countByCreatedAtBetween(startOfWeek, now);
+        Long newUsersThisMonth = userRepository.countByCreatedAtBetween(startOfMonth, now);
+        Long newUsersLastMonth = userRepository.countByCreatedAtBetween(startOfLastMonth, endOfLastMonth);
+
+        // Tính % tăng trưởng
+        double growthPercent = 0.0;
+        if (newUsersLastMonth != null && newUsersLastMonth > 0) {
+            growthPercent = ((newUsersThisMonth - newUsersLastMonth) * 100.0) / newUsersLastMonth;
+            growthPercent = Math.round(growthPercent * 10.0) / 10.0; // Làm tròn 1 chữ số
+        }
+
+        // Dùng LinkedHashMap để giữ thứ tự
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("totalUsers", totalUsers != null ? totalUsers : 0L);
+        stats.put("activeUsers", activeUsers != null ? activeUsers : 0L);
+        stats.put("newUsersThisWeek", newUsersThisWeek != null ? newUsersThisWeek : 0L);
+        stats.put("newUsersThisMonth", newUsersThisMonth != null ? newUsersThisMonth : 0L);
+        stats.put("newUsersLastMonth", newUsersLastMonth != null ? newUsersLastMonth : 0L);
+        stats.put("monthlyGrowthPercent", growthPercent);
+
+        return ResponseEntity.ok(stats);
     }
 }

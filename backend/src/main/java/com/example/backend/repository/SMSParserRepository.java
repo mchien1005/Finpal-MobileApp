@@ -13,4 +13,6 @@ public interface SMSParserRepository extends JpaRepository<SMSParser, Long> {
     Optional<SMSParser> findBySenderNumberAndIsActiveTrue(String senderNumber);
 
     List<SMSParser> findByIsActiveTrueOrderByPriorityDesc();
+
+    List<SMSParser> findByIsActiveTrue();
 }

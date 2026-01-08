@@ -146,8 +146,9 @@ public class FcmService {
                             .build())
                     .build());
 
-            // Gửi message
-            String response = FirebaseMessaging.getInstance().send(messageBuilder.build());
+            // Gửi message - sử dụng FirebaseApp.getInstance() để tránh lỗi
+            FirebaseApp app = FirebaseApp.getInstance();
+            String response = FirebaseMessaging.getInstance(app).send(messageBuilder.build());
             log.debug("FCM message sent successfully: {}", response);
 
         } catch (FirebaseMessagingException e) {

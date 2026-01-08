@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.config import settings
-from app.api import categorization, anomaly, prediction, insights, admin, smart_tips
+from app.api import categorization, anomaly, prediction, insights, admin, smart_tips, sms_parsing
 
 
 @asynccontextmanager
@@ -100,6 +100,13 @@ app.include_router(
     smart_tips.router,
     prefix=f"{settings.API_PREFIX}/tips",
     tags=["Smart Tips"]
+)
+
+# SMS Parsing với AI
+app.include_router(
+    sms_parsing.router,
+    prefix=f"{settings.API_PREFIX}",
+    tags=["SMS Parsing"]
 )
 
 

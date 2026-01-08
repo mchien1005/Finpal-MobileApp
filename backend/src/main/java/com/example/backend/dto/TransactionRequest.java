@@ -47,6 +47,9 @@ public class TransactionRequest {
     @Schema(description = "Ghi chú thêm", example = "Đi làm mưa to")
     private String notes;
 
-    @Schema(description = "Nội dung SMS gốc (cho giao dịch tự động)", example = "VCB: TK 1234xxx GD -100,000 VND...")
+    @Schema(description = "SHA-256 hash của SMS (cho giao dịch tự động)", example = "a1b2c3d4e5f6...")
     private String smsContent;
+
+    @Schema(description = "Gợi ý từ merchant trong SMS để AI/Rule phân loại (KHÔNG lưu vào DB)", example = "GRAB, Shopee...")
+    private String merchantHint;
 }

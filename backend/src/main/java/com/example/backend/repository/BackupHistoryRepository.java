@@ -33,8 +33,7 @@ public interface BackupHistoryRepository extends JpaRepository<BackupHistory, Lo
      */
     List<BackupHistory> findByCreatedAtBeforeAndStatus(
             LocalDateTime cutoffDate,
-            BackupHistory.BackupStatus status
-    );
+            BackupHistory.BackupStatus status);
 
     /**
      * Đếm số lượng backup thành công
@@ -42,8 +41,11 @@ public interface BackupHistoryRepository extends JpaRepository<BackupHistory, Lo
     long countByStatus(BackupHistory.BackupStatus status);
 
     /**
-     * Lấy backup mới nhất
+     * Lấy backup mới nhất - fix lỗi JPQL LIMIT 1
      */
-    @Query("SELECT b FROM BackupHistory b WHERE b.status = 'COMPLETED' ORDER BY b.createdAt DESC LIMIT 1")
-    BackupHistory findLatestSuccessfulBackup();
+    BackupHistory findFirstByStatusOrderByCreatedAtDesc(BackupHistory.BackupStatus status);
+
+    default BackupHistory findLatestSuccessfulBackup() {
+        return findFirstByStatusOrderByCreatedAtDesc(BackupHistory.BackupStatus.COMPLETED);
+    }
 }
