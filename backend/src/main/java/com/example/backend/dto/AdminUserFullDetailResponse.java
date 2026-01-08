@@ -111,7 +111,7 @@ public class AdminUserFullDetailResponse {
         @Schema(description = "Trạng thái", example = "SUCCESS")
         private String status;
 
-        @Schema(description = "Tên admin thực hiện")
+        @Schema(description = "Tên admin thực hiện", example = "admin")
         private String adminName;
     }
 }
