@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Tag, message, Spin } from 'antd';
+import { Card, Table, Tag, message, Spin, Button } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
 import activityLogService from '../../../services/activityLogService';
 
 const AuditLogTab = () => {
@@ -9,6 +10,14 @@ const AuditLogTab = () => {
   // Fetch activity logs from API
   useEffect(() => {
     fetchActivityLogs();
+    
+    // Auto-refresh every 30 seconds
+    const intervalId = setInterval(() => {
+      fetchActivityLogs();
+    }, 30000);
+    
+    // Cleanup interval on unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   const fetchActivityLogs = async () => {
@@ -146,14 +155,32 @@ const AuditLogTab = () => {
           style={{
             padding: '20px 24px',
             borderBottom: '1px solid #e5e7eb',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
           }}
         >
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', margin: 0, marginBottom: 4 }}>
-            Nhật ký Hoạt động Admin
-          </h3>
-          <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>
-            Lịch sử tất cả actions của admin
-          </p>
+          <div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', margin: 0, marginBottom: 4 }}>
+              Nhật ký Hoạt động Admin
+            </h3>
+            <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>
+              Lịch sử tất cả actions của admin
+            </p>
+          </div>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={fetchActivityLogs}
+            loading={loading}
+            style={{
+              borderRadius: 8,
+              height: 36,
+              padding: '0 16px',
+              border: '1px solid #e5e7eb',
+            }}
+          >
+            Làm mới
+          </Button>
         </div>
         <Spin spinning={loading}>
           <Table

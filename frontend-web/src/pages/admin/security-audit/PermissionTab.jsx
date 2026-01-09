@@ -351,9 +351,9 @@ const PermissionTab = () => {
             color: '#2563eb',
             border: 'none',
             borderRadius: 6,
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: 500,
-            padding: '2px 10px',
+            padding: '4px 12px',
           }}
         >
           {role}
@@ -669,7 +669,7 @@ const PermissionTab = () => {
                       showSizeChanger: true,
                       showTotal: (total) => `Tổng ${total} admin`,
                     }}
-                    tableLayout="fixed"
+                    scroll={{ x: 1200 }}
                   />
                 </Spin>
               </>
@@ -727,7 +727,7 @@ const PermissionTab = () => {
                       showSizeChanger: true,
                       showTotal: (total) => `Tổng ${total} vai trò`,
                     }}
-                    tableLayout="fixed"
+                    scroll={{ x: 1400 }}
                   />
                 </Spin>
               </>
