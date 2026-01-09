@@ -115,8 +115,8 @@ const AdminDashboardPage = () => {
           },
           {
             title: 'Giao dịch hôm nay',
-            value: overview.todayTransactions?.toLocaleString() || '0',
-            badge: `+${overview.transactionsGrowthPercent || 0}%`,
+            value: overview.transactionsToday?.toLocaleString() || '0',
+            badge: `+${overview.transactionGrowthPercent || 0}%`,
             badgeColor: '#dcfce7',
             badgeTextColor: '#008236',
             detail: overview.totalValueToday ? `₫${(overview.totalValueToday / 1000000).toFixed(1)}M tổng giá trị` : '₫0M tổng giá trị',

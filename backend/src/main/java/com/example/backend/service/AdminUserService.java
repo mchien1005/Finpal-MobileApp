@@ -38,6 +38,7 @@ public class AdminUserService {
     private final BudgetRepository budgetRepository;
     private final SavingsGoalRepository savingsGoalRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AdminActivityService activityService;
 
     /**
      * Lấy danh sách người dùng với phân trang và tìm kiếm
@@ -192,12 +193,22 @@ public class AdminUserService {
             throw new RuntimeException("Không thể vô hiệu hóa tài khoản của chính bạn");
         }
 
-        user.setIsActive(!user.getIsActive());
+        boolean newStatus = !user.getIsActive();
+        user.setIsActive(newStatus);
         userRepository.save(user);
+
+        // Ghi audit log
+        String action = newStatus ? "ACTIVATE_USER" : "DEACTIVATE_USER";
+        String description = String.format("%s tài khoản user '%s' (ID: %d)",
+                newStatus ? "Kích hoạt" : "Vô hiệu hóa",
+                user.getUsername(),
+                user.getId());
+        activityService.logActivity(adminUsername, action, "USER", user.getId(),
+                description, null, null);
 
         log.info("Admin {} đã {} tài khoản {}",
                 adminUsername,
-                user.getIsActive() ? "kích hoạt" : "vô hiệu hóa",
+                newStatus ? "kích hoạt" : "vô hiệu hóa",
                 user.getUsername());
     }
 
@@ -213,6 +224,13 @@ public class AdminUserService {
         String newPassword = generateRandomPassword();
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+
+        // Ghi audit log
+        String description = String.format("Reset mật khẩu cho user '%s' (ID: %d)",
+                user.getUsername(),
+                user.getId());
+        activityService.logActivity(adminUsername, "RESET_PASSWORD", "USER", user.getId(),
+                description, null, null);
 
         log.info("Admin {} đã reset mật khẩu cho tài khoản {}", adminUsername, user.getUsername());
 
@@ -249,12 +267,22 @@ public class AdminUserService {
         }
 
         // Soft delete: vô hiệu hóa và đánh dấu
+        String originalUsername = user.getUsername();
+        String originalEmail = user.getEmail();
         user.setIsActive(false);
         // Rename để giải phóng unique constraint cho email/username (cho phép tạo lại
         // user cùng tên sau này nếu cần)
         user.setEmail(user.getEmail() + "_deleted_" + System.currentTimeMillis());
         user.setUsername(user.getUsername() + "_deleted_" + System.currentTimeMillis());
         userRepository.save(user);
+
+        // Ghi audit log
+        String description = String.format("Xóa user '%s' (Email: %s, ID: %d)",
+                originalUsername,
+                originalEmail,
+                userId);
+        activityService.logActivity(adminUsername, "DELETE_USER", "USER", userId,
+                description, null, null);
 
         log.info("Admin {} đã xóa (soft delete) tài khoản {}", adminUsername, userId);
     }
