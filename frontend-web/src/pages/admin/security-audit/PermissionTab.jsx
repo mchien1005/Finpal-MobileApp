@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Tag, message, Spin } from 'antd';
-import { PlusOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Card, Table, Button, Tag, message, Spin, Tabs } from 'antd';
+import { PlusOutlined, EyeOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import AddAdminModal from '../../../components/admin/AddAdminModal';
 import AdminDetailModal from '../../../components/admin/AdminDetailModal';
+import AddRoleModal from '../../../components/admin/AddRoleModal';
+import EditRoleModal from '../../../components/admin/EditRoleModal';
+import RoleDetailModal from '../../../components/admin/RoleDetailModal';
 import SuccessModal from '../../../components/common/SuccessModal';
 import ConfirmModal from '../../../components/common/ConfirmModal';
 import activityLogService from '../../../services/activityLogService';
 
 const PermissionTab = () => {
+  const [activeTab, setActiveTab] = useState('admins');
+  
+  // Admin states
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
@@ -16,19 +22,30 @@ const PermissionTab = () => {
   const [adminToDelete, setAdminToDelete] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [admins, setAdmins] = useState([]);
+  const [loading, setLoading] = useState(false);
+  
+  // Role states
+  const [addRoleModalVisible, setAddRoleModalVisible] = useState(false);
+  const [editRoleModalVisible, setEditRoleModalVisible] = useState(false);
+  const [roleDetailModalVisible, setRoleDetailModalVisible] = useState(false);
+  const [confirmRoleDeleteVisible, setConfirmRoleDeleteVisible] = useState(false);
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [roleToDelete, setRoleToDelete] = useState(null);
+  const [rolesData, setRolesData] = useState([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  
+  // Common states
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [rolesLoading, setRolesLoading] = useState(false);
 
   useEffect(() => {
     fetchAdminUsers();
     fetchRoles();
     fetchPermissions();
+    fetchRolesData();
   }, []);
 
   const fetchRoles = async () => {
-    setRolesLoading(true);
     try {
       const data = await activityLogService.getAllRoles();
       console.log('Roles data:', data);
@@ -37,6 +54,33 @@ const PermissionTab = () => {
       console.error('Error fetching roles:', error);
       message.error('Không thể tải danh sách vai trò');
       setRoles([]);
+    }
+  };
+
+  const fetchRolesData = async () => {
+    setRolesLoading(true);
+    try {
+      const data = await activityLogService.getAllRoles();
+      console.log('Roles data for table:', data);
+      // Transform to table format
+      const transformedRoles = data.map((role, index) => ({
+        key: role.id || index,
+        id: role.id,
+        roleCode: role.roleCode,
+        roleName: role.roleName,
+        description: role.description,
+        color: role.color,
+        displayOrder: role.displayOrder,
+        permissionCodes: role.permissionCodes || [],
+        permissionNames: role.permissionNames || [],
+        adminCount: role.adminCount || 0,
+        isActive: role.isActive !== false,
+      }));
+      setRolesData(transformedRoles);
+    } catch (error) {
+      console.error('Error fetching roles data:', error);
+      message.error('Không thể tải danh sách vai trò');
+      setRolesData([]);
     } finally {
       setRolesLoading(false);
     }
@@ -186,6 +230,100 @@ const PermissionTab = () => {
     }
   };
 
+  // Role handlers
+  const handleAddRole = async (formData) => {
+    try {
+      setRolesLoading(true);
+      await activityLogService.createRole(formData);
+      await fetchRolesData();
+      await fetchRoles(); // Refresh roles for admin dropdown
+      setAddRoleModalVisible(false);
+      setSuccessMessage('Thêm vai trò thành công!');
+      setSuccessModalVisible(true);
+    } catch (error) {
+      console.error('Error creating role:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Không thể tạo vai trò';
+      message.error('Lỗi: ' + errorMessage);
+    } finally {
+      setRolesLoading(false);
+    }
+  };
+
+  const handleViewRole = async (role) => {
+    try {
+      setRolesLoading(true);
+      const detailData = await activityLogService.getRoleById(role.id);
+      console.log('Role detail:', detailData);
+      setSelectedRole(detailData);
+      setRoleDetailModalVisible(true);
+    } catch (error) {
+      console.error('Error fetching role detail:', error);
+      message.error('Không thể tải thông tin chi tiết vai trò');
+    } finally {
+      setRolesLoading(false);
+    }
+  };
+
+  const handleEditRole = async (role) => {
+    try {
+      setRolesLoading(true);
+      const detailData = await activityLogService.getRoleById(role.id);
+      console.log('Role to edit:', detailData);
+      setSelectedRole(detailData);
+      setEditRoleModalVisible(true);
+    } catch (error) {
+      console.error('Error fetching role for edit:', error);
+      message.error('Không thể tải thông tin vai trò');
+    } finally {
+      setRolesLoading(false);
+    }
+  };
+
+  const handleUpdateRole = async (roleId, formData) => {
+    try {
+      setRolesLoading(true);
+      await activityLogService.updateRole(roleId, formData);
+      await fetchRolesData();
+      await fetchRoles(); // Refresh roles for admin dropdown
+      setEditRoleModalVisible(false);
+      setSelectedRole(null);
+      setSuccessMessage('Cập nhật vai trò thành công!');
+      setSuccessModalVisible(true);
+    } catch (error) {
+      console.error('Error updating role:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Không thể cập nhật vai trò';
+      message.error('Lỗi: ' + errorMessage);
+    } finally {
+      setRolesLoading(false);
+    }
+  };
+
+  const handleDeleteRoleClick = (role) => {
+    setRoleToDelete(role);
+    setConfirmRoleDeleteVisible(true);
+  };
+
+  const handleConfirmDeleteRole = async () => {
+    try {
+      setRolesLoading(true);
+      await activityLogService.deleteRole(roleToDelete.id);
+      await fetchRolesData();
+      await fetchRoles(); // Refresh roles for admin dropdown
+      setConfirmRoleDeleteVisible(false);
+      setRoleToDelete(null);
+      setSuccessMessage('Xóa vai trò thành công!');
+      setSuccessModalVisible(true);
+    } catch (error) {
+      console.error('Error deleting role:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Không thể xóa vai trò';
+      message.error('Lỗi: ' + errorMessage);
+      setConfirmRoleDeleteVisible(false);
+      setRoleToDelete(null);
+    } finally {
+      setRolesLoading(false);
+    }
+  };
+
   const columns = [
     {
       title: 'Email',
@@ -303,6 +441,167 @@ const PermissionTab = () => {
     },
   ];
 
+  // Role columns
+  const roleColumns = [
+    {
+      title: 'Mã vai trò',
+      dataIndex: 'roleCode',
+      key: 'roleCode',
+      width: 150,
+      render: (text) => (
+        <Tag
+          style={{
+            background: '#dbeafe',
+            color: '#2563eb',
+            border: 'none',
+            borderRadius: 6,
+            fontSize: 13,
+            fontWeight: 500,
+            padding: '4px 12px',
+          }}
+        >
+          {text}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Tên vai trò',
+      dataIndex: 'roleName',
+      key: 'roleName',
+      width: 180,
+      render: (text) => <span style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>{text}</span>,
+    },
+    {
+      title: 'Mô tả',
+      dataIndex: 'description',
+      key: 'description',
+      width: 250,
+      render: (text) => (
+        <span style={{ fontSize: 14, color: '#6b7280' }}>
+          {text || 'Không có mô tả'}
+        </span>
+      ),
+    },
+    {
+      title: 'Màu sắc',
+      dataIndex: 'color',
+      key: 'color',
+      width: 100,
+      align: 'center',
+      render: (color) => (
+        <div
+          style={{
+            width: 40,
+            height: 24,
+            borderRadius: 6,
+            background: color,
+            border: '1px solid #e5e7eb',
+            margin: '0 auto',
+          }}
+        />
+      ),
+    },
+    {
+      title: 'Quyền',
+      dataIndex: 'permissionNames',
+      key: 'permissionNames',
+      width: 300,
+      render: (permissions) => (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {(permissions || []).slice(0, 3).map((permission, index) => (
+            <Tag
+              key={index}
+              style={{
+                background: '#dcfce7',
+                color: '#16a34a',
+                border: 'none',
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 500,
+                padding: '2px 10px',
+              }}
+            >
+              {permission}
+            </Tag>
+          ))}
+          {permissions && permissions.length > 3 && (
+            <Tag
+              style={{
+                background: '#f3f4f6',
+                color: '#6b7280',
+                border: 'none',
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 500,
+                padding: '2px 10px',
+              }}
+            >
+              +{permissions.length - 3}
+            </Tag>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: 'Số Admin',
+      dataIndex: 'adminCount',
+      key: 'adminCount',
+      width: 100,
+      align: 'center',
+      render: (count) => <span style={{ fontSize: 14, color: '#111827', fontWeight: 500 }}>{count}</span>,
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'isActive',
+      key: 'isActive',
+      width: 120,
+      render: (isActive) => (
+        <Tag
+          style={{
+            background: isActive ? '#dcfce7' : '#f3f4f6',
+            color: isActive ? '#16a34a' : '#6b7280',
+            border: 'none',
+            borderRadius: 6,
+            fontSize: 12,
+            fontWeight: 500,
+            padding: '2px 10px',
+          }}
+        >
+          {isActive ? 'Hoạt động' : 'Không hoạt động'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      width: 150,
+      align: 'center',
+      render: (_, record) => (
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+          <Button
+            type="text"
+            icon={<EyeOutlined style={{ fontSize: 16 }} />}
+            onClick={() => handleViewRole(record)}
+            style={{ color: '#111827' }}
+          />
+          <Button
+            type="text"
+            icon={<EditOutlined style={{ fontSize: 16 }} />}
+            onClick={() => handleEditRole(record)}
+            style={{ color: '#2563eb' }}
+          />
+          <Button
+            type="text"
+            icon={<DeleteOutlined style={{ fontSize: 16 }} />}
+            onClick={() => handleDeleteRoleClick(record)}
+            style={{ color: '#dc2626' }}
+            disabled={record.roleCode === 'SUPER_ADMIN'}
+          />
+        </div>
+      ),
+    },
+  ];
+
   return (
     <Card
       style={{
@@ -313,60 +612,138 @@ const PermissionTab = () => {
       }}
       bodyStyle={{ padding: 0 }}
     >
-      <div
-        style={{
-          padding: '20px 24px',
-          borderBottom: '1px solid #e5e7eb',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <div>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', margin: 0, marginBottom: 4 }}>
-            Vai trò & Phân quyền Admin
-          </h3>
-          <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>
-            Quản lý phân quyền admin
-          </p>
-        </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setAddModalVisible(true)}
-          style={{
-            background: '#2563eb',
-            border: 'none',
-            borderRadius: 8,
-            height: 36,
-            padding: '0 16px',
-            fontSize: 14,
-            fontWeight: 500,
-          }}
-        >
-          Thêm Admin
-        </Button>
-      </div>
-      <Spin spinning={loading}>
-        <Table
-          columns={columns}
-          dataSource={admins}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Tổng ${total} admin`,
-          }}
-          tableLayout="fixed"
-        />
-      </Spin>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        style={{ padding: '0 24px' }}
+        items={[
+          {
+            key: 'admins',
+            label: (
+              <span style={{ fontSize: 15, fontWeight: 500 }}>
+                Quản lý Admin
+              </span>
+            ),
+            children: (
+              <>
+                <div
+                  style={{
+                    padding: '20px 0',
+                    borderBottom: '1px solid #e5e7eb',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <div>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', margin: 0, marginBottom: 4 }}>
+                      Danh sách Admin
+                    </h3>
+                    <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>
+                      Quản lý tài khoản admin và phân quyền
+                    </p>
+                  </div>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => setAddModalVisible(true)}
+                    style={{
+                      background: '#2563eb',
+                      border: 'none',
+                      borderRadius: 8,
+                      height: 36,
+                      padding: '0 16px',
+                      fontSize: 14,
+                      fontWeight: 500,
+                    }}
+                  >
+                    Thêm Admin
+                  </Button>
+                </div>
+                <Spin spinning={loading}>
+                  <Table
+                    columns={columns}
+                    dataSource={admins}
+                    pagination={{
+                      pageSize: 10,
+                      showSizeChanger: true,
+                      showTotal: (total) => `Tổng ${total} admin`,
+                    }}
+                    tableLayout="fixed"
+                  />
+                </Spin>
+              </>
+            ),
+          },
+          {
+            key: 'roles',
+            label: (
+              <span style={{ fontSize: 15, fontWeight: 500 }}>
+                Quản lý Vai trò
+              </span>
+            ),
+            children: (
+              <>
+                <div
+                  style={{
+                    padding: '20px 0',
+                    borderBottom: '1px solid #e5e7eb',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <div>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111827', margin: 0, marginBottom: 4 }}>
+                      Danh sách Vai trò
+                    </h3>
+                    <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>
+                      Quản lý vai trò và quyền hạn
+                    </p>
+                  </div>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => setAddRoleModalVisible(true)}
+                    style={{
+                      background: '#2563eb',
+                      border: 'none',
+                      borderRadius: 8,
+                      height: 36,
+                      padding: '0 16px',
+                      fontSize: 14,
+                      fontWeight: 500,
+                    }}
+                  >
+                    Thêm Vai trò
+                  </Button>
+                </div>
+                <Spin spinning={rolesLoading}>
+                  <Table
+                    columns={roleColumns}
+                    dataSource={rolesData}
+                    pagination={{
+                      pageSize: 10,
+                      showSizeChanger: true,
+                      showTotal: (total) => `Tổng ${total} vai trò`,
+                    }}
+                    tableLayout="fixed"
+                  />
+                </Spin>
+              </>
+            ),
+          },
+        ]}
+      />
 
+      {/* Admin Modals */}
       <AddAdminModal
         visible={addModalVisible}
         onClose={() => setAddModalVisible(false)}
         onAdd={handleAddAdmin}
         roles={roles}
         permissions={permissions}
-        loading={rolesLoading}
+        loading={loading}
       />
 
       <AdminDetailModal
@@ -390,6 +767,51 @@ const PermissionTab = () => {
         adminInfo={adminToDelete}
       />
 
+      {/* Role Modals */}
+      <AddRoleModal
+        visible={addRoleModalVisible}
+        onClose={() => setAddRoleModalVisible(false)}
+        onAdd={handleAddRole}
+        permissions={permissions}
+        loading={rolesLoading}
+      />
+
+      <EditRoleModal
+        visible={editRoleModalVisible}
+        onClose={() => {
+          setEditRoleModalVisible(false);
+          setSelectedRole(null);
+        }}
+        onUpdate={handleUpdateRole}
+        role={selectedRole}
+        permissions={permissions}
+        loading={rolesLoading}
+      />
+
+      <RoleDetailModal
+        visible={roleDetailModalVisible}
+        onClose={() => {
+          setRoleDetailModalVisible(false);
+          setSelectedRole(null);
+        }}
+        role={selectedRole}
+      />
+
+      <ConfirmModal
+        open={confirmRoleDeleteVisible}
+        onConfirm={handleConfirmDeleteRole}
+        onCancel={() => {
+          setConfirmRoleDeleteVisible(false);
+          setRoleToDelete(null);
+        }}
+        title="Xóa Vai trò"
+        content={`Bạn có chắc chắn muốn xóa vai trò "${roleToDelete?.roleName}"? Hành động này không thể hoàn tác.`}
+        confirmText="Xác nhận xóa"
+        cancelText="Hủy"
+        danger={true}
+      />
+
+      {/* Success Modal */}
       <SuccessModal
         open={successModalVisible}
         onClose={() => setSuccessModalVisible(false)}

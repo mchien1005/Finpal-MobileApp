@@ -84,6 +84,30 @@ const activityLogService = {
         const response = await api.delete(`/admin/roles/users/${adminUserId}`);
         return response.data;
     },
+
+    // Create new role
+    createRole: async (roleData) => {
+        const response = await api.post('/admin/roles', roleData);
+        return response.data;
+    },
+
+    // Get role by ID
+    getRoleById: async (roleId) => {
+        const response = await api.get(`/admin/roles/${roleId}`);
+        return response.data;
+    },
+
+    // Update role
+    updateRole: async (roleId, roleData) => {
+        const response = await api.put(`/admin/roles/${roleId}`, roleData);
+        return response.data;
+    },
+
+    // Delete role (soft delete)
+    deleteRole: async (roleId) => {
+        const response = await api.delete(`/admin/roles/${roleId}`);
+        return response.data;
+    },
 };
 
 export default activityLogService;
