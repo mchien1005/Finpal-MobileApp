@@ -11,6 +11,14 @@ import '../../presentation/screens/profile/app_settings_screen.dart';
 /// All screens should use AppBarWithDrawer.scrollable() method
 class AppBarWithDrawer {
   static final UserRepository _userRepository = UserRepository();
+  
+  // ValueNotifier to trigger profile refresh across the app
+  static final ValueNotifier<int> _profileRefreshNotifier = ValueNotifier<int>(0);
+  
+  /// Call this method to refresh profile data in all drawers
+  static void refreshProfile() {
+    _profileRefreshNotifier.value++;
+  }
 
   /// Creates a scrollable scaffold with app bar that hides when scrolling down
   /// and shows when scrolling up
@@ -27,12 +35,16 @@ class AppBarWithDrawer {
     bool showSearchAction = false,
     String? customTitle,
   }) {
-    return FutureBuilder(
-      future: _userRepository.getProfile(),
-      builder: (context, snapshot) {
-        final profile = snapshot.data;
+    return ValueListenableBuilder<int>(
+      valueListenable: _profileRefreshNotifier,
+      builder: (context, refreshCount, _) {
+        return FutureBuilder(
+          key: ValueKey(refreshCount), // Force rebuild when refreshCount changes
+          future: _userRepository.getProfile(),
+          builder: (context, snapshot) {
+            final profile = snapshot.data;
 
-        return ScrollableAppBarScaffold(
+            return ScrollableAppBarScaffold(
           userName: profile?.fullName ?? userName,
           userEmail: profile?.email ?? userEmail,
           avatarUrl: profile?.avatarUrl ?? avatarUrl,
@@ -79,12 +91,14 @@ class AppBarWithDrawer {
           onLanguageChanged: (language) {
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(SnackBar(content: Text('Đổi ngôn ngữ: $language')));
+            ).showSnackBar(SnackBar(content: Text('Tính năng chưa phát triển')));
           },
           onThemeChanged: (isDark) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Đổi chủ đề: ${isDark ? "Tối" : "Sáng"}')),
+              SnackBar(content: Text('Tính năng chưa phát triển')),
             );
+          },
+        );
           },
         );
       },

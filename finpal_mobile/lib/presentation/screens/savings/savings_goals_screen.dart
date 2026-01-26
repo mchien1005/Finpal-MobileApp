@@ -391,30 +391,30 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {},
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 0),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Xem chi tiết',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFFFF9800),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(width: 4),
-                  Icon(Icons.arrow_forward, size: 16, color: Color(0xFFFF9800)),
-                ],
-              ),
-            ),
-          ),
+          // Align(
+          //   alignment: Alignment.centerRight,
+          //   child: TextButton(
+          //     onPressed: () {},
+          //     style: TextButton.styleFrom(
+          //       padding: const EdgeInsets.symmetric(horizontal: 0),
+          //     ),
+          //     child: const Row(
+          //       mainAxisSize: MainAxisSize.min,
+          //       children: [
+          //         Text(
+          //           'Xem chi tiết',
+          //           style: TextStyle(
+          //             fontSize: 14,
+          //             color: Color(0xFFFF9800),
+          //             fontWeight: FontWeight.w600,
+          //           ),
+          //         ),
+          //         SizedBox(width: 4),
+          //         Icon(Icons.arrow_forward, size: 16, color: Color(0xFFFF9800)),
+          //       ],
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );

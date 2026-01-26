@@ -209,6 +209,16 @@ class _BudgetFormState extends State<BudgetForm> {
       return;
     }
 
+    if (_endDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn ngày kết thúc'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -470,17 +480,11 @@ class _BudgetFormState extends State<BudgetForm> {
             const SizedBox(height: 20),
 
             // Ngày kết thúc
-            _buildLabel('Ngày kết thúc (không bắt buộc)'),
+            _buildLabel('Ngày kết thúc'),
             const SizedBox(height: 8),
             _buildDatePicker(
               date: _endDate,
               onTap: () => _selectDate(isStartDate: false),
-              showClearButton: _endDate != null,
-              onClear: () {
-                setState(() {
-                  _endDate = null;
-                });
-              },
             ),
             const SizedBox(height: 32),
 

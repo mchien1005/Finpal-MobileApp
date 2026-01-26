@@ -419,6 +419,7 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
           const SizedBox(height: 24),
 
           // Weekly spending items from API
+          // Loop qua từng ngày trong tuần
           ...dailySpending.asMap().entries.map((entry) {
             final daily = entry.value;
             final progress = maxAmount > 0
@@ -464,6 +465,7 @@ class _AIInsightsScreenState extends State<AIInsightsScreen> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
+                    // hiển thị insight từ API
                     child: Text(
                       _weeklyTrend!.insight.message,
                       style: const TextStyle(

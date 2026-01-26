@@ -22,7 +22,7 @@ class TrendChartSection extends StatelessWidget {
       symbol: '',
       decimalDigits: 0,
     );
-    
+
     if (amount >= 1000000) {
       return '${(amount / 1000000).toStringAsFixed(1)}M';
     } else if (amount >= 1000) {
@@ -42,17 +42,17 @@ class TrendChartSection extends StatelessWidget {
       symbol: '',
       decimalDigits: 0,
     );
-    
+
     // Calculate max value for Y axis
     double maxValue = 0;
     for (var trend in monthlyTrends) {
       if (trend.income > maxValue) maxValue = trend.income;
       if (trend.expense > maxValue) maxValue = trend.expense;
     }
-    
+
     // Add 10% padding to max value
     maxValue = maxValue * 1.1;
-    
+
     // Ensure minimum range
     if (maxValue < 1000000) maxValue = 1000000;
 
@@ -119,10 +119,7 @@ class TrendChartSection extends StatelessWidget {
                   show: true,
                   drawVerticalLine: false,
                   getDrawingHorizontalLine: (value) {
-                    return FlLine(
-                      color: Colors.grey.shade200,
-                      strokeWidth: 1,
-                    );
+                    return FlLine(color: Colors.grey.shade200, strokeWidth: 1);
                   },
                 ),
                 titlesData: FlTitlesData(
@@ -132,7 +129,8 @@ class TrendChartSection extends StatelessWidget {
                       reservedSize: 50,
                       interval: maxValue / 4,
                       getTitlesWidget: (value, meta) {
-                        if (value < 0 || value > maxValue) return const SizedBox();
+                        if (value < 0 || value > maxValue)
+                          return const SizedBox();
                         return Text(
                           _formatCurrency(value),
                           style: const TextStyle(
@@ -181,6 +179,7 @@ class TrendChartSection extends StatelessWidget {
                       return FlSpot(e.key.toDouble(), e.value.income);
                     }).toList(),
                     isCurved: true,
+                    preventCurveOverShooting: true,
                     color: AppColors.cardIncome,
                     barWidth: 3,
                     dotData: FlDotData(
@@ -205,6 +204,7 @@ class TrendChartSection extends StatelessWidget {
                       return FlSpot(e.key.toDouble(), e.value.expense);
                     }).toList(),
                     isCurved: true,
+                    preventCurveOverShooting: true,
                     color: AppColors.cardExpense,
                     barWidth: 3,
                     dotData: FlDotData(
@@ -274,10 +274,7 @@ class TrendChartSection extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
       ],
     );

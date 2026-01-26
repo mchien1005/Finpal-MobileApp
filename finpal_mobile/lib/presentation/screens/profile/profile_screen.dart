@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../data/repositories/user_repository.dart';
 import '../../../data/models/user.dart';
 import '../../../data/services/api_service.dart';
+import '../../../core/utils/app_bar_with_drawer.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -249,6 +250,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await _loadProfile();
 
       setState(() => _isUploadingAvatar = false);
+
+      // Notify app to refresh profile in drawer
+      AppBarWithDrawer.refreshProfile();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

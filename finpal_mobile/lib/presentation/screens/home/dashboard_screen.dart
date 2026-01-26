@@ -180,14 +180,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      //1
                       SummaryCardsSection(summary: _summary),
                       const SizedBox(height: 16),
+                      //2
                       ProgressCardSection(
                         summary: _summary,
                         activeBudget: _activeBudget,
                         cashFlow: _cashFlow,
                       ),
                       const SizedBox(height: 16),
+                      //3
                       TrendChartSection(
                         monthlyTrends: _monthlyTrends,
                         selectedMonths: _selectedMonths,
@@ -199,11 +202,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
+                      //4
                       CategoryChartSection(categories: _categories),
                       const SizedBox(height: 16),
+                      //5
                       WarningCardSection(categories: _categories),
                       const SizedBox(height: 16),
-                      // Card tổng quan ngân sách mới
+                      //6 Card tổng quan ngân sách mới
                       BudgetAnalysisSection(
                         onViewAll: () {
                           // Điều hướng đến tab Ngân sách (index 1)
